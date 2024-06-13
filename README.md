@@ -70,3 +70,30 @@ DataProcessing/
 ├── .gitgnore                   
 └──README.md                    
 ```
+
+## 雲端OenDrive結構
+
+```markdown
+BD_DataProcessing/
+├── 00_System/                  # 系統目錄
+|   ├── Config/                 # 設定資料檔
+|   |   ├── User_Config.csv     # 使用者config
+|   |   ├── BD_Config.csv       # BD config
+|   |   └── Dealer_Config.csv   # 經銷商 config
+|   └─ Log/                     # 存放日誌記錄
+|       ├── Success_Log         # 成功的日誌
+|       └── Error_Log           # 失敗的日誌
+├── 01_BD/                      # BD目錄
+|   ├── 01_MainFile/            # 主檔存放位置
+|   └── 02_Report/              # 報表存放位置
+└── 02_Dealer/                  # 經銷商目錄
+    ├── 00_CheckResult/         # 檢查結果存放位置
+    ├── Dealer-1
+    ├── Dealer-2
+    ├── Dealer-3
+    ├── Dealer-4
+    ├── Dealer-5
+    ├── Dealer-6
+    ├── Dealer-7   
+    └── Dealer-8
+```
