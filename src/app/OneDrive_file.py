@@ -6,12 +6,51 @@ Writer:Qian
 '''
 
 import os
-import shutil
-from dotenv import load_dotenv
+# import shutil
+from SystemConfig import Config
 
-BDLocalPath = "BD_DataProcessing"
-FolderPath = ["00_System\\Log\\01_Success_Log","00_System\\Log\\02_Error_Log","01_BD\\01_MainFile","01_BD\\02_Report","02_Dealer"]
+GlobalConfig = Config()
 
+WinUser = GlobalConfig["App"]["WinUser"]
+FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
+    else GlobalConfig["Default"]["Name"]
+RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
+    else GlobalConfig["Default"]["DataPath"]
+OneDrivePath = GlobalConfig["App"]["OneDrivePath"] if GlobalConfig["App"]["OneDrivePath"] \
+    else GlobalConfig["Default"]["OneDrivePath"]
+OneDrivePath = OneDrivePath.replace("{username}", WinUser)
+TargetPath = os.path.join(RootDir, FolderName)
+
+# 確認本地 OneDrive 路徑是否存在
+def DrivePathCheck():
+    if os.path.exists(OneDrivePath):
+        check_message = "OneDrive 路徑存在"
+        return True, check_message
+    else:
+        check_message = "OneDrive 路徑不存在，請檢查本地 OneDrive 目錄，並且登入嘉衡公司帳戶"
+        return False, check_message
+    
+# 建構本地目錄
+def MakeLocalFolder():
+    try:
+        os.makedirs(TargetPath)
+        make_message = f"成功建立目錄{TargetPath}"
+        return True, make_message
+    except Exception as e:
+        make_message = f"An error occurred: {e}"
+        return False, make_message
+
+# 確認本地目標路徑是否存在
+def TargetPathCheck():
+    if os.path.exists(TargetPath):
+        check_message = "本地目標路徑存在"
+        return True, check_message
+    else:
+        result, check_message = MakeLocalFolder()
+        return result, check_message
+        
+
+'''
 # 從 OneDrive 下載檔案 (Download File From OneDrive)
 def DownloadFileFOD():
     
@@ -62,14 +101,9 @@ def CopyFile(Src, Dst):
 
     except Exception as e:
         print(f"發生錯誤: {e}")
-
-# 初始建立資料夾
-def MakeTargetDir(RootDir, NextDir):
-    TargetDir = os.path.join(RootDir, NextDir)
-    os.makedirs(TargetDir)
-    for i in range(len(FolderPath)):
-        folder = os.path.join(TargetDir,FolderPath[i])
-        os.makedirs(folder)
+'''
 
 if __name__ == "__main__":
-    DownloadFileFOD()
+    result,message = TargetPathCheck()
+    print(result)
+    print(message)

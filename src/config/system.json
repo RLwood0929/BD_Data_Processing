@@ -1,0 +1,56 @@
+{
+    "App":{
+        "Name":"BD_DataProcessing",
+        "LogPath":"",
+        "OneDrivePath":"",
+        "DataPath":"",
+        "AutoRun":true,
+        "Debug":true,
+        "User":"",
+        "WinUser":"wood1"
+    },
+    "Default":{
+        "Name":"BD_DataProcessing",
+        "LogPath":"./logs",
+        "OneDrivePath":"C:\\\\Users\\\\{username}\\\\OneDrive - 嘉衡科技有限公司",
+        "DataPath":"./datas",
+        "AutoRun":true,
+        "Debug":false,
+        "User":"System",
+        "SystemLogFileName":"System.log",
+        "RecordLogFileName":"Record.log",
+        "ChangeLogFileName":"Change.log",
+        "CheckLogFileName":"Check.log"
+    },
+    "DataFormat":{
+        "FilePath":"./docs/data_format/DataFormatFromBD.xlsx",
+        "MappingSales":"銷售檔案配對規則",
+        "MappingInventory":"庫存檔案配對規則",
+        "SalesFormatToDealer":"經銷商銷售檔案規定格式",
+        "InventoryFormatToDealer":"經銷商庫存檔案規定格式",
+        "SalesFormatToBD":"BD資料庫銷售檔案規定格式",
+        "InventoryFormatToBD":"BD資料庫庫存檔案規定格式"
+    },
+    "MasterFile":{
+        "FileName":"",
+        "WorkSheet1_Name":"",
+        "WorkSheet1":{
+            "DealerIDColumName":"",
+            "ProductIDColumName":""
+        },
+        "WorkSheet2_Name":"",
+        "WorkSheet2":{
+
+        }
+    },
+    "EFT":{
+        "HostName":"eft.carefusion.com",
+        "Dir":"archive"
+    },
+    "Mail":{
+        "Host":"www.hibox.hinet.net",
+        "SMTPPort":"587",
+        "IMAPPort":"993"
+    
+    }
+}

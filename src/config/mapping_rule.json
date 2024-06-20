@@ -1,0 +1,30 @@
+{
+    "DateFormatChang":{
+        "SourceField":"Transaction Date",
+        "TargetField":"Invoice Date",
+        "DateFormat":"%d/%m/%Y"
+    },
+    "MoveOrSeachUoM":{
+        "SourceField1":"Original Quantity",
+        "SourceField2":"Quantity",
+        "SeachKey":"Product ID",
+        "SeachFile":"",
+        "SourceField3":"UoM",
+        "TargetField":"Quantity",
+    },
+    "Rule_3":{
+        "RuleName":"",
+        "SourceField":"",
+        "TargetField":"Demand Class Desc",
+        "SeachKey":"Product ID",
+        "SeachFile":"",
+        "TargetKey":""
+    },
+    "Rule_4":{
+        "RuleName":"",
+        "SourceField1":"Original Product Name",
+        "SourceField2":"Original Buyer Name",
+        "SourceField3":"Quantity",
+        "SourceField4":"Original Quantity"
+    }
+}

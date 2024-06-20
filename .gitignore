@@ -1,2 +1,7 @@
 .env 
 venv/*
+src/app/IMAPtest.py
+src/app/test.py
+docs/data_format/~$DataFormatFromBD.xlsx
+datas/*
+__pycache__

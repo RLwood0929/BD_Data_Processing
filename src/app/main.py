@@ -5,11 +5,7 @@
 Writer：Qian
 '''
 
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-path = os.getenv("OneDrivePath")
-
-print(path)
+# import os
+from OneDrive_file import MakeLocalFolder
+message = MakeLocalFolder()
+print(message)
