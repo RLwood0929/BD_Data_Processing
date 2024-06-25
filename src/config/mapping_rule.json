@@ -1,30 +1,205 @@
 {
-    "DateFormatChang":{
-        "SourceField":"Transaction Date",
-        "TargetField":"Invoice Date",
-        "DateFormat":"%d/%m/%Y"
+  "Sale": [
+    {
+      "Target": "Area",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": "TWM",
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "未使用"
     },
-    "MoveOrSeachUoM":{
-        "SourceField1":"Original Quantity",
-        "SourceField2":"Quantity",
-        "SeachKey":"Product ID",
-        "SeachFile":"",
-        "SourceField3":"UoM",
-        "TargetField":"Quantity",
+    {
+      "Target": "Branch",
+      "Source": "Seller ID",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "BD的經銷商代碼，若經銷商填寫錯誤則自動填寫為經銷商代碼"
     },
-    "Rule_3":{
-        "RuleName":"",
-        "SourceField":"",
-        "TargetField":"Demand Class Desc",
-        "SeachKey":"Product ID",
-        "SeachFile":"",
-        "TargetKey":""
+    {
+      "Target": "Customer Code",
+      "Source": "Buyer ID",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "經銷商客戶代碼"
     },
-    "Rule_4":{
-        "RuleName":"",
-        "SourceField1":"Original Product Name",
-        "SourceField2":"Original Buyer Name",
-        "SourceField3":"Quantity",
-        "SourceField4":"Original Quantity"
+    {
+      "Target": "Customer Name",
+      "Source": "Original Buyer Name",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "客戶名稱"
+    },
+    {
+      "Target": "Customer Address",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "客戶地址"
+    },
+    {
+      "Target": "Invoice No",
+      "Source": "Invoice Number",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "發票號碼"
+    },
+    {
+      "Target": "Invoice Date",
+      "Source": "Transaction Date",
+      "Rule": NaN,
+      "SecondRule": "DateFormatChang",
+      "Value": NaN,
+      "RuleDescription": "格式轉換，DD/MM/YYYY",
+      "Required/Optional": "Required",
+      "Description": "發票日期"
+    },
+    {
+      "Target": "BD Sku#",
+      "Source": "Product ID",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "產品代碼，BD與經銷商通用為BD的產品代碼"
+    },
+    {
+      "Target": "Quantity",
+      "Source": "Original Quantity",
+      "Rule": NaN,
+      "SecondRule": "Rule_2",
+      "Value": NaN,
+      "RuleDescription": "若Original Quantity欄位有值則直接搬；若無則透過經銷商檔案中的Quantity*MasterFile裡的Uom",
+      "Required/Optional": "Required",
+      "Description": "銷售數量"
+    },
+    {
+      "Target": "Gross Revenue",
+      "Source": "Original Unit Price",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "IMS價格"
+    },
+    {
+      "Target": "Discount Principal",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": 0,
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "未使用"
+    },
+    {
+      "Target": "Lot No",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "批號"
+    },
+    {
+      "Target": "Sales Channel Group",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "備註1"
+    },
+    {
+      "Target": "Uom",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": "EA",
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "單位"
+    },
+    {
+      "Target": "Conversion Rate",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": 1,
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "單位轉換率"
+    },
+    {
+      "Target": "Demand Class Desc",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": "Rule_3",
+      "Value": NaN,
+      "RuleDescription": "透過Product ID進MasterFile查找對應的DP價格",
+      "Required/Optional": "Required",
+      "Description": "經銷商價格DP"
+    },
+    {
+      "Target": "Ship to Customer code",
+      "Source": "Original Product Name+Original Buyer Name+Quantity+Original Quantity",
+      "Rule": NaN,
+      "SecondRule": "Rule_4",
+      "Value": NaN,
+      "RuleDescription": "Original Product Name+Original Buyer Name+Quantity+Original Quantity",
+      "Required/Optional": "Optional",
+      "Description": "備註2，多欄位合併，以；分隔，若無值則直接跳過，不留空"
+    },
+    {
+      "Target": "Ship to Customer name",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "未使用"
+    },
+    {
+      "Target": "Ship to Customer Address",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": NaN,
+      "Description": "未使用"
+    },
+    {
+      "Target": "Invoice Line Item No",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": NaN,
+      "Description": "未使用"
     }
+  ],
+  "Inventory": []
 }

@@ -1,0 +1,23 @@
+{
+    "SaleFile":{
+        "MustHave":[
+            "Seller ID",
+            "Buyer ID",
+            "Original Buyer Name",
+            "Product ID",
+            "Original Product Name",
+            "Transaction Date",
+            "Creation Date"
+        ],
+        "2Choose1":[
+            "Original Quantity",
+            "Quantity"
+        ]
+    },
+    "InventoryFile":{
+        "MustHave":[
+
+        ]
+
+    }
+}

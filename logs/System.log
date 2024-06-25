@@ -1,0 +1,27 @@
+2024-06-25 19:41:24,163 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 19:41:24,163 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 19:41:24,164 - INFO - CopyFolders - System - OneDrive與本地無差異資料
+2024-06-25 19:44:55,900 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 19:44:55,900 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 19:44:55,902 - INFO - CopyFolders-CopyFiles - System - 拷貝 ./datas\BD_DataProcessing\00_System\00.txt 至 C:\\Users\\wood1\\OneDrive - 嘉衡科技有限公司\BD_DataProcessing\00_System\00.txt
+2024-06-25 19:44:55,903 - INFO - CopyFolders - System - OneDrive與本地無差異資料
+2024-06-25 19:45:48,854 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 19:45:48,855 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 19:45:48,855 - INFO - CopyFolders - System - OneDrive與本地無差異資料
+2024-06-25 19:47:05,048 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 19:47:05,049 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 19:47:05,051 - INFO - CopyFolders - System - OneDrive與本地無差異資料
+2024-06-25 19:47:58,674 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 19:47:58,674 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 19:47:58,676 - INFO - CopyFolders - System - OneDrive與本地無差異資料
+2024-06-25 19:51:32,126 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 19:51:32,126 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 19:51:32,128 - INFO - CopyFolders - System - OneDrive與本地無差異資料
+2024-06-25 20:00:00,024 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 20:00:00,025 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 21:16:52,674 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 21:16:52,674 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 21:16:52,678 - INFO - CopyFolders - System - OneDrive 與 本地目錄 無差異
+2024-06-25 21:37:25,239 - INFO - DrivePathCheck - System - OneDrive 路徑存在
+2024-06-25 21:37:25,239 - INFO - TargetPathCheck - System - 本地目標路徑存在
+2024-06-25 21:37:25,243 - INFO - CopyFolders-RemoveExtraFiles - System - 刪除檔案 C:\\Users\\wood1\\OneDrive - 嘉衡科技有限公司\BD_DataProcessing\00_System\00.txt
