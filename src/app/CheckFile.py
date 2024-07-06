@@ -12,7 +12,7 @@ import pandas as pd
 from itertools import groupby
 from datetime import datetime
 from operator import itemgetter
-from app.Logs import WRecLog, WCheLog
+from Log import WRecLog, WCheLog
 from SystemConfig import Config, CheckRule, DealerConf
 
 GlobalConfig = Config()

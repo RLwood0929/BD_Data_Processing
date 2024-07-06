@@ -7,7 +7,7 @@ Writer:Qian
 
 import os
 import shutil
-from app.Logs import WSysLog
+from Log import WSysLog
 from SystemConfig import Config
 
 GlobalConfig = Config()
