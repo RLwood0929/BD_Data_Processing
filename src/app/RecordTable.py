@@ -7,7 +7,7 @@ Writer：Qian
 
 import os
 import pandas as pd
-from Log import WSysLog
+from app.Logs import WSysLog
 from datetime import datetime
 from openpyxl.styles import Alignment
 from SystemConfig import Config, DealerConf
