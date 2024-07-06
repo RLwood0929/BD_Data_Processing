@@ -28,7 +28,7 @@ CheckLogFileName = GlobalConfig["Default"]["CheckLogFileName"]
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(event)s - %(operator)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(event)s - %(message)s"
 )
 
 # 建立 SystemLog，紀錄系統日誌
@@ -56,7 +56,7 @@ ChaPath = os.path.join(LogPath, ChangeLogFileName)
 ChaFileHandler = logging.FileHandler(ChaPath, encoding="UTF-8")
 ChaFormatter = logging.Formatter\
     ("%(asctime)s - %(levelname)s - %(event)s - \
-     %(OutputFileName)s - %(InputFileName)s - %(message)s")
+%(OutputFileName)s - %(InputFileName)s - %(message)s")
 ChaFileHandler.setFormatter(ChaFormatter)
 
 ChaLogger = logging.getLogger("Change")
@@ -67,13 +67,13 @@ ChePath = os.path.join(LogPath, CheckLogFileName)
 CheFileHandler = logging.FileHandler(ChePath, encoding="UTF-8")
 CheFormatter = logging.Formatter\
     ("%(asctime)s - %(levelname)s - %(event)s - \
-     %(DealerID)s - %(FileName)s - %(message)s")
+%(DealerID)s - %(FileName)s - %(message)s")
 CheFileHandler.setFormatter(CheFormatter)
 
 CheLogger = logging.getLogger("Check")
 CheLogger.addHandler(CheFileHandler)
 
-# 撰寫 System Log 紀錄
+# 撰寫 System Log 紀錄，Level：0、1、2、3、4
 def WSysLog(Level, Event, Message):
     Level = str(Level)
     if Level == "0":
@@ -95,44 +95,44 @@ def WSysLog(Level, Event, Message):
         sys_message = "Level out of range."
     return sys_message
 
-# 撰寫 Record Log 紀錄
+# 撰寫 Record Log 紀錄，Level：1、2
 def WRecLog(Level, Event, DealerID, FileName, Message):
     Level = str(Level)
     if Level == "1":
-        SysLogger.info(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
+        RecLogger.info(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
         rec_message = "Writing info log is finish."
     elif Level == "2":
-        SysLogger.warning(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
+        RecLogger.warning(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
         rec_message = "Writing warning log is finish."
     else:
         rec_message = "Level out of range."
     return rec_message
 
-# 撰寫 Change Log 紀錄
-def WChaLog(Level, Event, InputFileName, OutputFileName, Message):
-    Level = str(Level)
-    if Level == "1":
-        SysLogger.info(Message, extra = {"event":Event, "OutputFileName":OutputFileName, "InputFileName":InputFileName})
-        cha_message = "Writing info log is finish."
-    elif Level == "2":
-        SysLogger.warning(Message, extra = {"event":Event, "OutputFileName":OutputFileName, "InputFileName":InputFileName})
-        cha_message = "Writing warning log is finish."
-    else:
-        cha_message = "Level out of range."
-    return cha_message
-
-# 撰寫 Check Log 紀錄
+# 撰寫 Check Log 紀錄，Level：1、2
 def WCheLog(Level, Event, DealerID, FileName, Message):
     Level = str(Level)
     if Level == "1":
-        SysLogger.info(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
+        CheLogger.info(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
         che_message = "Writing info log is finish."
     elif Level == "2":
-        SysLogger.warning(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
+        CheLogger.warning(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
         che_message = "Writing warning log is finish."
     else:
         che_message = "Level out of range."
     return che_message
+
+# 撰寫 Change Log 紀錄，Level：1、2
+def WChaLog(Level, Event, InputFileName, OutputFileName, Message):
+    Level = str(Level)
+    if Level == "1":
+        ChaLogger.info(Message, extra = {"event":Event, "OutputFileName":OutputFileName, "InputFileName":InputFileName})
+        cha_message = "Writing info log is finish."
+    elif Level == "2":
+        ChaLogger.warning(Message, extra = {"event":Event, "OutputFileName":OutputFileName, "InputFileName":InputFileName})
+        cha_message = "Writing warning log is finish."
+    else:
+        cha_message = "Level out of range."
+    return cha_message
 
 if __name__ == "__main__":
     level = "0"

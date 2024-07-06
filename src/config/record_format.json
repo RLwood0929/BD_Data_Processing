@@ -1,0 +1,11 @@
+{
+    "RawData":{
+        "Header":[
+            "DealerID",
+            "DealerName",
+            "DataType",
+            "當日更新筆數",
+            "檔案繳交週期"
+        ]
+    }
+}

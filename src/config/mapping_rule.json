@@ -84,7 +84,7 @@
       "Target": "Quantity",
       "Source": "Original Quantity",
       "Rule": NaN,
-      "SecondRule": "Rule_2",
+      "SecondRule": "MoveOrSearchUom",
       "Value": NaN,
       "RuleDescription": "若Original Quantity欄位有值則直接搬；若無則透過經銷商檔案中的Quantity*MasterFile裡的Uom",
       "Required/Optional": "Required",
@@ -154,7 +154,7 @@
       "Target": "Demand Class Desc",
       "Source": NaN,
       "Rule": NaN,
-      "SecondRule": "Rule_3",
+      "SecondRule": "SearchDP",
       "Value": NaN,
       "RuleDescription": "透過Product ID進MasterFile查找對應的DP價格",
       "Required/Optional": "Required",
@@ -164,7 +164,7 @@
       "Target": "Ship to Customer code",
       "Source": "Original Product Name+Original Buyer Name+Quantity+Original Quantity",
       "Rule": NaN,
-      "SecondRule": "Rule_4",
+      "SecondRule": "FourColumnAdd",
       "Value": NaN,
       "RuleDescription": "Original Product Name+Original Buyer Name+Quantity+Original Quantity",
       "Required/Optional": "Optional",
@@ -201,5 +201,56 @@
       "Description": "未使用"
     }
   ],
-  "Inventory": []
+  "Inventory": [
+    {
+      "Target": "Date Period",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": "LastMonthDayOne",
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "固定為上個月的1號"
+    },
+    {
+      "Target": "Distributor Code",
+      "Source": "Seller ID",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "經銷商ID。BD的經銷商代碼，若經銷商填寫錯誤則自動填寫為經銷商代碼"
+    },
+    {
+      "Target": "Material Code",
+      "Source": "Product ID",
+      "Rule": "Move",
+      "SecondRule": NaN,
+      "Value": NaN,
+      "RuleDescription": NaN,
+      "Required/Optional": "Required",
+      "Description": "來自經銷商檔案的Product ID"
+    },
+    {
+      "Target": "Type",
+      "Source": NaN,
+      "Rule": NaN,
+      "SecondRule": NaN,
+      "Value": "Distributor Inventory",
+      "RuleDescription": NaN,
+      "Required/Optional": "Optional",
+      "Description": "固定string \"Distributor Inventory”"
+    },
+    {
+      "Target": "Qty",
+      "Source": "Original Quantity",
+      "Rule": NaN,
+      "SecondRule": "MoveOrSearchUom",
+      "Value": NaN,
+      "RuleDescription": "若Original Quantity欄位有值則直接搬；若無則透過經銷商檔案中的Quantity*MasterFile裡的Uom",
+      "Required/Optional": "Required",
+      "Description": "如果經銷商有填original qty, 則使用經銷商檔案; 如果只有填quantity, 要根據單位轉換表轉換後才填入"
+    }
+  ]
 }

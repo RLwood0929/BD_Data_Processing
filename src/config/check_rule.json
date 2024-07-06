@@ -1,5 +1,11 @@
-{
+{   
     "SaleFile":{
+        "FileKey":"S",
+        "HeaderKey":[
+            "Seller ID",
+            "Buyer ID",
+            "Original Buyer Name"
+        ],
         "MustHave":[
             "Seller ID",
             "Buyer ID",
@@ -15,9 +21,17 @@
         ]
     },
     "InventoryFile":{
+        "FileKey":"I",
+        "HeaderKey":[
+            "Inventory Item ID"
+        ],
         "MustHave":[
-
+            "Product ID",
+            "Creation Date"
+        ],
+        "2Choose1":[
+            "Original Quantity",
+            "Quantity"
         ]
-
     }
 }

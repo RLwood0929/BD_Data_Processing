@@ -74,11 +74,11 @@ def CopyFolders(source, destination, skip_lsit = []):
                     if not os.path.exists(dst_dir):
                         os.makedirs(dst_dir)
                         msg = f"成功建立目錄 {dst_dir}"
-                        WSysLog("1", "CopyFolders-CopySubdirectory", msg)
+                        WSysLog("1", "CopyFolders_CopySubdirectory", msg)
                         copy_flag = True
                 except OSError as e:
                     msg = f"創建目錄 Error {dst_dir}: {e}"
-                    WSysLog("3", "CopyFolders-CopySubdirectory", msg)
+                    WSysLog("3", "CopyFolders_CopySubdirectory", msg)
             
             # 檔案拷貝
             for name in files:
@@ -88,11 +88,11 @@ def CopyFolders(source, destination, skip_lsit = []):
                     if not os.path.exists(dst_file) or os.stat(src_file).st_mtime > os.stat(dst_file).st_mtime:
                         shutil.copy2(src_file, dst_file)
                         msg = f"拷貝 {src_file} 至 {dst_file}"
-                        WSysLog("1","CopyFolders-CopyFiles", msg)
+                        WSysLog("1","CopyFolders_CopyFiles", msg)
                         copy_flag = True
                 except (IOError, shutil.Error) as e:
                     msg = f"拷貝 Error {src_file} 至 {dst_file}: {e}"
-                    WSysLog("3","CopyFolders-CopyFiles", msg)
+                    WSysLog("3","CopyFolders_CopyFiles", msg)
                 
         for root, dirs, files in os.walk(dst):
             for name in dirs:
@@ -103,11 +103,11 @@ def CopyFolders(source, destination, skip_lsit = []):
                     try:
                         shutil.rmtree(src_dir)
                         msg = f"刪除目錄 {src_dir}"
-                        WSysLog("1", "CopyFolders-RemoveExtraFolders", msg)
+                        WSysLog("1", "CopyFolders_RemoveExtraFolders", msg)
                         copy_flag = True
                     except Exception as e:
                         msg = f"刪除 Error {src_dir}: {e}"
-                        WSysLog("3", "CopyFolders-RemoveExtraFolders", msg)
+                        WSysLog("3", "CopyFolders_RemoveExtraFolders", msg)
             
             for name in files:
                 src_file = os.path.join(root, name)
@@ -117,11 +117,11 @@ def CopyFolders(source, destination, skip_lsit = []):
                     try:
                         os.remove(src_file)
                         msg = f"刪除檔案 {src_file}"
-                        WSysLog("1", "CopyFolders-RemoveExtraFiles", msg)
+                        WSysLog("1", "CopyFolders_RemoveExtraFiles", msg)
                         copy_flag = True
                     except Exception as e:
                         msg = f"刪除{src_file} Error: {e}"
-                        WSysLog("3", "CopyFolders-RemoveExtraFiles", msg) 
+                        WSysLog("3", "CopyFolders_RemoveExtraFiles", msg) 
 
         if not copy_flag:
             msg = "OneDrive 與 本地目錄 無差異"
@@ -129,19 +129,18 @@ def CopyFolders(source, destination, skip_lsit = []):
 
     recursive_sync(source, destination)
 
-
 # 從 OneDrive 下載檔案
-def DownloadFOD():
+def DownloadFOD(skip_list):
     if DrivePathCheck() & TargetPathCheck():
         # 冷資料應略過
-        SkipList = []
-        CopyFolders(SourcePath, TargetPath, SkipList)
+        CopyFolders(SourcePath, TargetPath, skip_list)
 
 # 上傳檔案到 OneDrive
-def UploadTOD():
+def UploadTOD(skip_list):
     if DrivePathCheck() & TargetPathCheck():
-        SkipList = []
-        CopyFolders(TargetPath, SourcePath, SkipList)
+        CopyFolders(TargetPath, SourcePath, skip_list)
 
 if __name__ == "__main__":
-    UploadTOD()
+    # 略過的目錄
+    SkipList = []
+    DownloadFOD(SkipList)
