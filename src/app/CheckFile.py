@@ -13,6 +13,7 @@ from itertools import groupby
 from datetime import datetime
 from operator import itemgetter
 from Log import WRecLog, WCheLog
+from RecordTable import WriteRawData
 from SystemConfig import Config, CheckRule, DealerConf
 
 GlobalConfig = Config()
@@ -120,14 +121,17 @@ def determine_file_type(file_path, file_name):
     else:
         return None
 
-# 紀錄檔案繳交狀況
+# 紀錄檔案繳交狀況，error
 def RecordSubmission():
-    NotSubmission = []
+    not_submission, record_dic = [], {}
     for i in DealerList:
         path = os.path.join(DealerPath, i)
         file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        note = {}
         if not file_names:
-            NotSubmission.append(i)
+            not_submission.append(i)
+            note = {"Sale":"0/未繳交/無檢查","Inventory":"0/未繳交/無檢查"}
+        record_dic[i] = note
 
         for file_name in file_names:
             file_path = os.path.join(path, file_name)
@@ -137,11 +141,17 @@ def RecordSubmission():
             if file_type is not None:
                 msg = f"{file_type} 檔案準時繳交，繳交時間 {formatted_time}"
                 WRecLog("1", "RecordSubmission", i, file_name, msg)
-    HaveSubmission = list(set(DealerList) - set(NotSubmission))
-    for i in NotSubmission:
+            elif file_type == "Sale":
+                note = {"Sale":"有繳交"}
+            elif file_type == "Inventory":
+                note = {"Inventory":"有繳交"}
+            record_dic[i] = note
+    have_submission = list(set(DealerList) - set(not_submission))
+    for i in not_submission:
         msg = "檔案未繳交"
         WRecLog("2", "RecordSubmission", i, None, msg)
-    return HaveSubmission
+    print(f"00record_dic:{record_dic}")
+    return have_submission, record_dic
 
 # 檢查檔案表頭，銷售檔案套用 file_type = Sale；庫存檔案套用 file_type = Inventory。
 def CheckHeader(dealer_id, file_dir, file_name, file_type):
@@ -155,6 +165,7 @@ def CheckHeader(dealer_id, file_dir, file_name, file_type):
     flag = False
     file_path = os.path.join(file_dir, file_name)
     data = read_data(file_path)
+    max_row = data.shape[0]
     error_list = []
     header = data.columns.tolist()
     file_header = set(header)
@@ -179,7 +190,9 @@ def CheckHeader(dealer_id, file_dir, file_name, file_type):
                 f.write(i + "\n")
     
     if flag:
-        return True
+        return True, max_row
+    else:
+        return False, max_row
 
 # 檢查檔案內容，銷售檔案套用 file_type = Sale；庫存檔案套用 file_type = Inventory。
 def CheckContent(dealer_id, file_dir, file_name, file_type):
@@ -245,12 +258,15 @@ def CheckContent(dealer_id, file_dir, file_name, file_type):
     if not error_list:
         msg = "檔案內容正確"
         WCheLog("1", "CheckContent", dealer_id, file_name ,msg)
+        return msg
     else:
         file = os.path.splitext(file_name)[0]
         file_path = os.path.join(file_dir, f"{file}_content_error.txt")
         with open(file_path, "w", encoding = "UTF-8") as f:
             for i in error_list:
                 f.write(i + "\n")
+        note = "檔案內容錯誤"
+        return note
 
 # 檢查檔案內容創建時間與檔案更新時間是否符合，檔案內容創建日期 <= 檔案更新日期
 def CheckDataTime(dealer_id, file_dir, file_name):
@@ -284,7 +300,7 @@ def CheckDataTime(dealer_id, file_dir, file_name):
         return error_list
 
 # 檢查檔案
-def CheckFile(have_file_list):
+def CheckFile(have_file_list, record_dic):
     accepted_file_list = []
     for i in have_file_list:
         path = os.path.join(DealerPath, i)
@@ -298,15 +314,30 @@ def CheckFile(have_file_list):
         for file in accepted_file_list:
             file_type = determine_file_type(path, file)
             if file_type is not None:
-                result = CheckHeader(i, path, file, file_type)
+                result, num = CheckHeader(i, path, file, file_type)
                 if result:
-                    CheckContent(i, path, file, file_type)
+                    note = CheckContent(i, path, file, file_type)
+                    msg = record_dic[i][0]
+                    message = f"{num}/{msg}/{note}"
+                    record_dic[i] = [message]
+                    return record_dic
+                else:
+                    note = "檔案表頭錯誤"
+                    msg = record_dic[i][0]
+                    message = f"{num}/{msg}/{note}"
+                    record_dic[i] = [message]
+                    return record_dic
 
 # 檢查檔案主程式
 def RecordAndCheck():
-    # NewData = []
-    file_list = RecordSubmission()
-    CheckFile(file_list)
+    RecordData = []
+    file_list, note = RecordSubmission()
+    output_data = CheckFile(file_list, note)
+    print(output_data)
+    for i in DealerList:
+        note = output_data[i][0]
+        RecordData.append(note)
+    print(RecordData)
 
 if __name__ == "__main__":
     RecordAndCheck()
