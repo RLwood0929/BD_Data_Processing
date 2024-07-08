@@ -32,13 +32,14 @@ DealerList = DealerConfig["DealerList"]
 
 Dir = os.path.join(RootDir, FolderName, DealerDir, ReportDir)
 ReportFilePath = os.path.join(Dir, ReportFileName)
-Fixed_Columns = [chr(i % 26 + 65) for i in range(5)]
+FixedColumns = [chr(i % 26 + 65) for i in range(5)]
+ExcelStyle = Alignment(horizontal = "center", vertical = "center")
 
 # RAW Data
 # 創建左側 A ~ E 欄固定值
 def make_part1_format(wb):
     ws = wb.create_sheet(title = SheetName)
-    for col, data in zip(Fixed_Columns, RawDataHeader):
+    for col, data in zip(FixedColumns, RawDataHeader):
         ws[f"{col}1"] = data
 
     set_cell_styles(ws)
@@ -46,11 +47,10 @@ def make_part1_format(wb):
 
 # 設定Excel的樣式
 def set_cell_styles(ws):
-    style = Alignment(horizontal = "center", vertical = "center")
-    for col in Fixed_Columns:
+    for col in FixedColumns:
         ws.column_dimensions[col].width = 15
         for row in range(1, ws.max_row + 1):
-            ws[f"{col}{row}"].alignment = style
+            ws[f"{col}{row}"].alignment = ExcelStyle
 
     for i in range (2, len(DealerList)*2+1,2):
         ws.merge_cells(f"A{i}:A{i + 1}")
@@ -62,7 +62,7 @@ def write_dealer_info(wb):
     dealer_dt_list = ["Sale", "Inventory"]
     dealer_name_list, sale_PC_list, inventory_PC_list = [], [], []
 
-    for col, data in zip(Fixed_Columns, RawDataHeader):
+    for col, data in zip(FixedColumns, RawDataHeader):
         ws[f"{col}1"] = data
 
     for i in range(len(DealerList)):
@@ -145,8 +145,10 @@ def WriteRawData(new_data):
                 break
         
         # 內容欄寬
-        ws.column_dimensions[get_column_letter(col)].width = 25
-
+        col_str = get_column_letter(col)
+        ws.column_dimensions[col_str].width = 30
+        ws[f"{col_str}1"].alignment = ExcelStyle
+        
         if col_idx is None:
             col_idx = ws.max_column + 1
             ws.cell(row = 1, column = col_idx, value = column_name)
@@ -159,7 +161,7 @@ def WriteRawData(new_data):
         # 寫入當天資料
         for i, value in enumerate(new_data, start = 2):
             ws.cell(row = i, column = col_idx, value = value)
-            #ws[f"{col}{i}"].alignment = Alignment(horizontal = "center", vertical = "center")
+            ws[f"{col_str}{i}"].alignment = ExcelStyle
         
         # 寫入當天更新筆數欄位
         update_num = [item.split("/")[0] for item in new_data]

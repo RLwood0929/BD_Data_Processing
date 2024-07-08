@@ -6,8 +6,7 @@
 Writer:Qian
 '''
 
-import os
-import re
+import os, re
 import pandas as pd
 from itertools import groupby
 from datetime import datetime
@@ -132,7 +131,7 @@ def RecordSubmission():
             not_submission.append(i)
             note = {"Sale":"0/未繳交/無檢查","Inventory":"0/未繳交/無檢查"}
         record_dic[i] = note
-
+        note = {}
         for file_name in file_names:
             file_path = os.path.join(path, file_name)
             file_update_time = os.path.getmtime(file_path)
@@ -141,16 +140,18 @@ def RecordSubmission():
             if file_type is not None:
                 msg = f"{file_type} 檔案準時繳交，繳交時間 {formatted_time}"
                 WRecLog("1", "RecordSubmission", i, file_name, msg)
-            elif file_type == "Sale":
-                note = {"Sale":"有繳交"}
-            elif file_type == "Inventory":
-                note = {"Inventory":"有繳交"}
+                sale_note, inventory_note = {}, {}
+                if file_type == "Sale":
+                    sale_note = {"Sale":"有繳交"}
+                elif file_type == "Inventory":
+                    inventory_note = {"Inventory":"有繳交"}
+                note.update(sale_note)
+                note.update(inventory_note)
             record_dic[i] = note
     have_submission = list(set(DealerList) - set(not_submission))
     for i in not_submission:
         msg = "檔案未繳交"
         WRecLog("2", "RecordSubmission", i, None, msg)
-    print(f"00record_dic:{record_dic}")
     return have_submission, record_dic
 
 # 檢查檔案表頭，銷售檔案套用 file_type = Sale；庫存檔案套用 file_type = Inventory。
@@ -246,7 +247,6 @@ def CheckContent(dealer_id, file_dir, file_name, file_type):
     if cell_value:
         key = []
         cell_result = merge_ranges(cell_value)
-        print(cell_result)
         for i in cell_result:
             key.append(i)
         error_list.append\
@@ -295,7 +295,6 @@ def CheckDataTime(dealer_id, file_dir, file_name):
             msg = f"{cell} 與檔案更新時間不符合"
             WCheLog("2", "CheckDataTime", dealer_id, file_name, msg)
         cell_result = merge_ranges(cell_value)
-        print(cell_result)
         error_list.extend([f"{'、'.join(cell_result[i])} 內容為空" for i in cell_result])
         return error_list
 
@@ -305,6 +304,7 @@ def CheckFile(have_file_list, record_dic):
     for i in have_file_list:
         path = os.path.join(DealerPath, i)
         file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        
         for j in file_names:
             _, j_extension = os.path.splitext(j)
             j_extension = j_extension.lower()
@@ -317,27 +317,25 @@ def CheckFile(have_file_list, record_dic):
                 result, num = CheckHeader(i, path, file, file_type)
                 if result:
                     note = CheckContent(i, path, file, file_type)
-                    msg = record_dic[i][0]
-                    message = f"{num}/{msg}/{note}"
-                    record_dic[i] = [message]
-                    return record_dic
+                    msg = record_dic[i][file_type]
                 else:
                     note = "檔案表頭錯誤"
-                    msg = record_dic[i][0]
-                    message = f"{num}/{msg}/{note}"
-                    record_dic[i] = [message]
-                    return record_dic
+                    msg = record_dic[i][file_type]
+            message = f"{num}/{msg}/{note}"
+            record_dic[i][file_type] = message
+    return record_dic
 
 # 檢查檔案主程式
 def RecordAndCheck():
     RecordData = []
     file_list, note = RecordSubmission()
     output_data = CheckFile(file_list, note)
-    print(output_data)
     for i in DealerList:
-        note = output_data[i][0]
+        note = output_data[i]["Sale"]
         RecordData.append(note)
-    print(RecordData)
+        note = output_data[i]["Inventory"]
+        RecordData.append(note)
+    WriteRawData(RecordData)
 
 if __name__ == "__main__":
     RecordAndCheck()
