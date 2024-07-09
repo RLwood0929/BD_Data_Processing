@@ -7,12 +7,13 @@ Writer:Qian
 '''
 
 import os, re
+import shutil
 import numpy as np
 import pandas as pd
 from itertools import groupby
 from datetime import datetime
 from operator import itemgetter
-from Log import WRecLog, WCheLog
+from Log import WRecLog, WCheLog, WSysLog
 from RecordTable import WriteRawData
 from SystemConfig import Config, CheckRule, DealerConf
 
@@ -21,6 +22,7 @@ CheckConfig = CheckRule()
 DealerDonfig = DealerConf()
 
 DealerList = DealerDonfig["DealerList"]
+CompletedDir = GlobalConfig["Default"]["CompletedDir"]
 DealerDir = GlobalConfig["Default"]["DealerFolderName"]
 FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
     else GlobalConfig["Default"]["Name"]
@@ -84,7 +86,7 @@ def merge_ranges(values):
         grouped_result[letter] = result
     return grouped_result
 
-# 自動切換 panda csv 及 excel 讀取器
+# 自動切換 panda 之 csv 或 excel 讀取器
 def read_data(file_path):
     file = os.path.basename(file_path)
     _, file_extension = os.path.splitext(file)
@@ -97,8 +99,7 @@ def read_data(file_path):
         return df
 
 # 依據檔案名稱選擇 file type
-def determine_file_type(dealer_id, file_path, file_name):
-    
+def determine_file_type(dealer_id, file_name):
     for i in range(len(DealerList)):
         if dealer_id == DealerList[i]:
             indx = i + 1
@@ -114,6 +115,7 @@ def determine_file_type(dealer_id, file_path, file_name):
     else:
         sf_header_key = dif_header_key
 
+    file_path = os.path.join(DealerPath, dealer_id)
     _, extension = os.path.splitext(file_name)
     sale_file_header_key = set(sf_header_key)
     inventory_file_header_key = set(if_header_key)
@@ -137,22 +139,55 @@ def determine_file_type(dealer_id, file_path, file_name):
     else:
         return None
 
-# 紀錄檔案繳交狀況，error
+# 將檢查錯誤的檔案搬移到 Completed/系統日期 之資料夾底下
+def move_check_error_file(dealer_id, file_names):
+    today = datetime.today()
+    folder_name = today.strftime("%Y%m%d")
+    source_path = os.path.join(DealerPath, dealer_id)
+    target_path = os.path.join(source_path, CompletedDir, folder_name)
+    if not os.path.exists(target_path):
+        os.makedirs(target_path)
+        msg = f"已在 {CompletedDir} 目錄下建立資料夾，資料夾名稱 {folder_name}"
+        WSysLog("1", "MoveCheckErrorFile", msg)
+
+    for file_name in file_names:
+        file_source = os.path.join(source_path, file_name)
+        file_target = os.path.join(target_path, file_name)
+        shutil.move(file_source, file_target)
+        if os.path.exists(file_target):
+            msg = f"檔案搬移至 {target_path} 成功"
+            WSysLog("1", "MoveCheckErrorFile", msg)
+        else:
+            msg = f"檔案搬移至 {target_path} 失敗"
+            WSysLog("2", "MoveCheckErrorFile", msg)
+
+# 紀錄檔案繳交狀況
 def RecordSubmission():
     not_submission, record_dic = [], {}
     for i in DealerList:
         path = os.path.join(DealerPath, i)
         file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+
+        for j in range(len(DealerList)):
+            if i == DealerList[j]:
+                index = j + 1
+                break
+
+        dsf_payment_cycle = DealerDonfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        dif_payment_cycle = DealerDonfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
+
         note = {}
         if not file_names:
             not_submission.append(i)
             record_dic[i] = note
+
         note = {}
         for file_name in file_names:
             file_path = os.path.join(path, file_name)
             file_update_time = os.path.getmtime(file_path)
             formatted_time = datetime.fromtimestamp(file_update_time).strftime('%Y-%m-%d %H:%M:%S')
-            file_type = determine_file_type(i, path, file_name)
+            file_type = determine_file_type(i, file_name)
+
             if file_type is not None:
                 msg = f"{file_type} 檔案準時繳交，繳交時間 {formatted_time}"
                 WRecLog("1", "RecordSubmission", i, file_name, msg)
@@ -164,14 +199,18 @@ def RecordSubmission():
                 note.update(sale_note)
                 note.update(inventory_note)
             record_dic[i] = note
+
         if "Sale" not in record_dic[i]:
-            record_dic[i]["Sale"] = "0/未繳交/無檢查"
+            record_dic[i]["Sale"] = "0/未繳交/無檢查/0"
         if "Inventory" not in record_dic[i]:
-            record_dic[i]["Inventory"] = "0/未繳交/無檢查"
+            record_dic[i]["Inventory"] = "0/未繳交/無檢查/0"
+
     have_submission = list(set(DealerList) - set(not_submission))
+
     for i in not_submission:
         msg = "檔案未繳交"
         WRecLog("2", "RecordSubmission", i, None, msg)
+
     return have_submission, record_dic
 
 # 檢查檔案表頭，銷售檔案套用 file_type = Sale；庫存檔案套用 file_type = Inventory。
@@ -187,6 +226,7 @@ def CheckHeader(dealer_id, file_dir, file_name, file_type):
     file_path = os.path.join(file_dir, file_name)
     data = read_data(file_path)
     max_row = data.shape[0]
+    move_list = []
     error_list = []
     header = data.columns.tolist()
     file_header = set(header)
@@ -207,9 +247,12 @@ def CheckHeader(dealer_id, file_dir, file_name, file_type):
         file = os.path.splitext(file_name)[0]
         file_path = os.path.join(file_dir, f"{file}_header_error.txt")
         with open(file_path, "w", encoding = "UTF-8") as f:
-            for i in error_list:
-                f.write(i + "\n")
-    
+            for i in range(len(error_list)):
+                f.write(f"{i+1}. {error_list[i]}\n")
+        move_list.append(file_name)
+        move_list.append(f"{file}_header_error.txt")
+        move_check_error_file(dealer_id, move_list)
+
     if flag:
         return True, max_row
     else:
@@ -238,7 +281,7 @@ def CheckContent(dealer_id, file_dir, file_name, file_type):
             cell_value.append(cell)
             msg = f"{cell} 內容為空"
             WCheLog("2", "CheckContent", dealer_id, file_name ,msg)
-
+    error_num = len(cell_value)
     if cell_value:
         cell_result = merge_ranges(cell_value)
         error_list.extend([f"{'、'.join(cell_result[i])} 內容為空" for i in cell_result])
@@ -264,6 +307,7 @@ def CheckContent(dealer_id, file_dir, file_name, file_type):
             msg = f"{cell2} 內容有值"
             WCheLog("1", "CheckContent", dealer_id, file_name ,msg)
 
+    error_num = error_num + len(cell_value)
     if cell_value:
         key = []
         cell_result = merge_ranges(cell_value)
@@ -272,21 +316,25 @@ def CheckContent(dealer_id, file_dir, file_name, file_type):
         error_list.append\
         (f"{'、'.join(cell_result[key[0]])} 及 {'、'.join(cell_result[key[1]])} 內容為空")
 
-    error_message = CheckDataTime(dealer_id, file_dir, file_name)
+    error_message, e_num = CheckDataTime(dealer_id, file_dir, file_name)
     error_list += error_message
-
+    error_num = error_num + e_num
+    move_list = []
     if not error_list:
         msg = "檔案內容正確"
         WCheLog("1", "CheckContent", dealer_id, file_name ,msg)
-        return msg
+        return msg, error_num
     else:
         file = os.path.splitext(file_name)[0]
         file_path = os.path.join(file_dir, f"{file}_content_error.txt")
         with open(file_path, "w", encoding = "UTF-8") as f:
-            for i in error_list:
-                f.write(i + "\n")
+            for i in range(len(error_list)):
+                f.write(f"{i+1}. {error_list[i]}\n")
+        move_list.append(file_name)
+        move_list.append(f"{file}_content_error.txt")
+        move_check_error_file(dealer_id, move_list)
         note = "檔案內容錯誤"
-        return note
+        return note, error_num
 
 # 檢查檔案內容創建時間與檔案更新時間是否符合，檔案內容創建日期 <= 檔案更新日期
 def CheckDataTime(dealer_id, file_dir, file_name):
@@ -307,16 +355,17 @@ def CheckDataTime(dealer_id, file_dir, file_name):
     if not Falg:
         msg = "檔案時間符合"
         WCheLog("1", "CheckDataTime", dealer_id, file_name, msg)
-        return error_list
+        return error_list, 0
     else:
         for i in invalid_indices:
             cell = data_change_to_excel(df, "Creation Date", i)
             cell_value.append(cell)
             msg = f"{cell} 與檔案更新時間不符合"
             WCheLog("2", "CheckDataTime", dealer_id, file_name, msg)
+        error_num = len(cell_value)
         cell_result = merge_ranges(cell_value)
         error_list.extend([f"{'、'.join(cell_result[i])} 內容為空" for i in cell_result])
-        return error_list
+        return error_list,  error_num
 
 # 檢查檔案
 def CheckFile(have_file_list, record_dic):
@@ -331,25 +380,25 @@ def CheckFile(have_file_list, record_dic):
                 accepted_file_list.append(j)
 
         for file in accepted_file_list:
-            file_type = determine_file_type(i, path, file)
+            file_type = determine_file_type(i, file)
             if file_type is not None:
                 result, num = CheckHeader(i, path, file, file_type)
                 if result:
-                    note = CheckContent(i, path, file, file_type)
+                    note, error_num = CheckContent(i, path, file, file_type)
                     msg = record_dic[i][file_type]
                 else:
                     note = "檔案表頭錯誤"
                     msg = record_dic[i][file_type]
-            message = f"{num}/{msg}/{note}"
+                    error_num = 0
+            message = f"{num}/{msg}/{note}/{error_num}"
             record_dic[i][file_type] = message
     return record_dic
 
 # 檢查檔案主程式
 def RecordAndCheck():
     RecordData = []
-    file_list, note = RecordSubmission()
-    output_data = CheckFile(file_list, note)
-    print(output_data)
+    HaveFileList, Note = RecordSubmission()
+    output_data = CheckFile(HaveFileList, Note)
     for i in DealerList:
         note = output_data[i]["Sale"]
         RecordData.append(note)

@@ -16,6 +16,7 @@
         "DataPath":"./datas",
         "DealerFolderName":"02_Dealer",
         "ReportDir":"00_CheckResult",
+        "CompletedDir":"00_Completed",
         "AutoRun":true,
         "Debug":false,
         "User":"System",
