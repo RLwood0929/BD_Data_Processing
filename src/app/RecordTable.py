@@ -24,10 +24,10 @@ SummaryReport = f"{Year}年_{Month}月_繳交總表.xlsx"
 SummarySheetName = "繳交總表"
 NotSubmissionFileName = f"{Year}{Month}_缺繳紀錄.xlsx"
 RawDataHeader = ["DealerID","DealerName","DataType","檔案繳交週期","當日更新筆數"]
-SummaryHeader = RawDataHeader[0:3] + ["當月繳交次數", "當月繳交筆數累計", \
-                                        "當月繳交錯誤次數", "當月錯誤筆數累計",\
-                                        "當月轉換次數", "當月轉換筆數累計", \
-                                        "當月轉換錯誤次數", "當月轉換筆數錯誤累計"]
+SummaryHeader = RawDataHeader[0:3]  +  ["當月繳交次數", "當月繳交筆數", \
+                                        "當月繳交錯誤次數", "當月繳交錯誤筆數",\
+                                        "當月轉換次數", "當月轉換筆數", \
+                                        "當月轉換錯誤次數", "當月轉換錯誤筆數"]
 
 ReportDir = GlobalConfig["Default"]["ReportDir"]
 DealerDir = GlobalConfig["Default"]["DealerFolderName"]
@@ -45,30 +45,10 @@ RawDataFixedColumns = [chr(i % 26 + 65) for i in range(len(RawDataHeader))]
 SummaryFixedColumns = [chr(i % 26 + 65) for i in range(len(SummaryHeader))]
 ExcelStyle = Alignment(horizontal = "center", vertical = "center")
 
-# RAW Data
-# 創建左側 A ~ E 欄固定值
-def make_part1_format(wb, mode):
-    ws = wb.create_sheet(title = SheetName)
-    if mode == "summary":
-        FixedColumns = SummaryFixedColumns
-        Header = SummaryHeader
-        FilePath = SummaryFilePath
-    elif mode == "report":
-        FixedColumns = RawDataFixedColumns
-        Header = RawDataHeader
-        FilePath = ReportFilePath
-    for col, data in zip(FixedColumns, Header):
-        ws[f"{col}1"] = data
-    wb.save(FilePath)
-
 # 設定Excel的樣式
-def set_cell_styles(ws, mode):
-    if mode == "summary":
-        FixedColumns = SummaryFixedColumns
-    elif mode == "report":
-        FixedColumns = RawDataFixedColumns
-    for col in FixedColumns:
-        ws.column_dimensions[col].width = 15
+def set_cell_styles(ws, fixed_columns, width):
+    for col in fixed_columns:
+        ws.column_dimensions[col].width = width
         for row in range(1, ws.max_row + 1):
             ws[f"{col}{row}"].alignment = ExcelStyle
 
@@ -76,20 +56,26 @@ def set_cell_styles(ws, mode):
         ws.merge_cells(f"A{i}:A{i + 1}")
         ws.merge_cells(f"B{i}:B{i + 1}")
 
+# 創建左側 A ~ E 欄固定值
+def make_part1_format(wb, fixed_columns, header, file_path, sheet_name, width):
+    ws = wb.create_sheet(title = sheet_name)
+    for col, data in zip(fixed_columns, header):
+        ws[f"{col}1"] = data
+    
+    set_cell_styles(ws, fixed_columns, width)
+    wb.save(file_path)
+
 # 寫入經銷商資料
-def write_dealer_info(wb, mode):
-    ws = wb[SheetName]
+def write_dealer_info(wb, sheet_name, file_path, fixed_columns, width):
+    ws = wb[sheet_name]
     dealer_dt_list = ["Sale", "Inventory"]
     dealer_name_list, sale_PC_list, inventory_PC_list = [], [], []
 
     for i in range(len(DealerList)):
         key1 = f"Dealer{i+1}"
-        #print(f"key1:{key1}")
         dealer_name = DealerConfig[key1]["DealerName"]
         sale_PC = DealerConfig[key1]["SaleFile"]["PaymentCycle"]
-        #print(f"sale_PC:{sale_PC}")
         inventory_PC = DealerConfig[key1]["InventoryFile"]["PaymentCycle"]
-        #print(f"inventory_PC:{inventory_PC}")
         dealer_name_list.append(dealer_name)
         sale_PC_list.append(sale_PC)
         inventory_PC_list.append(inventory_PC)
@@ -101,20 +87,33 @@ def write_dealer_info(wb, mode):
         ws[f"C{i + 1}"] = dealer_dt_list[int((i+1) % 2)]
         ws[f"D{i}"] = sale_PC_list[int(i / 2 - 1)]
         ws[f"D{i+1}"] = inventory_PC_list[int(i / 2 - 1)]
-    
-    set_cell_styles(ws, mode)
 
-    wb.save(ReportFilePath)
+    set_cell_styles(ws, fixed_columns, width)
+    wb.save(file_path)
     wb.close()
 
 # 創建 RAW Data excel 及 工作表
-def make_record_tamplates():
-    mode = "report"
+def make_record_tamplates(mode):
+    if mode == "report":
+        file_path = ReportFilePath
+        file_name = ReportFileName
+        sheet_name = SheetName
+        fixed_columns = RawDataFixedColumns
+        header = RawDataHeader
+        width = 15
+    elif mode == "summary":
+        file_path = SummaryFilePath
+        file_name = SummaryReport
+        sheet_name = SummarySheetName
+        fixed_columns = SummaryFixedColumns
+        header = SummaryHeader
+        width = 22.5
+
     if os.path.exists(Dir):
         try:
-            wb = load_workbook(ReportFilePath)
-            if SheetName in wb.sheetnames:
-                ws = wb[SheetName]
+            wb = load_workbook(file_path)
+            if sheet_name in wb.sheetnames:
+                ws = wb[sheet_name]
                 first_column_data = []
                 for row in ws.iter_rows(min_col=1, max_col=1, values_only=True):
                     first_column_data.append(row[0])
@@ -122,24 +121,25 @@ def make_record_tamplates():
                 dealer_list = set(DealerList)
                 result = dealer_list.issubset(dealer_id_in_data)
                 if result:
-                    msg = f"{ReportFileName} 檔案中 {SheetName} 工作表已存在"
+                    msg = f"{file_name} 檔案中 {sheet_name} 工作表已存在"
                     WSysLog("1", "MakeRecordTamplates", msg)
                 else:
-                    write_dealer_info(wb, mode)
-                    msg = f"{ReportFileName} 檔案中 {SheetName} 工作表更新經銷商資訊"
+                    write_dealer_info(wb, sheet_name, file_path, fixed_columns, width)
+                    msg = f"{file_name} 檔案中 {sheet_name} 工作表更新經銷商資訊"
                     WSysLog("1", "MakeRecordTamplates", msg)
             else:
-                make_part1_format(wb, "report")
-                write_dealer_info(wb, mode)
-                msg = f"{ReportFileName} 檔案中 {SheetName} 工作表已建立"
+                make_part1_format(wb, fixed_columns, header, file_path, sheet_name, width)
+                write_dealer_info(wb, sheet_name, file_path, fixed_columns, width)
+                msg = f"{file_name} 檔案中 {sheet_name} 工作表已建立"
                 WSysLog("1", "MakeRecordTamplates", msg)
             return True
+        
         except FileNotFoundError:
             wb = Workbook()
             wb.remove(wb.active)
-            make_part1_format(wb, "report")
-            write_dealer_info(wb, mode)
-            msg = f"{ReportFileName} 檔案已建立"
+            make_part1_format(wb, fixed_columns, header, file_path, sheet_name, width)
+            write_dealer_info(wb, sheet_name, file_path, fixed_columns, width)
+            msg = f"{file_name} 檔案已建立"
             WSysLog("1", "MakeRecordTamplates", msg)
             return True
     else:
@@ -147,9 +147,10 @@ def make_record_tamplates():
         WSysLog("3", "MakeRecordTamplates", msg)
         return False
 
+# RAW Data
 # 新資料寫入
 def WriteRawData(new_data):
-    result = make_record_tamplates()
+    result = make_record_tamplates("report")
     if result:
         wb = load_workbook(ReportFilePath)
         ws = wb[SheetName]
@@ -184,68 +185,15 @@ def WriteRawData(new_data):
         for i, value in enumerate(update_num, start = 2):
             ws.cell(row = i, column = 5, value = value)
         wb.save(ReportFilePath)
+
     else:
         msg = f"{ReportFileName} 檔案 {SheetName} 新增資料失敗"
         WSysLog("2", "WriteRawData", msg)
 
-# 繳交總表(每月一檔)
-# 設定Excel的樣式
-def set_cell_styles1(ws):
-    for col in SummaryFixedColumns:
-        ws.column_dimensions[col].width = 15
-        for row in range(1, ws.max_row + 1):
-            ws[f"{col}{row}"].alignment = ExcelStyle
-
-    for i in range (2, len(DealerList)*2+1,2):
-        ws.merge_cells(f"A{i}:A{i + 1}")
-        ws.merge_cells(f"B{i}:B{i + 1}")
-
-# 建立 Header
-def make_summary_header(wb):
-    ws = wb.create_sheet(title = SummarySheetName)
-    for col, data in zip(SummaryFixedColumns, SummaryHeader):
-        ws[f"{col}1"] = data
-    set_cell_styles1(ws)
-    wb.save(SummaryFilePath)
-
-def make_summary_report_templates():
-    mode = "summary"
-    if os.path.exists(Dir):
-        try:
-            wb = load_workbook(SummaryFilePath)
-            if SummarySheetName in wb.sheetnames:
-                ws = wb[SummarySheetName]
-                first_column_data = []
-                for row in ws.iter_rows(min_col=1, max_col=1, values_only=True):
-                    first_column_data.append(row[0])
-                dealer_id_in_data = set(first_column_data)
-                dealer_list = set(DealerList)
-                result = dealer_list.issubset(dealer_id_in_data)
-                if result:
-                    msg = f"{SummaryReport} 檔案中 {SummarySheetName} 工作表已存在"
-                    WSysLog("1", "MakeSummaryReportTemplates", msg)
-                else:
-                    msg = f"{SummaryReport} 檔案中 {SummarySheetName} 工作表更新經銷商資訊"
-                    WSysLog("1", "MakeSummaryReportTemplates", msg)
-            else:
-                make_summary_header(wb)
-                msg = f"{SummaryReport} 檔案中 {SummarySheetName} 工作表已建立"
-                WSysLog("1", "MakeSummaryReportTemplates", msg)
-            return True
-        except FileNotFoundError:
-            wb = Workbook()
-            wb.remove(wb.active)
-            make_summary_header(wb)
-            write_dealer_info(wb, mode)
-            msg = f"{SummaryReport} 檔案已建立"
-            WSysLog("1", "MakeSummaryReportTemplates", msg)
-            return True
-    else:
-        msg = f"{Dir}目錄不存在"
-        WSysLog("3", "MakeSummaryReportTemplates", msg)
-        return False
+# 繳交總表(每月一份檔案), not_filish
+def WriteSummaryData():
+    print("")
 
 if __name__ == "__main__":
-    # NewData = ["66/已繳交/錯誤","11/已繳交/正確","00/未繳交/錯誤","88/已繳交/正確"]
-    # WriteRawData(NewData)
-    make_summary_report_templates()
+    make_record_tamplates("summary")
+    make_record_tamplates("report")
