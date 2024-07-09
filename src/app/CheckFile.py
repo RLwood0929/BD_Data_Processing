@@ -7,6 +7,7 @@ Writer:Qian
 '''
 
 import os, re
+import numpy as np
 import pandas as pd
 from itertools import groupby
 from datetime import datetime
@@ -96,10 +97,26 @@ def read_data(file_path):
         return df
 
 # 依據檔案名稱選擇 file type
-def determine_file_type(file_path, file_name):
+def determine_file_type(dealer_id, file_path, file_name):
+    
+    for i in range(len(DealerList)):
+        if dealer_id == DealerList[i]:
+            indx = i + 1
+            break
+    dsf_header_key = DealerDonfig[f"Dealer{indx}"]["SaleFile"]["KeyWord"]
+    dif_header_key = DealerDonfig[f"Dealer{indx}"]["InventoryFile"]["KeyWord"]
+    if np.isnan(dsf_header_key):
+        sf_header_key = SF_HeaderKey
+    else:
+        sf_header_key = dsf_header_key
+    if np.isnan(dif_header_key):
+        if_header_key = IF_HeaderKey
+    else:
+        sf_header_key = dif_header_key
+
     _, extension = os.path.splitext(file_name)
-    sale_file_header_key = set(SF_HeaderKey)
-    inventory_file_header_key = set(IF_HeaderKey)
+    sale_file_header_key = set(sf_header_key)
+    inventory_file_header_key = set(if_header_key)
     path = os.path.join(file_path, file_name)
     if extension in [".csv", ".xls", ".xlsx"]:
         data = read_data(path)
@@ -129,14 +146,13 @@ def RecordSubmission():
         note = {}
         if not file_names:
             not_submission.append(i)
-            note = {"Sale":"0/未繳交/無檢查","Inventory":"0/未繳交/無檢查"}
-        record_dic[i] = note
+            record_dic[i] = note
         note = {}
         for file_name in file_names:
             file_path = os.path.join(path, file_name)
             file_update_time = os.path.getmtime(file_path)
             formatted_time = datetime.fromtimestamp(file_update_time).strftime('%Y-%m-%d %H:%M:%S')
-            file_type = determine_file_type(path, file_name)
+            file_type = determine_file_type(i, path, file_name)
             if file_type is not None:
                 msg = f"{file_type} 檔案準時繳交，繳交時間 {formatted_time}"
                 WRecLog("1", "RecordSubmission", i, file_name, msg)
@@ -148,6 +164,10 @@ def RecordSubmission():
                 note.update(sale_note)
                 note.update(inventory_note)
             record_dic[i] = note
+        if "Sale" not in record_dic[i]:
+            record_dic[i]["Sale"] = "0/未繳交/無檢查"
+        if "Inventory" not in record_dic[i]:
+            record_dic[i]["Inventory"] = "0/未繳交/無檢查"
     have_submission = list(set(DealerList) - set(not_submission))
     for i in not_submission:
         msg = "檔案未繳交"
@@ -300,11 +320,10 @@ def CheckDataTime(dealer_id, file_dir, file_name):
 
 # 檢查檔案
 def CheckFile(have_file_list, record_dic):
-    accepted_file_list = []
     for i in have_file_list:
         path = os.path.join(DealerPath, i)
         file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        
+        accepted_file_list = []
         for j in file_names:
             _, j_extension = os.path.splitext(j)
             j_extension = j_extension.lower()
@@ -312,7 +331,7 @@ def CheckFile(have_file_list, record_dic):
                 accepted_file_list.append(j)
 
         for file in accepted_file_list:
-            file_type = determine_file_type(path, file)
+            file_type = determine_file_type(i, path, file)
             if file_type is not None:
                 result, num = CheckHeader(i, path, file, file_type)
                 if result:
@@ -330,6 +349,7 @@ def RecordAndCheck():
     RecordData = []
     file_list, note = RecordSubmission()
     output_data = CheckFile(file_list, note)
+    print(output_data)
     for i in DealerList:
         note = output_data[i]["Sale"]
         RecordData.append(note)

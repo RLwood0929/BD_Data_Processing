@@ -78,7 +78,6 @@ def write_dealer_info(wb):
         inventory_PC_list.append(inventory_PC)
     
     for i in range(2, len(DealerList)*2+1,2):
-        print(i)
         ws[f"A{i}"] = DealerList[int(i / 2 - 1)]
         ws[f"B{i}"] = dealer_name_list[int(i / 2 - 1)]
         ws[f"C{i}"] = dealer_dt_list[int(i % 2)]
@@ -144,17 +143,16 @@ def WriteRawData(new_data):
                 col_idx = col
                 break
         
-        # 內容欄寬
-        col_str = get_column_letter(col)
-        ws.column_dimensions[col_str].width = 30
-        ws[f"{col_str}1"].alignment = ExcelStyle
-        
         if col_idx is None:
             col_idx = ws.max_column + 1
             ws.cell(row = 1, column = col_idx, value = column_name)
+            col_str = get_column_letter(col_idx)
+            ws.column_dimensions[col_str].width = 30
+            ws[f"{col_str}1"].alignment = ExcelStyle
             msg = f"{ReportFileName} 檔案，{SheetName} 工作表，新增資料：{new_data}"
             WSysLog("1", "WriteRawData", msg)
         else:
+            col_str = get_column_letter(col_idx)
             msg = f"{ReportFileName} 檔案，{SheetName} 工作表，{column_name} 更新資料：{new_data}"
             WSysLog("1", "WriteRawData", msg)
         
