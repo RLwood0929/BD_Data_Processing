@@ -6,8 +6,8 @@ Writer：Qian
 '''
 
 import os
-from Log import WSysLog
 from datetime import datetime
+from Log import WSysLog, WRecLog
 from openpyxl.styles import Alignment
 from SystemConfig import Config, DealerConf
 from openpyxl import Workbook, load_workbook
@@ -31,6 +31,7 @@ SummaryReport = SummaryReport.replace("{Year}", str(Year)).replace("{Month}", st
 SummarySheetName = GlobalConfig["SummaryTable"]["SheetName"]
 SummarySheetName = SummarySheetName.replace("{Month}", str(Month))
 SummaryHeader = GlobalConfig["SummaryTable"]["Header"]
+SummaryMinColKey = GlobalConfig["SummaryTable"]["MinCol"]
 
 # NotSubmission
 NotSubmissionFileName = GlobalConfig["NotSubmissionTable"]["FileName"]
@@ -56,6 +57,7 @@ SummaryFixedColumns = [chr(i % 26 + 65) for i in range(len(SummaryHeader))]
 NotSubmissionFixedColumns = [chr(i % 26 + 65) for i in range(len(NotSubmissionHeader))]
 ExcelStyle = Alignment(horizontal = "center", vertical = "center")
 
+# 共用函數
 # 設定Excel的樣式
 def set_cell_styles(ws, fixed_columns, width):
     for col in fixed_columns:
@@ -132,16 +134,16 @@ def make_record_tamplates(mode):
                 dealer_list = set(DealerList)
                 result = dealer_list.issubset(dealer_id_in_data)
                 if result:
-                    msg = f"{file_name} 檔案中 {sheet_name} 工作表已存在"
+                    msg = f"已確認 {file_name} 檔案中 {sheet_name} 工作表存在。"
                     WSysLog("1", "MakeRecordTamplates", msg)
                 else:
                     write_dealer_info(wb, sheet_name, file_path, fixed_columns, width)
-                    msg = f"{file_name} 檔案中 {sheet_name} 工作表更新經銷商資訊"
+                    msg = f"更新 {file_name} 檔案中 {sheet_name} 工作表經銷商資訊。"
                     WSysLog("1", "MakeRecordTamplates", msg)
             else:
                 make_part1_format(wb, fixed_columns, header, file_path, sheet_name, width)
                 write_dealer_info(wb, sheet_name, file_path, fixed_columns, width)
-                msg = f"{file_name} 檔案中 {sheet_name} 工作表已建立"
+                msg = f"{file_name} 檔案中建立 {sheet_name} 工作表。"
                 WSysLog("1", "MakeRecordTamplates", msg)
             return True
         
@@ -150,16 +152,17 @@ def make_record_tamplates(mode):
             wb.remove(wb.active)
             make_part1_format(wb, fixed_columns, header, file_path, sheet_name, width)
             write_dealer_info(wb, sheet_name, file_path, fixed_columns, width)
-            msg = f"{file_name} 檔案已建立"
+            msg = f"建立 {file_name} 檔案。"
             WSysLog("1", "MakeRecordTamplates", msg)
             return True
     else:
-        msg = f"{Dir}目錄不存在"
+        msg = f"{Dir} 目錄不存在。"
         WSysLog("3", "MakeRecordTamplates", msg)
         return False
 
-# 寫入RawData
-def WriteRawData(new_data):
+# RawData
+# 寫入RawData資料
+def WriteRawData(dealer_id, new_data):
     result = make_record_tamplates("report")
     if result:
         wb = load_workbook(RawDataFilePath)
@@ -178,12 +181,12 @@ def WriteRawData(new_data):
             col_str = get_column_letter(col_idx)
             ws.column_dimensions[col_str].width = 30
             ws[f"{col_str}1"].alignment = ExcelStyle
-            msg = f"{RawDataFileName} 檔案，{RawDataSheetName} 工作表，新增資料：{new_data}"
-            WSysLog("1", "WriteRawData", msg)
+            msg = f"{RawDataSheetName} 工作表，新增資料：{new_data}。"
+            WRecLog("1", "WriteRawData",dealer_id, RawDataFileName, msg)
         else:
             col_str = get_column_letter(col_idx)
-            msg = f"{RawDataFileName} 檔案，{RawDataSheetName} 工作表，{column_name} 更新資料：{new_data}"
-            WSysLog("1", "WriteRawData", msg)
+            msg = f"{RawDataFileName} 檔案，{RawDataSheetName} 工作表，{column_name} 更新資料：{new_data}。"
+            WRecLog("1", "WriteRawData",dealer_id, RawDataFileName, msg)
         
         # 寫入當天資料
         for i, value in enumerate(new_data, start = 2):
@@ -197,18 +200,65 @@ def WriteRawData(new_data):
         wb.save(RawDataFilePath)
 
     else:
-        msg = f"{RawDataFileName} 檔案 {RawDataSheetName} 新增資料失敗"
-        WSysLog("2", "WriteRawData", msg)
+        msg = f"{RawDataFileName} 檔案 {RawDataSheetName} 新增資料失敗。"
+        WRecLog("2", "WriteRawData",dealer_id, RawDataFileName, msg)
 
-# 繳交總表(每月一份檔案), not_finish
-def WriteSummaryData():
+# 取得資料寫入的 column range 及 row range
+def get_excel_range():
+    for i in range(len(SummaryHeader)):
+        if SummaryHeader[i] == SummaryMinColKey:
+            min_col = i
+            max_col = len(SummaryHeader)
+            break
+    excel_col = [chr(i % 26 + 65) for i in range(min_col, max_col)]
+    min_row = 2
+    max_row = len(DealerList) * 2 + 1
+    min_col += 1
+    return excel_col, min_col, max_col, min_row, max_row
+
+# 繳交總表(每月一份檔案)，write_data = ["Dealer ID", "DataType", "Data1"~"Data8"]
+def WriteSummaryData(write_data):
+    dealer_id = write_data[0]
+    file_type = write_data[1]
+    data = write_data[2:]
     result = make_record_tamplates("summary")
+    excel_col, excel_min_col, excel_max_col, excel_min_row, excel_max_row = get_excel_range()
     if result:
         wb = load_workbook(SummaryFilePath)
         ws = wb[SummarySheetName]
 
+        # 取出舊資料
+        existing_data = []
+        for row in ws.iter_rows(excel_min_row, excel_max_row, excel_min_col, excel_max_col, True):
+            row_data = []
+            for value in row:
+                if value == None:
+                    value = 0
+                row_data.append(value)
+            existing_data.append(row_data)
+
+        # 將舊資料與新資料相加，寫入檔案中
+        for i in range(len(DealerList)):
+            if write_data[0] == DealerList[i]:
+                i += 2
+                if write_data[1] == "Sale":
+                    row_index = i
+                    break
+                elif write_data[1] == "Inventory":
+                    row_index = i + 1
+                    break
+
+        new_data = []
+        for col in range(len(existing_data[0])):
+            value = int(existing_data[row_index][col]) + int(data[col])
+            ws[f"{excel_col[col]}{row_index}"] = value
+            new_data.append(value) 
+        msg = f"{SummarySheetName} 工作表中，經銷商：{dealer_id}，資料類型：{file_type}，更新資料：{new_data}。"
+        WRecLog("1", "WriteSummaryData", dealer_id, SummaryReport, msg)
+        wb.save(SummaryFilePath)
     else:
-        print("")
+        msg = f"{SummaryReport} 檔案 {SummarySheetName} 工作表中，更新資料失敗。"
+        WRecLog("2", "WriteSummaryData", dealer_id, SummaryReport, msg)
 
 # NotSubmission
 # 設定缺繳、補繳工作表欄寬
@@ -231,29 +281,30 @@ def make_not_sub_table():
         try:
             wb = load_workbook(NotSubmissionPath)
             if NotSubmissionSheetName in wb.sheetnames:
-                msg = f"{NotSubmissionFileName} 檔案中 {NotSubmissionSheetName} 工作表已存在"
+                msg = f"已確認 {NotSubmissionFileName} 檔案中 {NotSubmissionSheetName} 工作表存在。"
                 WSysLog("1", "MakeNotSubTable", msg)
             else:
                 make_not_sub_header(wb)
-                msg = f"{NotSubmissionFileName} 檔案中 {NotSubmissionSheetName} 工作表已建立"
+                msg = f"{NotSubmissionFileName} 檔案中建立 {NotSubmissionSheetName} 工作表。"
                 WSysLog("1", "MakeNotSubTable", msg)
             return True
         except FileNotFoundError:
             wb = Workbook()
             wb.remove(wb.active)
             make_not_sub_header(wb)
-            msg = f"{NotSubmissionFileName} 檔案已建立"
+            msg = f"建立 {NotSubmissionFileName} 檔案。"
             WSysLog("1", "MakeNotSubTable", msg)
             return True
     else:
-        msg = f"{Dir}目錄不存在"
+        msg = f"{Dir} 目錄不存在"
         WSysLog("3", "MakeNotSubTable", msg)
         return False
 
 # 寫入NotSubmission，["Dealer ID", "Dealer Name", "DataType", "檔案繳交週期", "缺繳檔案名稱", "應繳時間", "是否繳交", "檢查結果", "補繳時間", "補繳檢查結果"]
-# 資料一row一row寫
+# 資料一行一行寫入
 def WriteNotSubmission(write_data):
     result = make_not_sub_table()
+    dealer_id = write_data[0]
     if result:
         wb = load_workbook(NotSubmissionPath)
         ws = wb[NotSubmissionSheetName]
@@ -269,24 +320,19 @@ def WriteNotSubmission(write_data):
             for i in range(len(write_data)):
                 col = chr((8 + i) % 26 + 65)
                 ws[f"{col}{index}"] = write_data[i]
-            msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 資料更新，補繳時間：{write_data[0]}，補繳檢查結果：{write_data[1]}"
-            WSysLog("1", "WriteNotSubmission", msg)
+            msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 資料更新，補繳時間：{write_data[0]}，補繳檢查結果：{write_data[1]}。"
+            WRecLog("1", "WriteNotSubmission", dealer_id, NotSubmissionFileName, msg)
         else:
             index = ws.max_row + 1
             for col, data in zip(NotSubmissionFixedColumns, write_data):
                 ws[f"{col}{index}"] = data
-            msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 新增資料，{write_data}"
-            WSysLog("1", "WriteNotSubmission", msg)
+            msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 新增資料，{write_data}。"
+            WRecLog("1", "WriteNotSubmission", dealer_id, NotSubmissionFileName, msg)
         wb.save(NotSubmissionPath)
     else:
-        msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 新增資料失敗"
-        WSysLog("2", "WriteNotSubmission", msg)
+        msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 新增資料失敗。"
+        WRecLog("2", "WriteNotSubmission", dealer_id, NotSubmissionFileName, msg)
 
 if __name__ == "__main__":
     make_record_tamplates("summary")
     make_record_tamplates("report")
-    # input_data = ["000"] * 8
-    # input_data.append("001")
-    # input_data.append("002")
-    # print(input_data)
-    # WriteNotSubmission(input_data)

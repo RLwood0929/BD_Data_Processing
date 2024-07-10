@@ -13,8 +13,8 @@ import pandas as pd
 from itertools import groupby
 from datetime import datetime
 from operator import itemgetter
-from Log import WRecLog, WCheLog, WSysLog
 from RecordTable import WriteRawData
+from Log import WRecLog, WCheLog, WSysLog
 from SystemConfig import Config, CheckRule, DealerConf
 
 GlobalConfig = Config()

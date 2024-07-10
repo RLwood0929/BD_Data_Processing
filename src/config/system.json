@@ -70,6 +70,7 @@
     "SummaryTable":{
         "FileName":"{Year}_繳交總表.xlsx",
         "SheetName":"{Month}月繳交總表",
+        "MinCol":"當月繳交次數",
         "Header":[
             "DealerID",
             "DealerName",
