@@ -55,6 +55,50 @@
         "IMAPHost":"imap.hibox.biz",
         "SMTPPort":"587",
         "IMAPPort":"993"
-    
+    },
+    "RawDataTable":{
+        "FileName":"{Year}_RawData.xlsx",
+        "SheetName":"{Month}月RawData",
+        "Header":[
+            "DealerID",
+            "DealerName",
+            "DataType",
+            "檔案繳交週期",
+            "當日更新筆數"
+        ]
+    },
+    "SummaryTable":{
+        "FileName":"{Year}_繳交總表.xlsx",
+        "SheetName":"{Month}月繳交總表",
+        "Header":[
+            "DealerID",
+            "DealerName",
+            "DataType",
+            "檔案繳交週期",
+            "當月繳交次數", 
+            "當月繳交筆數",
+            "當月繳交錯誤次數", 
+            "當月繳交錯誤筆數",
+            "當月轉換次數", 
+            "當月轉換筆數",
+            "當月轉換錯誤次數", 
+            "當月轉換錯誤筆數"
+        ]
+    },
+    "NotSubmissionTable":{
+        "FileName":"{Year}_缺繳、補繳紀錄表.xlsx",
+        "SheetName":"{Month}月缺繳、補繳紀錄",
+        "Header":[
+            "DealerID",
+            "DealerName",
+            "DataType",
+            "檔案繳交週期",
+            "缺繳檔案名稱",
+            "應繳時間",
+            "是否繳交",
+            "檢查結果",
+            "補繳時間",
+            "補繳檢查結果"
+        ]
     }
 }

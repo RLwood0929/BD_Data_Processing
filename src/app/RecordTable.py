@@ -18,16 +18,26 @@ DealerConfig = DealerConf()
 CurrentDate = datetime.now()
 Day, Month, Year = CurrentDate.day, CurrentDate.month, CurrentDate.year
 
-ReportFileName = f"{Year}_RawData.xlsx"
-SheetName = f"{Month}月"
-SummaryReport = f"{Year}年_{Month}月_繳交總表.xlsx"
-SummarySheetName = "繳交總表"
-NotSubmissionFileName = f"{Year}{Month}_缺繳紀錄.xlsx"
-RawDataHeader = ["DealerID","DealerName","DataType","檔案繳交週期","當日更新筆數"]
-SummaryHeader = RawDataHeader[0:3]  +  ["當月繳交次數", "當月繳交筆數", \
-                                        "當月繳交錯誤次數", "當月繳交錯誤筆數",\
-                                        "當月轉換次數", "當月轉換筆數", \
-                                        "當月轉換錯誤次數", "當月轉換錯誤筆數"]
+#RawData
+RawDataFileName = GlobalConfig["RawDataTable"]["FileName"]
+RawDataFileName = RawDataFileName.replace("{Year}", str(Year))
+RawDataSheetName = GlobalConfig["RawDataTable"]["SheetName"]
+RawDataSheetName = RawDataSheetName.replace("{Month}", str(Month))
+RawDataHeader = GlobalConfig["RawDataTable"]["Header"]
+
+#Summary
+SummaryReport = GlobalConfig["SummaryTable"]["FileName"]
+SummaryReport = SummaryReport.replace("{Year}", str(Year)).replace("{Month}", str(Month))
+SummarySheetName = GlobalConfig["SummaryTable"]["SheetName"]
+SummarySheetName = SummarySheetName.replace("{Month}", str(Month))
+SummaryHeader = GlobalConfig["SummaryTable"]["Header"]
+
+# NotSubmission
+NotSubmissionFileName = GlobalConfig["NotSubmissionTable"]["FileName"]
+NotSubmissionFileName = NotSubmissionFileName.replace("{Year}", str(Year))
+NotSubmissionSheetName = GlobalConfig["NotSubmissionTable"]["SheetName"]
+NotSubmissionSheetName = NotSubmissionSheetName.replace("{Month}", str(Month))
+NotSubmissionHeader = GlobalConfig["NotSubmissionTable"]["Header"]
 
 ReportDir = GlobalConfig["Default"]["ReportDir"]
 DealerDir = GlobalConfig["Default"]["DealerFolderName"]
@@ -38,11 +48,12 @@ RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
 DealerList = DealerConfig["DealerList"]
 
 Dir = os.path.join(RootDir, FolderName, DealerDir, ReportDir)
-ReportFilePath = os.path.join(Dir, ReportFileName)
+RawDataFilePath = os.path.join(Dir, RawDataFileName)
 SummaryFilePath = os.path.join(Dir, SummaryReport)
 NotSubmissionPath = os.path.join(Dir, NotSubmissionFileName)
 RawDataFixedColumns = [chr(i % 26 + 65) for i in range(len(RawDataHeader))]
 SummaryFixedColumns = [chr(i % 26 + 65) for i in range(len(SummaryHeader))]
+NotSubmissionFixedColumns = [chr(i % 26 + 65) for i in range(len(NotSubmissionHeader))]
 ExcelStyle = Alignment(horizontal = "center", vertical = "center")
 
 # 設定Excel的樣式
@@ -56,7 +67,7 @@ def set_cell_styles(ws, fixed_columns, width):
         ws.merge_cells(f"A{i}:A{i + 1}")
         ws.merge_cells(f"B{i}:B{i + 1}")
 
-# 創建左側 A ~ E 欄固定值
+# 建立固定表頭
 def make_part1_format(wb, fixed_columns, header, file_path, sheet_name, width):
     ws = wb.create_sheet(title = sheet_name)
     for col, data in zip(fixed_columns, header):
@@ -92,12 +103,12 @@ def write_dealer_info(wb, sheet_name, file_path, fixed_columns, width):
     wb.save(file_path)
     wb.close()
 
-# 創建 RAW Data excel 及 工作表
+# 創建 RAW Data excel 或 繳交總表
 def make_record_tamplates(mode):
     if mode == "report":
-        file_path = ReportFilePath
-        file_name = ReportFileName
-        sheet_name = SheetName
+        file_path = RawDataFilePath
+        file_name = RawDataFileName
+        sheet_name = RawDataSheetName
         fixed_columns = RawDataFixedColumns
         header = RawDataHeader
         width = 15
@@ -147,13 +158,12 @@ def make_record_tamplates(mode):
         WSysLog("3", "MakeRecordTamplates", msg)
         return False
 
-# RAW Data
-# 新資料寫入
+# 寫入RawData
 def WriteRawData(new_data):
     result = make_record_tamplates("report")
     if result:
-        wb = load_workbook(ReportFilePath)
-        ws = wb[SheetName]
+        wb = load_workbook(RawDataFilePath)
+        ws = wb[RawDataSheetName]
         column_name = f"{Month}月{Day}日"
         col_idx = None
 
@@ -168,11 +178,11 @@ def WriteRawData(new_data):
             col_str = get_column_letter(col_idx)
             ws.column_dimensions[col_str].width = 30
             ws[f"{col_str}1"].alignment = ExcelStyle
-            msg = f"{ReportFileName} 檔案，{SheetName} 工作表，新增資料：{new_data}"
+            msg = f"{RawDataFileName} 檔案，{RawDataSheetName} 工作表，新增資料：{new_data}"
             WSysLog("1", "WriteRawData", msg)
         else:
             col_str = get_column_letter(col_idx)
-            msg = f"{ReportFileName} 檔案，{SheetName} 工作表，{column_name} 更新資料：{new_data}"
+            msg = f"{RawDataFileName} 檔案，{RawDataSheetName} 工作表，{column_name} 更新資料：{new_data}"
             WSysLog("1", "WriteRawData", msg)
         
         # 寫入當天資料
@@ -184,16 +194,99 @@ def WriteRawData(new_data):
         update_num = [item.split("/")[0] for item in new_data]
         for i, value in enumerate(update_num, start = 2):
             ws.cell(row = i, column = 5, value = value)
-        wb.save(ReportFilePath)
+        wb.save(RawDataFilePath)
 
     else:
-        msg = f"{ReportFileName} 檔案 {SheetName} 新增資料失敗"
+        msg = f"{RawDataFileName} 檔案 {RawDataSheetName} 新增資料失敗"
         WSysLog("2", "WriteRawData", msg)
 
-# 繳交總表(每月一份檔案), not_filish
+# 繳交總表(每月一份檔案), not_finish
 def WriteSummaryData():
-    print("")
+    result = make_record_tamplates("summary")
+    if result:
+        wb = load_workbook(SummaryFilePath)
+        ws = wb[SummarySheetName]
+
+    else:
+        print("")
+
+# NotSubmission
+# 設定缺繳、補繳工作表欄寬
+def set_not_sub_styles(ws):
+    column_widths = [15, 15, 15, 15, 35, 15, 10, 10, 15, 15]
+    for i, width in enumerate(column_widths):
+        ws.column_dimensions[NotSubmissionFixedColumns[i]].width = width
+
+# 產生缺繳、補繳工作表表頭
+def make_not_sub_header(wb):
+    ws = wb.create_sheet(title = NotSubmissionSheetName)
+    for col, data in zip(NotSubmissionFixedColumns, NotSubmissionHeader):
+        ws[f"{col}1"] = data
+    set_not_sub_styles(ws)
+    wb.save(NotSubmissionPath)
+
+# 產生補繳、缺繳工作表
+def make_not_sub_table():
+    if os.path.exists(Dir):
+        try:
+            wb = load_workbook(NotSubmissionPath)
+            if NotSubmissionSheetName in wb.sheetnames:
+                msg = f"{NotSubmissionFileName} 檔案中 {NotSubmissionSheetName} 工作表已存在"
+                WSysLog("1", "MakeNotSubTable", msg)
+            else:
+                make_not_sub_header(wb)
+                msg = f"{NotSubmissionFileName} 檔案中 {NotSubmissionSheetName} 工作表已建立"
+                WSysLog("1", "MakeNotSubTable", msg)
+            return True
+        except FileNotFoundError:
+            wb = Workbook()
+            wb.remove(wb.active)
+            make_not_sub_header(wb)
+            msg = f"{NotSubmissionFileName} 檔案已建立"
+            WSysLog("1", "MakeNotSubTable", msg)
+            return True
+    else:
+        msg = f"{Dir}目錄不存在"
+        WSysLog("3", "MakeNotSubTable", msg)
+        return False
+
+# 寫入NotSubmission，["Dealer ID", "Dealer Name", "DataType", "檔案繳交週期", "缺繳檔案名稱", "應繳時間", "是否繳交", "檢查結果", "補繳時間", "補繳檢查結果"]
+# 資料一row一row寫
+def WriteNotSubmission(write_data):
+    result = make_not_sub_table()
+    if result:
+        wb = load_workbook(NotSubmissionPath)
+        ws = wb[NotSubmissionSheetName]
+        not_sub_file_name = [cell.value for cell in ws['E']]
+        index = None
+        for row in range(len(not_sub_file_name)):
+            if write_data[4] == not_sub_file_name[row]:
+                index = row + 1
+                break
+
+        if index is not None:
+            write_data = write_data[-2:]
+            for i in range(len(write_data)):
+                col = chr((8 + i) % 26 + 65)
+                ws[f"{col}{index}"] = write_data[i]
+            msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 資料更新，補繳時間：{write_data[0]}，補繳檢查結果：{write_data[1]}"
+            WSysLog("1", "WriteNotSubmission", msg)
+        else:
+            index = ws.max_row + 1
+            for col, data in zip(NotSubmissionFixedColumns, write_data):
+                ws[f"{col}{index}"] = data
+            msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 新增資料，{write_data}"
+            WSysLog("1", "WriteNotSubmission", msg)
+        wb.save(NotSubmissionPath)
+    else:
+        msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 新增資料失敗"
+        WSysLog("2", "WriteNotSubmission", msg)
 
 if __name__ == "__main__":
     make_record_tamplates("summary")
     make_record_tamplates("report")
+    # input_data = ["000"] * 8
+    # input_data.append("001")
+    # input_data.append("002")
+    # print(input_data)
+    # WriteNotSubmission(input_data)
