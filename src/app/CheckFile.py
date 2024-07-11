@@ -13,9 +13,9 @@ import pandas as pd
 from itertools import groupby
 from datetime import datetime
 from operator import itemgetter
-from RecordTable import WriteRawData
 from Log import WRecLog, WCheLog, WSysLog
 from SystemConfig import Config, CheckRule, DealerConf
+from RecordTable import WriteRawData, WriteSummaryData, WriteNotSubmission
 
 GlobalConfig = Config()
 CheckConfig = CheckRule()
@@ -167,14 +167,6 @@ def RecordSubmission():
     for i in DealerList:
         path = os.path.join(DealerPath, i)
         file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-
-        for j in range(len(DealerList)):
-            if i == DealerList[j]:
-                index = j + 1
-                break
-
-        dsf_payment_cycle = DealerDonfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-        dif_payment_cycle = DealerDonfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
 
         note = {}
         if not file_names:
@@ -396,15 +388,35 @@ def CheckFile(have_file_list, record_dic):
 
 # 檢查檔案主程式
 def RecordAndCheck():
-    RecordData = []
+    RawData, SummaryData = [], []
     HaveFileList, Note = RecordSubmission()
     output_data = CheckFile(HaveFileList, Note)
+    
     for i in DealerList:
-        note = output_data[i]["Sale"]
-        RecordData.append(note)
-        note = output_data[i]["Inventory"]
-        RecordData.append(note)
-    WriteRawData(RecordData)
+        for j in range(2):
+            # 寫入Summary
+            file_type = "Sale" if j == 0 else "Inventory"
+            data = ["0"] * 8
+            note = output_data[i][file_type]
+            part = note.split("/")
+            if part[1] == "有繳交":
+                data[0] = 1
+            if part[2] in ("檔案內容錯誤", "檔案表頭錯誤"):
+                data[2] = 1
+            data[1] = part[0]
+            data[3] = part[3]
+            if data != ["0"] * 8:
+                SummaryData = [i, file_type] + data
+                print(f"SummaryData:{SummaryData}")
+                WriteSummaryData(SummaryData)
+            
+            # 寫入RawData
+            note = output_data[i][file_type]
+            RawData.append(note)
+    WriteRawData(RawData)
+
+    
+
 
 if __name__ == "__main__":
     RecordAndCheck()

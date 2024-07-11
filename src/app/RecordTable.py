@@ -162,7 +162,7 @@ def make_record_tamplates(mode):
 
 # RawData
 # 寫入RawData資料
-def WriteRawData(dealer_id, new_data):
+def WriteRawData(new_data):
     result = make_record_tamplates("report")
     if result:
         wb = load_workbook(RawDataFilePath)
@@ -182,11 +182,11 @@ def WriteRawData(dealer_id, new_data):
             ws.column_dimensions[col_str].width = 30
             ws[f"{col_str}1"].alignment = ExcelStyle
             msg = f"{RawDataSheetName} 工作表，新增資料：{new_data}。"
-            WRecLog("1", "WriteRawData",dealer_id, RawDataFileName, msg)
+            WRecLog("1", "WriteRawData", "All Dealer", RawDataFileName, msg)
         else:
             col_str = get_column_letter(col_idx)
-            msg = f"{RawDataFileName} 檔案，{RawDataSheetName} 工作表，{column_name} 更新資料：{new_data}。"
-            WRecLog("1", "WriteRawData",dealer_id, RawDataFileName, msg)
+            msg = f"{RawDataSheetName} 工作表，{column_name} 更新資料：{new_data}。"
+            WRecLog("1", "WriteRawData", "All Dealer", RawDataFileName, msg)
         
         # 寫入當天資料
         for i, value in enumerate(new_data, start = 2):
@@ -200,9 +200,10 @@ def WriteRawData(dealer_id, new_data):
         wb.save(RawDataFilePath)
 
     else:
-        msg = f"{RawDataFileName} 檔案 {RawDataSheetName} 新增資料失敗。"
-        WRecLog("2", "WriteRawData",dealer_id, RawDataFileName, msg)
+        msg = f"{RawDataSheetName} 工作表新增資料失敗。"
+        WRecLog("2", "WriteRawData", "All Dealer", RawDataFileName, msg)
 
+# SummaryData
 # 取得資料寫入的 column range 及 row range
 def get_excel_range():
     for i in range(len(SummaryHeader)):
@@ -216,7 +217,7 @@ def get_excel_range():
     min_col += 1
     return excel_col, min_col, max_col, min_row, max_row
 
-# 繳交總表(每月一份檔案)，write_data = ["Dealer ID", "DataType", "Data1"~"Data8"]
+# 繳交總表(每月一份檔案)，write_data = ["Dealer ID", "DataType", "DataE"~"DataL"]
 def WriteSummaryData(write_data):
     dealer_id = write_data[0]
     file_type = write_data[1]
@@ -240,25 +241,27 @@ def WriteSummaryData(write_data):
         # 將舊資料與新資料相加，寫入檔案中
         for i in range(len(DealerList)):
             if write_data[0] == DealerList[i]:
-                i += 2
+                row = i + i
+                i = i * 2 + 2
                 if write_data[1] == "Sale":
                     row_index = i
                     break
                 elif write_data[1] == "Inventory":
+                    row += 1 
                     row_index = i + 1
                     break
 
         new_data = []
         for col in range(len(existing_data[0])):
-            value = int(existing_data[row_index][col]) + int(data[col])
+            value = int(existing_data[row][col]) + int(data[col])
             ws[f"{excel_col[col]}{row_index}"] = value
-            new_data.append(value) 
+            new_data.append(value)
         msg = f"{SummarySheetName} 工作表中，經銷商：{dealer_id}，資料類型：{file_type}，更新資料：{new_data}。"
-        WRecLog("1", "WriteSummaryData", dealer_id, SummaryReport, msg)
+        WRecLog("1", "WriteSummaryData", "All Dealer", SummaryReport, msg)
         wb.save(SummaryFilePath)
     else:
-        msg = f"{SummaryReport} 檔案 {SummarySheetName} 工作表中，更新資料失敗。"
-        WRecLog("2", "WriteSummaryData", dealer_id, SummaryReport, msg)
+        msg = f"{SummarySheetName} 工作表中，更新資料失敗。"
+        WRecLog("2", "WriteSummaryData", "All Dealer", SummaryReport, msg)
 
 # NotSubmission
 # 設定缺繳、補繳工作表欄寬
@@ -300,11 +303,26 @@ def make_not_sub_table():
         WSysLog("3", "MakeNotSubTable", msg)
         return False
 
-# 寫入NotSubmission，["Dealer ID", "Dealer Name", "DataType", "檔案繳交週期", "缺繳檔案名稱", "應繳時間", "是否繳交", "檢查結果", "補繳時間", "補繳檢查結果"]
-# 資料一行一行寫入
+# 寫入NotSubmission，wriet_data = ["Dealer ID", "DataType", "缺繳檔案名稱", "應繳時間", "是否繳交", "檢查結果", "補繳時間", "補繳檢查結果"]
 def WriteNotSubmission(write_data):
     result = make_not_sub_table()
     dealer_id = write_data[0]
+    dealer_name = None
+
+    for i in range(len(DealerList)):
+        if dealer_id == DealerList[i]:
+            dealer_name = DealerConfig[f"Dealer{i + 1}"]["DealerName"]
+            payment_cycle = DealerConfig[f"Dealer{i + 1}"][f"{write_data[1]}File"]["PaymentCycle"]
+            break
+
+    if dealer_name == None:
+        msg = f"DealerID錯誤， {dealer_id} 未在經銷商列表中。"
+        WRecLog("2", "WriteNotSubmission", "All Dealer", NotSubmissionFileName, msg)
+        return 
+    
+    write_data.insert(2, payment_cycle)
+    write_data.insert(1, dealer_name)
+
     if result:
         wb = load_workbook(NotSubmissionPath)
         ws = wb[NotSubmissionSheetName]
@@ -321,18 +339,22 @@ def WriteNotSubmission(write_data):
                 col = chr((8 + i) % 26 + 65)
                 ws[f"{col}{index}"] = write_data[i]
             msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 資料更新，補繳時間：{write_data[0]}，補繳檢查結果：{write_data[1]}。"
-            WRecLog("1", "WriteNotSubmission", dealer_id, NotSubmissionFileName, msg)
+            WRecLog("1", "WriteNotSubmission", "All Dealer", NotSubmissionFileName, msg)
         else:
             index = ws.max_row + 1
             for col, data in zip(NotSubmissionFixedColumns, write_data):
                 ws[f"{col}{index}"] = data
             msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 工作表中，row{index} 新增資料，{write_data}。"
-            WRecLog("1", "WriteNotSubmission", dealer_id, NotSubmissionFileName, msg)
+            WRecLog("1", "WriteNotSubmission", "All Dealer", NotSubmissionFileName, msg)
         wb.save(NotSubmissionPath)
+        return
     else:
         msg = f"{NotSubmissionFileName} 檔案 {NotSubmissionSheetName} 新增資料失敗。"
-        WRecLog("2", "WriteNotSubmission", dealer_id, NotSubmissionFileName, msg)
+        WRecLog("2", "WriteNotSubmission", "All Dealer", NotSubmissionFileName, msg)
+        return
 
 if __name__ == "__main__":
-    make_record_tamplates("summary")
-    make_record_tamplates("report")
+    # make_record_tamplates("summary")
+    # make_record_tamplates("report")
+    dt = ["AAA","Sale"] + ["000"]*6
+    WriteNotSubmission(dt)
