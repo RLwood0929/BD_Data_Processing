@@ -14,11 +14,13 @@ SystemConfig = "system.json"
 MappingConfig = "mapping_rule.json"
 CheckConfig = "check_rule.json"
 DealerConfig = "dealer.json"
+DealerFormatConfig = "dealer_format.json"
 
 ConfigPath = os.path.join(ConfigDir, SystemConfig)
 MappingPath = os.path.join(ConfigDir, MappingConfig)
 CheckPath = os.path.join(ConfigDir, CheckConfig)
 DealerPath = os.path.join(ConfigDir, DealerConfig)
+DealerFormatPath = os.path.join(ConfigDir, DealerFormatConfig)
 
 # 讀取 system.json
 def Config():
@@ -44,7 +46,13 @@ def DealerConf():
         dealer_config = json.load(file)
     return dealer_config
 
-#將 excel 內容轉變為json
+# 讀取 dealer_format.json
+def DealerFormatConf():
+    with open(DealerFormatPath, "r", encoding = "UTF-8") as file:
+        format_config = json.load(file)
+    return format_config
+
+# 將 excel 內容轉變為json
 def write_rule_json(file_path, sheet, data_name, output_name):
     df = pd.read_excel(file_path,sheet_name=sheet)
     data_list = df.to_dict("records")
@@ -153,5 +161,27 @@ def DealerJson():
     with open(output_path, "w",encoding="UTF-8") as f:
         json.dump(OutputData, f, ensure_ascii=False, indent=2)
 
+# 抓取經銷商 Header，跟默認的比對，notfinish
+def HeaderChange():
+    dealer_format_config = DealerFormatConf()
+    dealer_config = DealerConf()
+    DealerList = dealer_config["DealerList"]
+    sale_format = dealer_format_config["Defualt"]["SaleFileHeader"]
+    inventory_format = dealer_format_config["Defualt"]["InventoryFileHeader"]
+    for dealer_id in range(len(DealerList)):
+        index = dealer_id + 1
+        sale_header = dealer_config[f"Dealer{index}"]["SaleFile"]["FileHeader"]
+        inventory_header = dealer_config[f"Dealer{index}"]["InventoryFile"]["FileHeader"]
+        location = []
+        for i in range(len(sale_format)):
+            hf = sale_format[i]
+            hf_lower = hf.replace(" ", "").lower()
+            for h in sale_header:
+                h_lower = h.replace(" ", "").lower()
+                if hf_lower == h_lower:
+                    location.append(chr(i % 26 + 65))
+        print(location)
+
 if __name__ == "__main__":
-    DealerJson()
+    # DealerJson()
+    HeaderChange()

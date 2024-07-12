@@ -8,20 +8,20 @@ Writer:Qian
 
 import os, re
 import shutil
-import numpy as np
 import pandas as pd
 from itertools import groupby
 from datetime import datetime
 from operator import itemgetter
 from Log import WRecLog, WCheLog, WSysLog
-from SystemConfig import Config, CheckRule, DealerConf
+from SystemConfig import Config, CheckRule, DealerConf, DealerFormatConf
 from RecordTable import WriteRawData, WriteSummaryData, WriteNotSubmission
 
 GlobalConfig = Config()
 CheckConfig = CheckRule()
-DealerDonfig = DealerConf()
+DealerConfig = DealerConf()
+DFormatConfig = DealerFormatConf()
 
-DealerList = DealerDonfig["DealerList"]
+DealerList = DealerConfig["DealerList"]
 CompletedDir = GlobalConfig["Default"]["CompletedDir"]
 DealerDir = GlobalConfig["Default"]["DealerFolderName"]
 FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
@@ -32,13 +32,12 @@ RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
 # 銷售檔案參數
 SF_MustHave = CheckConfig["SaleFile"]["MustHave"]
 SF_2Choose1 = CheckConfig["SaleFile"]["2Choose1"]
-SF_KeyWord = CheckConfig["SaleFile"]["FileKey"]
-SF_HeaderKey = CheckConfig["SaleFile"]["HeaderKey"]
+SF_Default_Header = DFormatConfig["Defualt"]["SaleFileHeader"]
+
 # 庫存檔案參數
 IF_MustHave = CheckConfig["InventoryFile"]["MustHave"]
 IF_2Choose1 = CheckConfig["InventoryFile"]["2Choose1"]
-IF_KeyWord = CheckConfig["InventoryFile"]["FileKey"]
-IF_HeaderKey = CheckConfig["InventoryFile"]["HeaderKey"]
+IF_Default_Header = DFormatConfig["Defualt"]["InventoryFileHeader"]
 
 TargetPath = os.path.join(RootDir, FolderName)
 DealerPath = os.path.join(TargetPath, DealerDir)
@@ -102,40 +101,28 @@ def read_data(file_path):
 def determine_file_type(dealer_id, file_name):
     for i in range(len(DealerList)):
         if dealer_id == DealerList[i]:
-            indx = i + 1
+            index = i + 1
             break
-    dsf_header_key = DealerDonfig[f"Dealer{indx}"]["SaleFile"]["KeyWord"]
-    dif_header_key = DealerDonfig[f"Dealer{indx}"]["InventoryFile"]["KeyWord"]
-    if np.isnan(dsf_header_key):
-        sf_header_key = SF_HeaderKey
-    else:
-        sf_header_key = dsf_header_key
-    if np.isnan(dif_header_key):
-        if_header_key = IF_HeaderKey
-    else:
-        sf_header_key = dif_header_key
+
+    SF_Header = DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"]
+    IF_Header = DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"]
 
     file_path = os.path.join(DealerPath, dealer_id)
     _, extension = os.path.splitext(file_name)
-    sale_file_header_key = set(sf_header_key)
-    inventory_file_header_key = set(if_header_key)
+    sale_file_header = set(SF_Header)
+    inventory_file_header = set(IF_Header)
     path = os.path.join(file_path, file_name)
     if extension in [".csv", ".xls", ".xlsx"]:
         data = read_data(path)
-        header = data.columns.tolist()
-        file_header = set(header)
-        sale_result = sale_file_header_key.issubset(file_header)
-        inventory_result = inventory_file_header_key.issubset(file_header)
-        result = sale_result ^ inventory_result
-        parts = file_name.split("_")
-        for i in parts:
-            if i == SF_KeyWord or i == IF_KeyWord:
-                if i == SF_KeyWord and result:
-                    return "Sale"
-                elif i == IF_KeyWord and result:
-                    return "Inventory"
-                else:
-                    return None
+        file_header = set(data.columns.tolist())
+        sale_result =  sale_file_header == file_header
+        inventory_result = inventory_file_header == file_header
+        if sale_result != inventory_result:
+            if sale_result:
+                return "Sale"
+            elif inventory_result:
+                return "Inventory"
+        return None
     else:
         return None
 
@@ -198,7 +185,6 @@ def RecordSubmission():
             record_dic[i]["Inventory"] = "0/未繳交/無檢查/0"
 
     have_submission = list(set(DealerList) - set(not_submission))
-
     for i in not_submission:
         msg = "檔案未繳交"
         WRecLog("2", "RecordSubmission", i, None, msg)
@@ -415,8 +401,8 @@ def RecordAndCheck():
             RawData.append(note)
     WriteRawData(RawData)
 
-    
-
-
 if __name__ == "__main__":
-    RecordAndCheck()
+    # RecordAndCheck()
+    aa = DealerConfig["FileHeader"]
+    if aa == []:
+        print("000")
