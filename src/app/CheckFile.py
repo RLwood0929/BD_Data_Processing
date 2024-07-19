@@ -10,12 +10,13 @@ import os, re
 import shutil
 import pandas as pd
 from itertools import groupby
-from datetime import datetime
 from operator import itemgetter
+from datetime import datetime, timedelta
 from Log import WRecLog, WCheLog, WSysLog
 from SystemConfig import Config, CheckRule, DealerConf, DealerFormatConf
-from RecordTable import WriteRawData, WriteSummaryData, WriteNotSubmission
+from RecordTable import WriteRawData, WriteSummaryData, WriteNotSubmission, GetSummaryData
 
+SystemTime = datetime.now()
 GlobalConfig = Config()
 CheckConfig = CheckRule()
 DealerConfig = DealerConf()
@@ -28,6 +29,9 @@ FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
     else GlobalConfig["Default"]["Name"]
 RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
     else GlobalConfig["Default"]["DataPath"]
+MonthlyFileRange = GlobalConfig["App"]["MonthlyFileRange"] if GlobalConfig["App"]["MonthlyFileRange"]\
+    else GlobalConfig["Default"]["MonthlyFileRange"]
+MonthlyFileRange = int(MonthlyFileRange)
 
 # 銷售檔案參數
 SF_MustHave = CheckConfig["SaleFile"]["MustHave"]
@@ -106,7 +110,7 @@ def determine_file_type(dealer_id, file_name):
 
     SF_Header = DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"]
     IF_Header = DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"]
-
+    
     file_path = os.path.join(DealerPath, dealer_id)
     _, extension = os.path.splitext(file_name)
     sale_file_header = set(SF_Header)
@@ -148,19 +152,105 @@ def move_check_error_file(dealer_id, file_names):
             msg = f"檔案搬移至 {target_path} 失敗"
             WSysLog("2", "MoveCheckErrorFile", msg)
 
+# 日繳檔案紀錄
+def DailyFile(dealer_id, file_name):
+    start_date = SystemTime.date() - timedelta(days = 1)
+    end_date = SystemTime.date()
+    file_path = os.path.join(DealerPath, dealer_id)
+    path = os.path.join(file_path,file_name)
+    df = read_data(path)
+    flag = False
+    # 確認Creation Date欄位存在
+    check_col = SF_MustHave[-1]
+    check_col = check_col.replace(" ","").lower()
+    df.columns = df.columns.str.replace(" ","",regex = False).str.lower()
+    if check_col in df.columns:
+        df[check_col] = pd.to_datetime(df[check_col], format='%Y/%m/%d').dt.date
+        df["is_conform"] = (start_date <= df[check_col]) & (df[check_col] <= end_date)
+        for i in df["is_conform"]:
+            if not i:
+                flag = True
+        if not flag:
+            msg = "檔案內容Creation Date時間符合繳交區間。"
+            WRecLog("1", "DailyFile", dealer_id, file_name, msg)
+        else:
+            not_conform = df[df["is_conform"] == False]
+            index = not_conform.index
+            for i in index:
+                row = data_change_to_excel(df, check_col, i)
+                msg = f"檔案內容 {row} 時間不符合繳交區間。"
+                WRecLog("2", "DailyFile", dealer_id, file_name, msg)
+    else:
+        msg = "表頭中無Creation Date欄位，無法檢查。"
+        WRecLog("2", "DailyFile", dealer_id, file_name, msg)
+
+# 月繳檔案紀錄
+def MonthlyFile(dealer_id, file_name):
+    end_date = SystemTime.date().replace(day = 1) - timedelta(days = 1)
+    start_date = end_date.replace(day = 1)
+    file_path = os.path.join(DealerPath, dealer_id)
+    path = os.path.join(file_path, file_name)
+    file_type = determine_file_type(dealer_id, file_name)
+    df = read_data(path)
+    flag = False
+    # 確認Creation Date欄位存在
+    check_col = SF_MustHave[-1]
+    check_col = check_col.replace(" ","").lower()
+    df.columns = df.columns.str.replace(" ","",regex = False).str.lower()
+    if check_col in df.columns:
+        df[check_col] = pd.to_datetime(df[check_col], format='%Y/%m/%d').dt.date
+        df["is_conform"] = (start_date <= df[check_col]) & (df[check_col] <= end_date)
+        df["Year"] = df[check_col].dt.year
+        creation_year = df["Year"][2]
+        df["Month"] = df[check_col].dt.month
+        creation_month = df["Month"][2]
+        date_due = f"{creation_year}-{creation_month + 1}-05"
+        for i in df["Year"]:
+            if creation_year != i:
+                msg = "檔案內容Creation Date非同一年份"
+                WRecLog("2", "MonthlyFile", dealer_id, file_name, msg)
+                return False, None
+        for i in df["Month"]:
+            if creation_month != i:
+                msg = "檔案內容Creation Date非同一月份"
+                WRecLog("2", "MonthlyFile", dealer_id, file_name, msg)
+                return False, None
+        for i in df["is_conform"]:
+            if not i:
+                flag = True
+        if not flag:
+            msg = "檔案內容Creation Date時間符合繳交區間。"
+            WRecLog("1", "MonthlyFile", dealer_id, file_name, msg)
+            return True, None
+        else:
+            sub_data = [dealer_id, file_type, file_name, date_due ,"已繳交", "無檢查", None, None]
+            WriteNotSubmission(sub_data)
+            return "ReSubmission", date_due
+    else:
+        msg = "表頭中無Creation Date欄位，無法檢查。"
+        WRecLog("2", "MonthlyFile", dealer_id, file_name, msg)
+        return False, None
+    
 # 紀錄檔案繳交狀況
 def RecordSubmission():
     not_submission, record_dic = [], {}
     for i in DealerList:
         path = os.path.join(DealerPath, i)
         file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        for index in range(len(DealerList)):
+            if DealerList[index] == i:
+                index += 1
+                break
+
+        sale_file_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        inventory_file_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
 
         note = {}
         if not file_names:
             not_submission.append(i)
             record_dic[i] = note
 
-        note = {}
+        note, resubmission_list, date_due_list = {}, [], []
         for file_name in file_names:
             file_path = os.path.join(path, file_name)
             file_update_time = os.path.getmtime(file_path)
@@ -171,25 +261,42 @@ def RecordSubmission():
                 msg = f"{file_type} 檔案準時繳交，繳交時間 {formatted_time}"
                 WRecLog("1", "RecordSubmission", i, file_name, msg)
                 sale_note, inventory_note = {}, {}
+                # 銷售檔案
                 if file_type == "Sale":
-                    sale_note = {"Sale":"有繳交"}
+                    sale_note = {"Sale":"有繳交/無補繳"}
+                    if sale_file_cycle == "D":
+                        DailyFile(i, file_name)
+                    else:
+                        result, date_due = MonthlyFile(i, file_name)
+                        if result == "ReSubmission":
+                            sale_note = {"Sale":"有繳交/補繳交"}
+                            resubmission_list.append(file_name)
+                            date_due_list.append(date_due)
+                # 庫存檔案
                 elif file_type == "Inventory":
-                    inventory_note = {"Inventory":"有繳交"}
+                    inventory_note = {"Inventory":"有繳交/無補繳"}
+                    if inventory_file_cycle == "D":
+                        DailyFile(i, file_name)
+                    else:
+                        result, date_due = MonthlyFile(i, file_name)
+                        if result == "ReSubmission":
+                            inventory_note = {"Inventory":"有繳交/補繳交"}
+                            resubmission_list.append(file_name)
+                            date_due_list.append(date_due)
                 note.update(sale_note)
                 note.update(inventory_note)
             record_dic[i] = note
 
         if "Sale" not in record_dic[i]:
-            record_dic[i]["Sale"] = "0/未繳交/無檢查/0"
+            record_dic[i]["Sale"] = "0/0/未繳交/無補繳/無檢查/0"
         if "Inventory" not in record_dic[i]:
-            record_dic[i]["Inventory"] = "0/未繳交/無檢查/0"
+            record_dic[i]["Inventory"] = "0/0/未繳交/無補繳/無檢查/0"
 
     have_submission = list(set(DealerList) - set(not_submission))
     for i in not_submission:
         msg = "檔案未繳交"
         WRecLog("2", "RecordSubmission", i, None, msg)
-
-    return have_submission, record_dic
+    return have_submission, record_dic, resubmission_list, date_due_list
 
 # 檢查檔案表頭，銷售檔案套用 file_type = Sale；庫存檔案套用 file_type = Inventory。
 def CheckHeader(dealer_id, file_dir, file_name, file_type):
@@ -331,14 +438,14 @@ def CheckDataTime(dealer_id, file_dir, file_name):
             Falg = True
 
     if not Falg:
-        msg = "檔案時間符合"
+        msg = "檔案時間符合。"
         WCheLog("1", "CheckDataTime", dealer_id, file_name, msg)
         return error_list, 0
     else:
         for i in invalid_indices:
             cell = data_change_to_excel(df, "Creation Date", i)
             cell_value.append(cell)
-            msg = f"{cell} 與檔案更新時間不符合"
+            msg = f"{cell} 與檔案更新時間不符合。"
             WCheLog("2", "CheckDataTime", dealer_id, file_name, msg)
         error_num = len(cell_value)
         cell_result = merge_ranges(cell_value)
@@ -346,7 +453,7 @@ def CheckDataTime(dealer_id, file_dir, file_name):
         return error_list,  error_num
 
 # 檢查檔案
-def CheckFile(have_file_list, record_dic):
+def CheckFile(have_file_list, record_dic, re_submission, date_due_list):
     for i in have_file_list:
         path = os.path.join(DealerPath, i)
         file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
@@ -356,18 +463,43 @@ def CheckFile(have_file_list, record_dic):
             j_extension = j_extension.lower()
             if j_extension in [".csv", ".xls", ".xlsx"]:
                 accepted_file_list.append(j)
+        
+        for index in range(len(DealerList)):
+            if i == index:
+                index += 1
+                break
+        sale_file_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        inventory_file_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
 
         for file in accepted_file_list:
+            re_sub_file = None
+            for j in range(len(re_submission)):
+                if file == re_submission[j]:
+                    re_sub_file = file
+                    date_due = date_due_list[j]
+                    break
             file_type = determine_file_type(i, file)
             if file_type is not None:
                 result, num = CheckHeader(i, path, file, file_type)
                 if result:
                     note, error_num = CheckContent(i, path, file, file_type)
                     msg = record_dic[i][file_type]
+                    # 月繳檔案
+                    if (file_type == "Sale" and sale_file_cycle == "M" and note == "檔案內容錯誤") or \
+                    (file_type == "Inventory" and inventory_file_cycle == "M" and note == "檔案內容錯誤") :
+                        re_seb_data = [i, file_type, file, SystemTime.date().replace(day = 5), "已繳交", note, None, None]
+                        WriteNotSubmission(re_seb_data)
                 else:
                     note = "檔案表頭錯誤"
                     msg = record_dic[i][file_type]
                     error_num = 0
+                    if (file_type == "Sale" and sale_file_cycle == "M") or \
+                    (file_type == "Inventory" and inventory_file_cycle == "M"):
+                        re_seb_data = [i, file_type, file, SystemTime.date().replace(day = 5), "已繳交", note, None, None]
+                        WriteNotSubmission(re_seb_data)
+                if re_sub_file is not None:
+                    re_seb_data = [i, file_type, file, date_due, "已補繳", None, SystemTime, note]
+                    WriteNotSubmission(re_seb_data)
             message = f"{num}/{msg}/{note}/{error_num}"
             record_dic[i][file_type] = message
     return record_dic
@@ -375,8 +507,8 @@ def CheckFile(have_file_list, record_dic):
 # 檢查檔案主程式
 def RecordAndCheck():
     RawData, SummaryData = [], []
-    HaveFileList, Note = RecordSubmission()
-    output_data = CheckFile(HaveFileList, Note)
+    HaveFileList, Note, ReSubmissionList, DateDueList = RecordSubmission()
+    output_data = CheckFile(HaveFileList, Note, ReSubmissionList, DateDueList)
     
     for i in DealerList:
         for j in range(2):
@@ -393,16 +525,25 @@ def RecordAndCheck():
             data[3] = part[3]
             if data != ["0"] * 8:
                 SummaryData = [i, file_type] + data
-                print(f"SummaryData:{SummaryData}")
                 WriteSummaryData(SummaryData)
-            
+
+            if SystemTime == SystemTime.replace(day = MonthlyFileRange):
+                sum_data = GetSummaryData()
+                monthly_data = sum_data[sum_data["檔案繳交週期"] == "M"]
+                not_sub_file = monthly_data[monthly_data["當月繳交次數"]== 0].reset_index(drop = True)
+                not_sub_list = []
+                for k in range(len(not_sub_file)):
+                    to_list = not_sub_file.loc[k]
+                    to_list = list(to_list.to_dict().values())
+                    not_sub_list.append(to_list)
+                for k in not_sub_list:
+                    not_sub_data = [k[0],k[2],None, SystemTime.date().replace(day = MonthlyFileRange), "未繳交", "無檢查", None, None]
+                    WriteNotSubmission(not_sub_data)
+
             # 寫入RawData
             note = output_data[i][file_type]
             RawData.append(note)
     WriteRawData(RawData)
 
 if __name__ == "__main__":
-    # RecordAndCheck()
-    aa = DealerConfig["FileHeader"]
-    if aa == []:
-        print("000")
+    RecordAndCheck()

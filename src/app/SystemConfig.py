@@ -15,12 +15,14 @@ MappingConfig = "mapping_rule.json"
 CheckConfig = "check_rule.json"
 DealerConfig = "dealer.json"
 DealerFormatConfig = "dealer_format.json"
+HeaderChangeConfig = "header_change.json"
 
 ConfigPath = os.path.join(ConfigDir, SystemConfig)
 MappingPath = os.path.join(ConfigDir, MappingConfig)
 CheckPath = os.path.join(ConfigDir, CheckConfig)
 DealerPath = os.path.join(ConfigDir, DealerConfig)
 DealerFormatPath = os.path.join(ConfigDir, DealerFormatConfig)
+HeaderChangePath = os.path.join(ConfigDir, HeaderChangeConfig)
 
 # 讀取 system.json
 def Config():
@@ -161,26 +163,69 @@ def DealerJson():
     with open(output_path, "w",encoding="UTF-8") as f:
         json.dump(OutputData, f, ensure_ascii=False, indent=2)
 
-# 抓取經銷商 Header，跟默認的比對，notfinish
+# 取得 excel column 名稱
+def excel_column_name(n):
+    result = []
+    while n > 0:
+        n, remainder = divmod(n-1, 26)
+        result.append(chr(65 + remainder))
+    return "".join(result[::-1])
+
+# 抓取經銷商 Header，跟默認的比對
 def HeaderChange():
+    write_data = {}
     dealer_format_config = DealerFormatConf()
     dealer_config = DealerConf()
     DealerList = dealer_config["DealerList"]
     sale_format = dealer_format_config["Defualt"]["SaleFileHeader"]
     inventory_format = dealer_format_config["Defualt"]["InventoryFileHeader"]
     for dealer_id in range(len(DealerList)):
+        sale_flag, inve_flag = True, True
         index = dealer_id + 1
         sale_header = dealer_config[f"Dealer{index}"]["SaleFile"]["FileHeader"]
         inventory_header = dealer_config[f"Dealer{index}"]["InventoryFile"]["FileHeader"]
-        location = []
+        location_sale, location_inve , location_sale_index, location_inve_index = [], [], [], []
+
         for i in range(len(sale_format)):
             hf = sale_format[i]
             hf_lower = hf.replace(" ", "").lower()
-            for h in sale_header:
+            for j in range(len(sale_header)):
+                h = sale_header[j]
                 h_lower = h.replace(" ", "").lower()
                 if hf_lower == h_lower:
-                    location.append(chr(i % 26 + 65))
-        print(location)
+                    location_sale.append(excel_column_name(j+1))
+                    location_sale_index.append(j)
+                    break
+
+        for i in range(len(inventory_format)):
+            hf = inventory_format[i]
+            hf_lower = hf.replace(" ", "").lower()
+            for j in range(len(inventory_header)):
+                h = inventory_header[j]
+                h_lower = h.replace(" ", "").lower()
+                if hf_lower == h_lower:
+                    location_inve.append(excel_column_name(j+1))
+                    location_inve_index.append(j)
+                    break
+        
+        for i in range(len(location_sale_index)):
+            if i != location_sale_index[i]:
+                sale_flag = False
+
+        for i in range(len(location_inve_index)):
+            if i != location_inve_index[i]:
+                inve_flag = False
+        data = {}
+        dealer_name = dealer_config[f"Dealer{index}"]["DealerName"]
+        data["DealerName"] = dealer_name
+        data.setdefault("SaleFile", {})["Headerindex"] = "Default" \
+            if sale_flag else location_sale
+        data.setdefault("InventoryFile", {})["Headerindex"] = "Default" \
+            if inve_flag else location_inve
+        write_data[f"Dealer{index}"] = data
+
+    with open(HeaderChangePath, "w", encoding = "UTF-8")as file:
+        json.dump(write_data, file, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     # DealerJson()

@@ -7,7 +7,8 @@
         "AutoRun":true,
         "Debug":true,
         "User":"",
-        "WinUser":"wood1"
+        "WinUser":"wood1",
+        "MonthlyFileRange":""
     },
     "Default":{
         "Name":"BD_DataProcessing",
@@ -23,7 +24,8 @@
         "SystemLogFileName":"System.log",
         "RecordLogFileName":"Record.log",
         "ChangeLogFileName":"Change.log",
-        "CheckLogFileName":"Check.log"
+        "CheckLogFileName":"Check.log",
+        "MonthlyFileRange":"5"
     },
     "DataFormat":{
         "FilePath":"./docs/data_format/DataFormatFromBD.xlsx",
@@ -56,25 +58,76 @@
         "SMTPPort":"587",
         "IMAPPort":"993"
     },
-    "RawDataTable":{
-        "FileName":"{Year}_RawData.xlsx",
-        "SheetName":"{Month}月RawData",
+    "SubRawData":{
+        "FileName":"{Year}_繳交紀錄表.xlsx",
+        "SheetName":"{Month}月",
         "Header":[
-            "DealerID",
-            "DealerName",
-            "DataType",
+            "ID",
+            "經銷商ID",
+            "經銷商名稱",
+            "檔案類型",
             "檔案繳交週期",
-            "當日更新筆數"
+            "繳交狀態",
+            "檔案名稱",
+            "應繳時間",
+            "繳交時間",
+            "檔案內容總筆數",
+            "檢查狀態",
+            "表頭檢查結果",
+            "內容檢查結果",
+            "內容錯誤筆數",
+            "轉換狀態",
+            "轉換後檔案名稱",
+            "轉換錯誤筆數",
+            "轉換後總筆數"
+        ],
+        "ColumnWidth":[
+            10,
+            15,
+            15,
+            10,
+            15, 
+            10, 
+            30,
+            20,
+            20, 
+            20,
+            10, 
+            15, 
+            15, 
+            15,
+            10,
+            30,
+            15,
+            15
         ]
     },
-    "SummaryTable":{
-        "FileName":"{Year}_繳交總表.xlsx",
-        "SheetName":"{Month}月繳交總表",
-        "MinCol":"當月繳交次數",
+    "DailyReport":{
+        "FileName":"{Year}_每日總結紀錄表.xlsx",
+        "SheetName":"{Month}月",
         "Header":[
-            "DealerID",
-            "DealerName",
-            "DataType",
+            "經銷商ID",
+            "經銷商名稱",
+            "檔案類型",
+            "檔案繳交週期",
+            "當日更新筆數"
+        ],
+        "ColumnWidth":[
+            15,
+            15,
+            15,
+            20,
+            20
+        ],
+        "NewDataWidth":55
+    },
+    "MonthlyReport":{
+        "FileName":"{Year}_每月總結紀錄表.xlsx",
+        "SheetName":"{Month}月",
+        "Header":[
+            "經銷商ID",
+            "經銷商名稱",
+            "檔案類型",
             "檔案繳交週期",
             "當月繳交次數", 
             "當月繳交筆數",
@@ -84,22 +137,50 @@
             "當月轉換筆數",
             "當月轉換錯誤次數", 
             "當月轉換錯誤筆數"
+        ],
+        "ColumnWidth":[
+            15,
+            15,
+            15,
+            20,
+            20,
+            20,
+            25,
+            25,
+            20,
+            20,
+            25,
+            25 
         ]
     },
-    "NotSubmissionTable":{
-        "FileName":"{Year}_缺繳、補繳紀錄表.xlsx",
-        "SheetName":"{Month}月缺繳、補繳紀錄",
+    "NotSubmission":{
+        "FileName":"{Year}_待補繳紀錄表.xlsx",
+        "SheetName":"{Month}月",
         "Header":[
-            "DealerID",
-            "DealerName",
-            "DataType",
+            "ID",
+            "經銷商ID",
+            "經銷商名稱",
+            "檔案類型",
             "檔案繳交週期",
-            "缺繳檔案名稱",
+            "缺繳(待補繳)檔案名稱",
+            "檔案狀態",
             "應繳時間",
-            "是否繳交",
-            "檢查結果",
+            "檔案檢查結果",
             "補繳時間",
             "補繳檢查結果"
+        ],
+        "ColumnWidth":[
+            10,
+            15,
+            15,
+            15,
+            20,
+            35,
+            15,
+            25,
+            25,
+            25,
+            25
         ]
     }
 }

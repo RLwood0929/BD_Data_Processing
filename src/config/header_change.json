@@ -1,0 +1,20 @@
+{
+  "Dealer1": {
+    "DealerName": "AAA",
+    "SaleFile": {
+      "Headerindex": "Default"
+    },
+    "InventoryFile": {
+      "Headerindex": "Default"
+    }
+  },
+  "Dealer2": {
+    "DealerName": "BBB",
+    "SaleFile": {
+      "Headerindex": "Default"
+    },
+    "InventoryFile": {
+      "Headerindex": "Default"
+    }
+  }
+}
