@@ -8,7 +8,7 @@ Writer：Qian
 """
 繳交紀錄表
     write_data{
-        upload_data{
+        UploadData{
             "經銷商ID"
             "檔案類型"
             "繳交狀態"
@@ -19,7 +19,7 @@ Writer：Qian
         }
     }
     write_data{
-        check_data{
+        CheckData{
             "ID"
             "檢查狀態"
             "表頭檢查結果"
@@ -28,7 +28,7 @@ Writer：Qian
         }
     }
     write_data{
-        change_data{
+        ChangeData{
             "ID"
             "轉換狀態"
             "轉換後檔案名稱"
@@ -72,11 +72,11 @@ Writer：Qian
 """
 
 import os, re
-# import pandas as pd
+import pandas as pd
 from datetime import datetime
 from Log import WSysLog, WRecLog
 from openpyxl.styles import Alignment
-from SystemConfig import Config, DealerConf
+from SystemConfig import Config, DealerConf, SubRecordJson
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 
@@ -290,12 +290,14 @@ def write_upload_data(ws, data, file_header):
 
 # 寫入檢查資料
 def write_check_or_change_data(ws, data, file_header):
-    row = int(data["ID"]) + 1
+    data_id = data["ID"]
+    row = int(data_id) + 1
+    data.pop("ID")
     for col_name, input_data in data.items():
         col = search_column_name(file_header, col_name)
         ws[f"{col}{row}"] = input_data
         ws[f"{col}{row}"].alignment = ExcelStyle
-    return row
+    return data_id
 
 # 撰寫繳交紀錄表
 def WriteSubRawData(write_data):
@@ -307,6 +309,8 @@ def WriteSubRawData(write_data):
     if result:
         wb = load_workbook(file_path)
         ws = wb[file_sheet_name]
+        if write_data == "Read":
+            return True, ws.max_row
         # 寫入UploadData
         if "UploadData" in write_data:
             data = write_data["UploadData"]
@@ -320,7 +324,7 @@ def WriteSubRawData(write_data):
             data = write_data["CheckData"]
             data_id = write_check_or_change_data(ws, data, file_header)
             wb.save(file_path)
-            msg = f"{file_sheet_name} 工作表中，更新 ID：{data_id} 資料。"
+            msg = f"{file_sheet_name} 工作表中，更新 ID：{data_id} 資料：{data}。"
             WRecLog("1", "WrightSubRawData", "All Dealer", file_name, msg)
             return True, data_id
         # 寫入ChangeData
@@ -328,7 +332,7 @@ def WriteSubRawData(write_data):
             data = write_data["ChangeData"]
             data_id = write_check_or_change_data(ws, data, file_header)
             wb.save(file_path)
-            msg = f"{file_sheet_name} 工作表中，更新 ID：{data_id} 資料。"
+            msg = f"{file_sheet_name} 工作表中，更新 ID：{data_id} 資料：{data}。"
             WRecLog("1", "WrightSubRawData", "All Dealer", file_name, msg)
             return True, data_id
         else:
@@ -385,10 +389,11 @@ def WriteDailyReoprt(write_data):
             ws[f"E{row}"].alignment = ExcelStyle
 
         wb.save(file_path)
+        return True
     else:
         msg = "工作表新增/更新資料失敗。"
         WRecLog("2", "WriteDailyReoprt", "All Dealer", file_name, msg)
-        return result, None
+        return result
     
 # 撰寫每月總結紀錄表
 def WriteMonthlyReoprt(write_data):
@@ -423,10 +428,11 @@ def WriteMonthlyReoprt(write_data):
         msg = f"{file_sheet_name} 工作表中，經銷商ID：{dealer_id}，檔案類型：{data_type}，更新資料：{write_data}"
         WRecLog("1", "WriteMonthlyReoprt", "All Dealer", file_name, msg)
         wb.save(file_path)
+        return True
     else:
         msg = "工作表新增/更新資料失敗。"
         WRecLog("2", "WriteMonthlyReoprt", "All Dealer", file_name, msg)
-        return result, None
+        return result
 
 # 撰寫待補繳紀錄表
 def WriteNotSubmission(write_data):
@@ -458,6 +464,7 @@ def WriteNotSubmission(write_data):
                 write_data.pop("檔案類型")
                 write_data.pop("缺繳(待補繳)檔案名稱")
                 row = i + 1
+                break
 
         # 新增資料
         if row is None:
@@ -479,32 +486,118 @@ def WriteNotSubmission(write_data):
         else:
             msg = f"{file_sheet_name} 工作表中，ID：{row - 1}，更新資料{write_data}。"
         WRecLog("1", "WriteNotSubmission", "All Dealer", file_name, msg)
+        return True
     else:
         msg = "工作表新增/更新資料失敗。"
         WRecLog("2", "WriteNotSubmission", "All Dealer", file_name, msg)
-        return result, None
+        return result
 
-# 讀取 SubRawData 資料，待寫
+# 抓取繳交紀錄表資料，轉換寫入每日總結紀錄表
+def statistics_daily_data(df, file_header):
+    daily_data = []
+    for i in range(len(DealerList)):
+        for j in range(2):
+            num_data = []
+            data_type = "Sale" if j == 0 else "Inventory"
+            sort_data =  df[(df[file_header[1]] == DealerList[i]) & (df[file_header[3]] == data_type)]
+            sub_data = sort_data[sort_data[file_header[5]] == "有繳交"]
+            resub_data = sort_data[sort_data[file_header[5]] == "補繳交"]
+            for k in range(2):
+                data = sub_data if k == 0 else resub_data
+                total_content_num = 0
+                for num in data[file_header[9]].dropna():
+                    total_content_num += int(num)
+                num_data.append(len(data))
+                num_data.append(total_content_num)
+            num_data.append(len(sort_data[sort_data[file_header[10]] == "OK"]))
+            num_data.append(len(sort_data[sort_data[file_header[10]] == "NO"]))
+            total_content_num = 0
+            for num in sort_data[file_header[13]].dropna():
+                total_content_num += int(num)
+            num_data.append(total_content_num)
+            num_data.append(len(sort_data[file_header[14]].dropna()))
+            total_content_num = 0
+            for num in sort_data[file_header[16]].dropna():
+                total_content_num += int(num)
+            num_data.append(total_content_num)
+            write_data = f"繳交：{num_data[0]}/{num_data[1]}；補繳：{num_data[2]}/{num_data[3]}；檢查：{num_data[4]}/{num_data[5]}/{num_data[6]}；轉換：{num_data[7]}/{num_data[8]}"
+            daily_data.append(write_data)
+    return daily_data
 
-# 資訊寫入進紀錄表，待寫
+# 抓取繳交紀錄表資料，轉換寫入每月總結紀錄表
+def statistics_monthly_data(df,sub_file_header, monthly_file_header):
+    for i in range(len(DealerList)):
+        for j in range(2):
+            content_num, content_error_num, change_num, change_error_num = 0, 0, 0, 0
+            data_type = "Sale" if j == 0 else "Inventory"
+            sort_data =  df[(df[sub_file_header[1]] == DealerList[i]) & (df[sub_file_header[3]] == data_type)]
+            for num in sort_data[sub_file_header[9]].dropna():
+                content_num += int(num)
+            for num in sort_data[sub_file_header[13]].dropna():
+                content_error_num += int(num)
+            change_data = sort_data[sort_data[sub_file_header[10]] == "OK"]
+            for num in change_data[sub_file_header[9]].dropna():
+                change_num += int(num)
+            change_error_data = sort_data[(sort_data[sub_file_header[10]] == "OK") & (sort_data[sub_file_header[14]] == "NO")]
+            if not change_error_data[sub_file_header[16]].dropna().empty:
+                for num in change_error_data[sub_file_header[16]].dropna():
+                    change_error_num += int(num)
+            monthly_data = {
+                monthly_file_header[0]:DealerList[i],
+                monthly_file_header[2]:data_type,
+                monthly_file_header[4]:len(sort_data[sub_file_header[5]].dropna()),
+                monthly_file_header[5]:content_num,
+                monthly_file_header[6]:len(sort_data[sort_data[sub_file_header[10]] == "NO"]),
+                monthly_file_header[7]:content_error_num,
+                monthly_file_header[8]:len(sort_data[sub_file_header[14]].dropna()),
+                monthly_file_header[9]:change_num,
+                monthly_file_header[10]:len(sort_data[sort_data[sub_file_header[14]] == "NO"]),
+                monthly_file_header[11]:change_error_num
+            }
+            WriteMonthlyReoprt(monthly_data)
+
+# 讀取 SubRawData 資料
+def Statistics():
+    # 取得資料範圍    
+    start_index = SubRecordJson("ReadIndex", None)
+    _, end_index = WriteSubRawData("Read")
+    end_index = end_index - 1
+    # 取得資料
+    file_path = SubRawDataPath
+    file_sheet_name = SubRawDataSheetName
+    sub_file_header = SubRawDataHeader
+    monthly_file_header = MonthlyReportHeader
+    index_key = "ID"
+    df = pd.read_excel(file_path, sheet_name = file_sheet_name, dtype = str, index_col = index_key)
+    df = df[start_index:end_index]
+    # Daily
+    daily_data =  statistics_daily_data(df, sub_file_header)
+    WriteDailyReoprt(daily_data)
+    msg = "已將繳交紀錄資訊寫入至每日總結紀錄表。"
+    WSysLog("1", "Statistics", msg)
+    # Monthly
+    statistics_monthly_data(df,sub_file_header, monthly_file_header)
+    msg = "已將繳交紀錄資訊寫入至每月總結紀錄表。"
+    WSysLog("1", "Statistics", msg)
+
 
 if __name__ == "__main__":
-    data0 = {"UploadData":{
-        "經銷商ID":"111",
-        "檔案類型":"Sale",
-        "繳交狀態":"有繳交",
-        "檔案名稱":"0.xlsx",
-        "應繳時間":"2024-07-18 22:00",
-        "繳交時間":"2024-07-18 15:58",
-        "檔案內容總筆數":"500"
-    }}
-    data1 = {"CheckData":{
-        "ID":"1",
-        "檢查狀態":"OK",
-        "表頭檢查結果":"good",
-        "內容檢查結果":"good",
-        "內容錯誤筆數":"0",
-    }}
+    # data0 = {"UploadData":{
+    #     "經銷商ID":"111",
+    #     "檔案類型":"Sale",
+    #     "繳交狀態":"有繳交",
+    #     "檔案名稱":"0.xlsx",
+    #     "應繳時間":"2024-07-18 22:00",
+    #     "繳交時間":"2024-07-18 15:58",
+    #     "檔案內容總筆數":"500"
+    # }}
+    # data1 = {"CheckData":{
+    #     "ID":"1",
+    #     "檢查狀態":"OK",
+    #     "表頭檢查結果":"good",
+    #     "內容檢查結果":"good",
+    #     "內容錯誤筆數":"0",
+    # }}
     # data2 = {"ChangeData":{
     #     "ID":"1",
     #     "轉換狀態":"OK",
@@ -512,20 +605,20 @@ if __name__ == "__main__":
     #     "轉換錯誤筆數":"0",
     #     "轉換後總筆數":"500"
     # }}
-    WriteSubRawData(data1)
+    # WriteSubRawData(data2)
+    # data0 = ["繳交：1/10；補繳：0/0；檢查：True/2；轉換：1/52"]
+    # WriteDailyReoprt(data0)
     # data0 = {"經銷商ID":"111","檔案類型":"Inventory","當月繳交次數":1,"當月繳交筆數":1,"當月繳交錯誤次數":10,"當月繳交錯誤筆數":10,"當月轉換次數":5,"當月轉換筆數":6,"當月轉換錯誤次數":4,"當月轉換錯誤筆數":4}
     # WriteMonthlyReoprt(data0)
-    # aa = "awefawe/ee；fff"
-    # gg = re.split(r"[:;：；/]", data0)
-    # data0 = {
-    #     "經銷商ID":"111",
-    #     "檔案類型":"Sale",
-    #     "缺繳(待補繳)檔案名稱":"0.xlsx",
-    #     "檔案狀態":"00",
-    #     "應繳時間":"eee",
-    #     "檔案檢查結果":"aaa",
-    #     "補繳時間":"hhh",
-    #     "補繳檢查結果":"333"
-    # }
-    # WriteNotSubmission(data0)
-    # print()
+    data0 = {
+        "經銷商ID":"111",
+        "檔案類型":"Sale",
+        "缺繳(待補繳)檔案名稱":"0.xlsx",
+        "檔案狀態":"00",
+        "應繳時間":"eee",
+        "檔案檢查結果":"aaa",
+        "補繳時間":"hhh",
+        "補繳檢查結果":"333"
+    }
+    WriteNotSubmission(data0)
+    # Statistics()

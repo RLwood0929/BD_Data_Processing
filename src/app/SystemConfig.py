@@ -16,6 +16,7 @@ CheckConfig = "check_rule.json"
 DealerConfig = "dealer.json"
 DealerFormatConfig = "dealer_format.json"
 HeaderChangeConfig = "header_change.json"
+SubRecordConfig = "sub_record.json"
 
 ConfigPath = os.path.join(ConfigDir, SystemConfig)
 MappingPath = os.path.join(ConfigDir, MappingConfig)
@@ -23,6 +24,7 @@ CheckPath = os.path.join(ConfigDir, CheckConfig)
 DealerPath = os.path.join(ConfigDir, DealerConfig)
 DealerFormatPath = os.path.join(ConfigDir, DealerFormatConfig)
 HeaderChangePath = os.path.join(ConfigDir, HeaderChangeConfig)
+SubRecordPath = os.path.join(ConfigDir, SubRecordConfig)
 
 # 讀取 system.json
 def Config():
@@ -227,6 +229,54 @@ def HeaderChange():
     with open(HeaderChangePath, "w", encoding = "UTF-8")as file:
         json.dump(write_data, file, ensure_ascii=False, indent=2)
 
+# 撰寫sub_record.json檔案
+def SubRecordJson(mode, data):
+    if mode == "Start": # data = None
+        dealer_config = DealerConf()
+        dealer_list = dealer_config["DealerList"]
+        data = {"StartIndex" : None}
+        for i in range(len(dealer_list)):
+            index = i + 1
+            data[f"Dealer{index}"] = {"SaleFile" : None, "InventoryFile" : None}
+        with open(SubRecordPath, "w", encoding = "UTF-8") as file_json:
+            json.dump(data, file_json, ensure_ascii = False, indent = 4)
+        return "成功建立檔案繳交狀態json檔"
+    elif mode == "ReadIndex": # data = None
+        with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
+            running_data = json.load(file_json)
+        start_index = running_data["StartIndex"]
+        return start_index
+    elif mode == "WriteIndex": # data = int
+        with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
+            running_data = json.load(file_json)
+        start = data
+        running_data["StartIndex"] = start
+        with open(SubRecordPath, "w", encoding = "UTF-8") as file_json:
+            json.dump(running_data, file_json, ensure_ascii = False, indent = 4)
+        return f"更新起始索引為： {data}."
+    elif mode == "WriteFileStatus": # data = {"Dealer1":{"SaleFile":Ture}}
+        sale = "SaleFile"
+        inventory = "InventoryFile"
+        with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
+            running_data = json.load(file_json)
+        for i in data:
+            if sale in data[i]:
+                running_data[i][sale] = data[i][sale]
+            elif inventory in data[i]:
+                running_data[i][inventory] = data[i][inventory]
+        with open(SubRecordPath, "w", encoding = "UTF-8") as file_json:
+            json.dump(running_data, file_json, ensure_ascii = False, indent = 4)
+        return f"已更新檔案繳交參數。 Data = {data}."
+    elif mode == "Read": # data = None
+        with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
+            running_data = json.load(file_json)
+        return running_data
+    else: # data = None
+        return False
+
 if __name__ == "__main__":
     # DealerJson()
-    HeaderChange()
+    # HeaderChange()
+    mode = "WriteFileStatus"
+    data = {"Dealer1":{"SaleFile":True}}
+    SubRecordJson(mode, data)

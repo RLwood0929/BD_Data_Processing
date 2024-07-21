@@ -25,7 +25,12 @@
         "RecordLogFileName":"Record.log",
         "ChangeLogFileName":"Change.log",
         "CheckLogFileName":"Check.log",
-        "MonthlyFileRange":"5"
+        "MonthlyFileRange":"5",
+        "AllowFileExtensions":[
+            ".csv",
+            ".xlsx",
+            ".xls"
+        ]
     },
     "DataFormat":{
         "FilePath":"./docs/data_format/DataFormatFromBD.xlsx",
@@ -88,8 +93,8 @@
             10,
             15, 
             10, 
+            40,
             30,
-            20,
             20, 
             20,
             10, 
@@ -119,7 +124,7 @@
             20,
             20
         ],
-        "NewDataWidth":55
+        "NewDataWidth":65
     },
     "MonthlyReport":{
         "FileName":"{Year}_每月總結紀錄表.xlsx",
@@ -132,7 +137,7 @@
             "當月繳交次數", 
             "當月繳交筆數",
             "當月繳交錯誤次數", 
-            "當月繳交錯誤筆數",
+            "當月繳交內容錯誤筆數",
             "當月轉換次數", 
             "當月轉換筆數",
             "當月轉換錯誤次數", 

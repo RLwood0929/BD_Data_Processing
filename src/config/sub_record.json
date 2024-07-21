@@ -1,0 +1,11 @@
+{
+    "StartIndex": 0,
+    "Dealer1": {
+        "SaleFile": true,
+        "InventoryFile": true
+    },
+    "Dealer2": {
+        "SaleFile": null,
+        "InventoryFile": null
+    }
+}

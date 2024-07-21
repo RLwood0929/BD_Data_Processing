@@ -58,7 +58,7 @@
       ]
     },
     "InventoryFile": {
-      "PaymentCycle": "M",
+      "PaymentCycle": "D",
       "KeyWord": NaN,
       "Extension": "csv",
       "FileHeader": [
@@ -139,7 +139,7 @@
       ]
     },
     "InventoryFile": {
-      "PaymentCycle": "M",
+      "PaymentCycle": "D",
       "KeyWord": NaN,
       "Extension": "csv",
       "FileHeader": [
