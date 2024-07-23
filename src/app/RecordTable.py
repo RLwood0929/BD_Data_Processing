@@ -443,8 +443,18 @@ def WriteNotSubmission(write_data):
     result = check_templates("NotSub")
     new_data_flag = False
     if result:
-        if write_data == "Read":
-            return pd.read_excel(file_path, sheet_name = file_sheet_name, index_col = "ID")
+        # 讀取未繳交紀錄表中的內容
+        # 日繳
+        if write_data == "ReadDaily":
+            df = pd.read_excel(file_path, sheet_name = file_sheet_name, dtype = str, index_col = "ID")
+            df = df[df[NotSubHeader[4]] == "D"]
+            return df
+        # 月繳
+        if write_data == "ReadMonthly":
+            df = pd.read_excel(file_path, sheet_name = file_sheet_name, index_col = "ID")
+            df = df[df[NotSubHeader[4]] == "M"]
+            return df
+        
         wb = load_workbook(file_path)
         ws = wb[file_sheet_name]
         dealer_id = write_data["經銷商ID"]

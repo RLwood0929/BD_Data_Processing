@@ -94,7 +94,7 @@ def decide_file_type(dealer_id, file_name):
         return None, None
 
 # RecordDealerFiles
-# 寫入未繳交名單
+# 寫入未繳交名單 #
 def write_not_sub_record():
     record_data = SubRecordJson("Read", None)
     for i in range(len(DealerList)):
@@ -109,7 +109,7 @@ def write_not_sub_record():
             write_data = {
                 "經銷商ID":dealer_id,
                 "檔案類型":"Sale",
-                "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{SystemTime.date()}.{file_extencion}",
+                "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
                 "檔案狀態":"未繳交",
                 "應繳時間":f"{SystemTime.date()} ~ {SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
@@ -122,7 +122,7 @@ def write_not_sub_record():
             write_data = {
                 "經銷商ID":dealer_id,
                 "檔案類型":"Inventory",
-                "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{SystemTime.date()}.{file_extencion}",
+                "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
                 "檔案狀態":"未繳交",
                 "應繳時間":f"{SystemTime.date()} ~ {SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
@@ -136,7 +136,7 @@ def write_not_sub_record():
                 write_data = {
                     "經銷商ID":dealer_id,
                     "檔案類型":"Sale",
-                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{SystemTime.date().replace(day = 1) - timedelta(days = 1)}.{file_extencion}",
+                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{(SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
                     "檔案狀態":"未繳交",
                     "應繳時間":f"{SystemTime.date().replace(day = 1)} ~ {SystemTime.date().replace(day = MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
@@ -150,7 +150,7 @@ def write_not_sub_record():
                 write_data = {
                     "經銷商ID":dealer_id,
                     "檔案類型":"Sale",
-                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{SystemTime.date().replace(day = 1) - timedelta(days = 1)}.{file_extencion}",
+                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{(SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
                     "檔案狀態":"未繳交",
                     "應繳時間":f"{SystemTime.date().replace(day = 1)} ~ {SystemTime.date().replace(day = MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
@@ -204,9 +204,62 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
             WSysLog("2", "RecordDealerfiles", msg)
     return file_time
 
-def daily_file_resub():
-    data = WriteNotSubmission("Read")
-    print(data)
+# 整理待繳紀錄表終日繳檔案
+def daily_file_resub(dealer_id, file_type, file_name):
+    # 抓取紀錄中的經銷商副檔名
+    for i in range(len(DealerList)):
+        if dealer_id == DealerList[i]:
+            index = i + 1
+            break
+    sale_extension = DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+    inventory_extension = DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
+
+    # 讀取待補繳紀錄表中篩選的內容
+    header = GlobalConfig["NotSubmission"]["Header"]
+    data = WriteNotSubmission("ReadDaily")
+    # 針對日繳未繳交處理
+    df = data[(data[header[1]] == dealer_id) & (data[header[3]] == file_type) & (data[header[6]] == "未繳交")]
+    not_sub_file = df[header[5]].values
+    not_sub_date_list = []
+    for item in not_sub_file:
+        name, _ = item.rsplit(".", 1)
+        parts = re.split(r"_", name)
+        not_sub_date = datetime.strptime(parts[2], "%Y-%m-%d")
+        not_sub_date_list.append(not_sub_date)
+    not_sub_date_list.sort()
+
+    # 抓取目標時間
+    target_file_dict = {}
+    processed_dates = set()
+    for date in not_sub_date_list:
+        if date in processed_dates:
+            continue
+        source_dates = [date]
+        next_date = date + timedelta(days=1)
+        
+        while next_date in not_sub_date_list:
+            source_dates.append(next_date)
+            processed_dates.add(next_date)
+            next_date += timedelta(days=1)
+        
+        target_date = source_dates[-1] + timedelta(days=1)
+        processed_dates.update(source_dates)
+        target_file_dict[target_date] = source_dates
+
+    # 生成檔案名稱字典，目標:來源
+    final_dict = {}
+    data_type = "S" if file_type == "Sale" else "I"
+    extension = sale_extension if file_type == "Sale" else inventory_extension
+    for target_date, source_dates in target_file_dict.items():
+        target_file_name = f"{dealer_id}_{data_type}_{target_date.strftime('%Y-%m-%d')}.{extension}"
+        source_files = [f"{dealer_id}_{data_type}_{date.strftime('%Y-%m-%d')}.{extension}" for date in source_dates]
+        final_dict[target_file_name] = source_files
+    
+    for target, source in final_dict.items():
+        if target == file_name:
+            return source
+    return None
+
 
 # 紀錄檔案繳交主程式，回傳 有檔案名單，繳交dic，補繳交dic
 def RecordDealerFiles():
@@ -260,8 +313,8 @@ def RecordDealerFiles():
                 WRecLog("1", "RecordDealerFiles", dealer_id, file_name, msg)
 
                 if file_cycle == "D":
-                    start_time = file_time 
-                    end_time = file_time + timedelta(days = 1)
+                    start_time = file_time.date()
+                    end_time = file_time.date() + timedelta(days = 1)
                 else:
                     start_time = SystemTime.date().replace(day = 1)
                     end_time = SystemTime.date().replace(day = MonthlyFileRange)
@@ -273,6 +326,20 @@ def RecordDealerFiles():
                 else:
                     status = "時間錯誤"
             
+            # 日繳檔案僅變更檔案狀態，無檢查紀錄
+            resub_files = daily_file_resub(dealer_id, file_type, file_name)
+            if resub_files is not None:
+                for file in resub_files:
+                    write_data = {
+                        "經銷商ID":dealer_id,
+                        "檔案類型":file_type,
+                        "缺繳(待補繳)檔案名稱":file,
+                        "檔案狀態":"已補繳",
+                        "補繳時間":file_update_time,
+                        "補繳檢查結果":"無檢查"
+                    }
+                    WriteNotSubmission(write_data)
+
             # 寫入繳交紀錄
             write_data = {"UploadData":{
                 "經銷商ID":dealer_id,
@@ -295,7 +362,6 @@ def RecordDealerFiles():
 
     # 寫入未繳交紀錄
     write_not_sub_record()
-    # 日繳交補繳
 
     have_submission = list(set(DealerList) - set(not_submission))
     for dealer_id in not_submission:
@@ -605,7 +671,8 @@ def CheckFile(have_submission, sub_dic, sub, resub):
 # 須將信件通知加入進來
 
 if __name__ == "__main__":
-    # HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles()
-    # ClearSubRecordJson()
-    # CheckFile(HaveSubmission, SubDic, Sub, ReSub)
-    daily_file_resub()
+    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles()
+    ClearSubRecordJson()
+    CheckFile(HaveSubmission, SubDic, Sub, ReSub)
+    # aa = "111_I_2024-07-21.csv"
+    # daily_file_resub("111", "Inventory", aa)
