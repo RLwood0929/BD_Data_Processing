@@ -443,6 +443,8 @@ def WriteNotSubmission(write_data):
     result = check_templates("NotSub")
     new_data_flag = False
     if result:
+        if write_data == "Read":
+            return pd.read_excel(file_path, sheet_name = file_sheet_name, index_col = "ID")
         wb = load_workbook(file_path)
         ws = wb[file_sheet_name]
         dealer_id = write_data["經銷商ID"]
