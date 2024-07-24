@@ -94,7 +94,7 @@ def decide_file_type(dealer_id, file_name):
         return None, None
 
 # RecordDealerFiles
-# 寫入未繳交名單 #
+# 寫入未繳交名單
 def write_not_sub_record():
     record_data = SubRecordJson("Read", None)
     for i in range(len(DealerList)):
@@ -149,7 +149,7 @@ def write_not_sub_record():
                 file_extencion = DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
                 write_data = {
                     "經銷商ID":dealer_id,
-                    "檔案類型":"Sale",
+                    "檔案類型":"Inventory",
                     "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{(SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
                     "檔案狀態":"未繳交",
                     "應繳時間":f"{SystemTime.date().replace(day = 1)} ~ {SystemTime.date().replace(day = MonthlyFileRange)}",
@@ -173,6 +173,7 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
     if len(file_name_part2) == 8:
         try:
             file_time = datetime.strptime(file_name_part2, "%Y%m%d")
+            file_time = file_time.date()
         except ValueError as  e:
             flag = False
             msg = f"檔名內容錯誤，時間內容錯誤 {e}。"
@@ -204,7 +205,7 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
             WSysLog("2", "RecordDealerfiles", msg)
     return file_time
 
-# 整理待繳紀錄表終日繳檔案
+# 整理待繳紀錄表中日繳檔案
 def daily_file_resub(dealer_id, file_type, file_name):
     # 抓取紀錄中的經銷商副檔名
     for i in range(len(DealerList)):
@@ -224,7 +225,7 @@ def daily_file_resub(dealer_id, file_type, file_name):
     for item in not_sub_file:
         name, _ = item.rsplit(".", 1)
         parts = re.split(r"_", name)
-        not_sub_date = datetime.strptime(parts[2], "%Y-%m-%d")
+        not_sub_date = datetime.strptime(parts[2], "%Y%m%d")
         not_sub_date_list.append(not_sub_date)
     not_sub_date_list.sort()
 
@@ -251,15 +252,14 @@ def daily_file_resub(dealer_id, file_type, file_name):
     data_type = "S" if file_type == "Sale" else "I"
     extension = sale_extension if file_type == "Sale" else inventory_extension
     for target_date, source_dates in target_file_dict.items():
-        target_file_name = f"{dealer_id}_{data_type}_{target_date.strftime('%Y-%m-%d')}.{extension}"
-        source_files = [f"{dealer_id}_{data_type}_{date.strftime('%Y-%m-%d')}.{extension}" for date in source_dates]
+        target_file_name = f"{dealer_id}_{data_type}_{target_date.strftime('%Y%m%d')}.{extension}"
+        source_files = [f"{dealer_id}_{data_type}_{date.strftime('%Y%m%d')}.{extension}" for date in source_dates]
         final_dict[target_file_name] = source_files
-    
+
     for target, source in final_dict.items():
         if target == file_name:
             return source
     return None
-
 
 # 紀錄檔案繳交主程式，回傳 有檔案名單，繳交dic，補繳交dic
 def RecordDealerFiles():
@@ -313,8 +313,8 @@ def RecordDealerFiles():
                 WRecLog("1", "RecordDealerFiles", dealer_id, file_name, msg)
 
                 if file_cycle == "D":
-                    start_time = file_time.date()
-                    end_time = file_time.date() + timedelta(days = 1)
+                    start_time = file_time
+                    end_time = file_time + timedelta(days = 1)
                 else:
                     start_time = SystemTime.date().replace(day = 1)
                     end_time = SystemTime.date().replace(day = MonthlyFileRange)
@@ -590,22 +590,15 @@ def CheckFileContent(dealer_id, file_name, file_type):
         move_error_file(dealer_id, [file_name, f"{file}_content_error.txt"])
         return False, error_num
 
-# 檢查檔案主程式 #
+# 檢查檔案主程式
 def CheckFile(have_submission, sub_dic, sub, resub):
+    change_dic = {}
     for dealer_id in have_submission:
-        # for i in range(len(DealerList)):
-        #     if DealerList[i] == dealer_id:
-        #         index = i + 1
-        #         break
-
-        # sale_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-        # inventory_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
         folder_path = os.path.join(DealerPath, dealer_id)
         file_names = [file for file in os.listdir(folder_path) \
                       if os.path.isfile(os.path.join(folder_path, file))]
         for file_name in file_names:
             file_type, _ = decide_file_type(dealer_id, file_name)
-            # file_cycle = sale_cycle if file_type == "Sale" else inventory_cycle
             header_result = CheckFileHeader(dealer_id, file_name, file_type)
             if header_result:
                 header_msg = "表頭正確"
@@ -639,6 +632,9 @@ def CheckFile(have_submission, sub_dic, sub, resub):
             }}
             WriteSubRawData(write_data)
 
+            if check_status == "OK":
+                change_dic[data_index] = file_name
+
             # 寫入待補繳紀錄表，檔案有交但有錯
             if check_status == "NO":
                 for sub_file_name, sub_file_time_due in sub.items():
@@ -655,7 +651,6 @@ def CheckFile(have_submission, sub_dic, sub, resub):
 
             # 檔案補繳
             # 將補繳檔案檢查結果寫入待補繳紀錄表中
-            # if file_cycle == "M":
             for resub_file_name, resub_file_upload_time in resub.items():
                 if file_name == resub_file_name:
                     write_data = {
@@ -667,12 +662,14 @@ def CheckFile(have_submission, sub_dic, sub, resub):
                         "補繳檢查結果":f"{header_msg};{content_msg}"
                     }
                     WriteNotSubmission(write_data)
+    if not change_dic:
+        change_dic = None
+    return change_dic
       
 # 須將信件通知加入進來
 
 if __name__ == "__main__":
     HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles()
     ClearSubRecordJson()
-    CheckFile(HaveSubmission, SubDic, Sub, ReSub)
-    # aa = "111_I_2024-07-21.csv"
-    # daily_file_resub("111", "Inventory", aa)
+    ChangeDic = CheckFile(HaveSubmission, SubDic, Sub, ReSub)
+    print(ChangeDic)

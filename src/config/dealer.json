@@ -103,7 +103,7 @@
     "ContactProjectMail": 125,
     "ContactProjectEx": 125,
     "SaleFile": {
-      "PaymentCycle": "D",
+      "PaymentCycle": "M",
       "KeyWord": NaN,
       "Extension": "csv",
       "FileHeader": [
@@ -139,7 +139,7 @@
       ]
     },
     "InventoryFile": {
-      "PaymentCycle": "D",
+      "PaymentCycle": "M",
       "KeyWord": NaN,
       "Extension": "csv",
       "FileHeader": [

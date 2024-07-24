@@ -5,7 +5,7 @@
         "InventoryFile": true
     },
     "Dealer2": {
-        "SaleFile": null,
-        "InventoryFile": null
+        "SaleFile": true,
+        "InventoryFile": true
     }
 }

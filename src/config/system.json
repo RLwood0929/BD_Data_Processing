@@ -17,6 +17,7 @@
         "DataPath":"./datas",
         "DealerFolderName":"02_Dealer",
         "ReportDir":"00_CheckResult",
+        "ChangeFileDir":"01_ChangeFile",
         "CompletedDir":"00_Completed",
         "AutoRun":true,
         "Debug":false,
