@@ -1,0 +1,158 @@
+{
+  "MappingRule":{
+    "Sale":{
+      "Column1":{
+        "ColumnName":"Area",
+        "SourceName":null,
+        "ChangeRule":"FixedValue",
+        "Value":"TWM"
+      },
+      "Column2":{
+        "ColumnName":"Branch",
+        "SourceName":"Seller ID",
+        "ChangeRule":"Move",
+        "Value":null
+      },
+      "Column3":{
+        "ColumnName":"Customer Code",
+        "SourceName":"Buyer ID",
+        "ChangeRule":"Move",
+        "Value":null
+      },
+      "Column4":{
+        "ColumnName":"Customer Name",
+        "SourceName":"Original Buyer Name",
+        "ChangeRule":"Move",
+        "Value":null
+      },
+      "Column5":{
+        "ColumnName":"Customer Address",
+        "SourceName":null,
+        "ChangeRule":null,
+        "Value":null
+      },
+      "Column6":{
+        "ColumnName":"Invoice No",
+        "SourceName":"Invoice Number",
+        "ChangeRule":"Move",
+        "Value":null
+      },
+      "Column7":{
+        "ColumnName":"Invoice Date",
+        "SourceName":"Transaction Date",
+        "ChangeRule":"ChangeTimeFormat",
+        "Value":"%d/%m/%Y"
+      },
+      "Column8":{
+        "ColumnName":"BD Sku#",
+        "SourceName":"Product ID",
+        "ChangeRule":"Move",
+        "Value":null
+      },
+      "Column9":{
+        "ColumnName":"Quantity",
+        "SourceName":"Original Quantity",
+        "ChangeRule":"MoveOrSearchUom",
+        "Value":null
+      },
+      "Column10":{
+        "ColumnName":"Gross Revenue",
+        "SourceName":"Original Unit Price",
+        "ChangeRule":"Move",
+        "Value":null
+      },
+      "Column11":{
+        "ColumnName":"Discount Principal",
+        "SourceName":null,
+        "ChangeRule":"FixedValue",
+        "Value":"0"
+      },
+      "Column12":{
+        "ColumnName":"Lot No",
+        "SourceName":null,
+        "ChangeRule":null,
+        "Value":null
+      },
+      "Column13":{
+        "ColumnName":"Sales Channel Group",
+        "SourceName":null,
+        "ChangeRule":null,
+        "Value":null
+      },
+      "Column14":{
+        "ColumnName":"Uom",
+        "SourceName":null,
+        "ChangeRule":"FixedValue",
+        "Value":"EA"
+      },
+      "Column15":{
+        "ColumnName":"Conversion Rate",
+        "SourceName":null,
+        "ChangeRule":"FixedValue",
+        "Value":"1"
+      },
+      "Column16":{
+        "ColumnName":"Demand Class Desc",
+        "SourceName":null,
+        "ChangeRule":"SearchDP",
+        "Value":null
+      },
+      "Column17":{
+        "ColumnName":"Ship to Customer code",
+        "SourceName":"Original Product Name+Original Buyer Name+Quantity+Original Quantity",
+        "ChangeRule":"MergeColumns",
+        "Value":";"
+      },
+      "Column18":{
+        "ColumnName":"Ship to Customer name",
+        "SourceName":null,
+        "ChangeRule":null,
+        "Value":null
+      },
+      "Column19":{
+        "ColumnName":"Ship to Customer Address",
+        "SourceName":null,
+        "ChangeRule":null,
+        "Value":null
+      },
+      "Column20":{
+        "ColumnName":"Invoice Line Item No",
+        "SourceName":null,
+        "ChangeRule":null,
+        "Value":null
+      }
+    },
+    "Inventory":{
+      "Column1":{
+        "ColumnName":"Date Period",
+        "SourceName":null,
+        "ChangeRule":null,
+        "Value":"{Last_Month_Day1}"
+      },
+     "Column2":{
+        "ColumnName":"Distributor Code",
+        "SourceName":"Seller ID",
+        "ChangeRule":"Move",
+        "Value":null
+      },
+      "Column3":{
+        "ColumnName":"Material Code",
+        "SourceName":"Product ID",
+        "ChangeRule":"Move",
+        "Value":""
+      },
+      "Column4":{
+        "ColumnName":"Type",
+        "SourceName":null,
+        "ChangeRule":"FixedValue",
+        "Value":"Distributor Inventory"
+      },
+      "Column5":{
+        "ColumnName":"Qty",
+        "SourceName":"Original Quantity",
+        "ChangeRule":"MoveOrSearchUom",
+        "Value":null
+      }
+    }
+  }
+}

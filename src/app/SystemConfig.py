@@ -11,7 +11,7 @@ import pandas as pd
 
 ConfigDir = "src/config"
 SystemConfig = "system.json"
-MappingConfig = "mapping_rule.json"
+MappingConfig = "mapping.json"
 CheckConfig = "check_rule.json"
 DealerConfig = "dealer.json"
 DealerFormatConfig = "dealer_format.json"

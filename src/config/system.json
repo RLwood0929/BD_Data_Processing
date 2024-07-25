@@ -15,6 +15,8 @@
         "LogPath":"./logs",
         "OneDrivePath":"C:\\\\Users\\\\{username}\\\\OneDrive - 嘉衡科技有限公司",
         "DataPath":"./datas",
+        "BDFolderName":"01_BD",
+        "MasterFileDir":"01_MasterFile",
         "DealerFolderName":"02_Dealer",
         "ReportDir":"00_CheckResult",
         "ChangeFileDir":"01_ChangeFile",
@@ -41,18 +43,6 @@
         "InventoryFormatToDealer":"經銷商庫存檔案規定格式",
         "SalesFormatToBD":"BD資料庫銷售檔案規定格式",
         "InventoryFormatToBD":"BD資料庫庫存檔案規定格式"
-    },
-    "MasterFile":{
-        "FileName":"",
-        "WorkSheet1_Name":"",
-        "WorkSheet1":{
-            "DealerIDColumName":"",
-            "ProductIDColumName":""
-        },
-        "WorkSheet2_Name":"",
-        "WorkSheet2":{
-
-        }
     },
     "EFT":{
         "HostName":"eft.carefusion.com",
@@ -188,5 +178,54 @@
             25,
             25
         ]
+    },
+    "OutputFile":{
+        "Sale":{
+            "FileName":"IMS_{DealerID}_{DataStartDate}_{DataEndDate}",
+            "Extension":"CSV",
+            "Header":[
+                "Area",
+                "Branch",
+                "Customer Code",
+                "Customer Name",
+                "Customer Address",
+                "Invoice No",
+                "Invoice Date",
+                "BD Sku#",
+                "Quantity",
+                "Gross Revenue",
+                "Discount Principal",
+                "Lot No",
+                "Sales Channel Group",
+                "Uom",
+                "Conversion Rate",
+                "Demand Class Desc",
+                "Ship to Customer code",
+                "Ship to Customer name",
+                "Ship to Customer Address",
+                "Invoice Line Item No"
+            ]
+        },
+        "Inventory":{
+            "FileName":"{CountryCode}_MTHQTY_M_{DataSubmissionDate}",
+            "Extension":"txt",
+            "CountryCode":"TWN",
+            "Header":[
+                "Date Period",
+                "Distributor Code",
+                "Material Code",
+                "Type",
+                "Qty"
+            ]
+        },
+        "ErrorReport":{
+            "FileName":"{Date}未清洗成功表",
+            "Extension":"xlsx",
+            "Header":[
+                "Dealer ID",
+                "Dealer Name",
+                "未清洗成功原因"
+            ]
+        }
     }
 }
