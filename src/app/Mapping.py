@@ -13,9 +13,8 @@ Writer:Qian
 import os
 import pandas as pd
 from datetime import datetime
-from dateutil import parser
+from CheckFile import read_data
 from SystemConfig import Config, MappingRule, DealerConf
-from CheckFile import read_data, decide_file_type
 
 GlobalConfig = Config()
 DealerConfig = DealerConf()
@@ -46,6 +45,8 @@ InventoryFileChangeRule = MappingConfig["MappingRule"]["Inventory"]
 SaleOutputFileName = GlobalConfig["OutputFile"]["Sale"]["FileName"]
 SaleOutputFileHeader = GlobalConfig["OutputFile"]["Sale"]["Header"]
 SaleOutputFileExtension = GlobalConfig["OutputFile"]["Sale"]["Extension"]
+SaleErrorReportFileName = GlobalConfig["SaleErrorReport"]["FileName"]
+SaleErrorReportHeader = GlobalConfig["SaleErrorReport"]["Header"]
 
 # 庫存輸出參數
 InventoryOutputFileName = GlobalConfig["OutputFile"]["Inventory"]["FileName"]
@@ -53,10 +54,8 @@ InventoryOutputFileHeader = GlobalConfig["OutputFile"]["Inventory"]["Header"]
 InventoryOutputFileExtension = GlobalConfig["OutputFile"]["Inventory"]["Extension"]
 InventoryOutputFileCountryCode = GlobalConfig["OutputFile"]["Inventory"]["CountryCode"]
 InventoryOutputFileName = InventoryOutputFileName.replace("{CountryCode}", InventoryOutputFileCountryCode)
-
-# 比對、篩選 product id 不存在於 masterfile 中的資料 #
-def check_product_id():
-    print()
+InventoryErrorReportFileName = GlobalConfig["InventoryErrorReport"]["FileName"]
+InventoryErrorReportHeader = GlobalConfig["InventoryErrorReport"]["Header"]
 
 # 搬移欄位值至新欄位
 def move_rule(input_data, input_col):
@@ -81,6 +80,20 @@ def read_master_file():
     msg = "成功讀取 MasterFile 資料。"
     return True, master_data, ka_data
 
+# 比對、篩選 product id 不存在於 masterfile 中的資料 #
+def check_product_id(dealer_id, input_data):
+    result, master_data, _ = read_master_file()
+    error_data = pd.DataFrame(columns = input_data.columns)
+    if result:
+        master_col = master_data.columns.values
+        search_data = master_data[master_data[master_col[0]] == dealer_id]
+        error_row = []
+        for index, row in input_data.iterrows():
+            product_id = str(row["Product ID"])
+            if product_id not in search_data[master_col[1]].values:
+                print()
+        print(error_data)
+        
 # Quantity特殊處理
 def move_or_search_uom(input_data, source_col, target_col, dealer_id):
     output, error_row = [], []
@@ -94,7 +107,7 @@ def move_or_search_uom(input_data, source_col, target_col, dealer_id):
             else:
                 # 從經銷商檔案中取得產品id及日期
                 product_id = str(input_data["Product ID"][row])
-                data_date = input_data["Creation Date"][row]
+                data_date = input_data["Transaction Date"][row]
 
                 # 讀取並篩選 masterfile 中對應的資料
                 search_data = master_data[(master_data[master_col[0]] == dealer_id) & \
@@ -127,7 +140,7 @@ def search_dp(input_data, dealer_id):
         price_type = master_col[4]
         for row in range(len(input_data)):
             product_id = str(input_data["Product ID"][row])
-            data_date = input_data["Creation Date"][row]
+            data_date = input_data["Transaction Date"][row]
             search_data = master_data[(master_data[master_col[0]] == dealer_id) & \
                                         (master_data[master_col[1]] == product_id)]
             search_data = search_data.reset_index(drop=True)
@@ -181,11 +194,12 @@ def merge_columns(input_data, source_col, value):
     return output
 
 # 依據轉換規則轉換銷售檔案 #
-def change_sale_file(dealer_id, file_path):
+def ChangeSaleFile(dealer_id, file_path):
     file_header = SaleOutputFileHeader
     change_rules = SaleFileChangeRule
     input_data, data_max_row = read_data(file_path)
     output_data = pd.DataFrame(columns = file_header)
+    check_product_id(dealer_id, input_data)
     for rule_index in range(1, len(change_rules) + 1):
         source_col = change_rules[f"Column{rule_index}"]["SourceName"]
         target_col = change_rules[f"Column{rule_index}"]["ColumnName"]
@@ -193,6 +207,8 @@ def change_sale_file(dealer_id, file_path):
         value = change_rules[f"Column{rule_index}"]["Value"]
         # 欄位為固定值
         if rule == "FixedValue":
+            if target_col == "Area":
+                value = "TWM" #
             output_data[target_col] = fixed_value(value, data_max_row)
         # 搬移資料
         elif rule == "Move":
@@ -219,17 +235,55 @@ def change_sale_file(dealer_id, file_path):
             continue
         else:
             msg = f"{rule} 此轉換規則不再範圍中。"
-    data_start_date = datetime.strftime(input_data["Creation Date"][0], "%Y%m%d")
-    data_end_date = datetime.strftime(input_data["Creation Date"][data_max_row - 1], "%Y%m%d")
+    
+    # 輸出傳換後的sale檔案
+    data_start_date = datetime.strftime(input_data["Transaction Date"][0], "%Y%m%d")
+    data_end_date = datetime.strftime(input_data["Transaction Date"][data_max_row - 1], "%Y%m%d")
     file_name = SaleOutputFileName.replace("{DealerID}", str(dealer_id))\
         .replace("{DataStartDate}", data_start_date).replace("{DataEndDate}", data_end_date)
     output_data.to_csv(os.path.join(ChangedPath, dealer_id, f"{file_name}.{SaleOutputFileExtension}"), index=False)
 
+# 新欄位內容填寫 Transaction Date 最後一天
+def last_transaction_date(input_data, row):
+    return [str(datetime.strftime(input_data["Transaction Date"][row - 1], "%Y%m%d"))] * row
+
+# 依據規則轉換庫存檔案 #
+def ChangeInventoryFile(dealer_id, file_path):
+    file_header = InventoryOutputFileHeader
+    change_rules = InventoryFileChangeRule
+    input_data, data_max_row = read_data(file_path)
+    output_data = pd.DataFrame(columns = file_header)
+    check_product_id(dealer_id, input_data)
+    for rule_index in range(1, len(change_rules) + 1):
+        source_col = change_rules[f"Column{rule_index}"]["SourceName"]
+        target_col = change_rules[f"Column{rule_index}"]["ColumnName"]
+        rule = change_rules[f"Column{rule_index}"]["ChangeRule"]
+        value = change_rules[f"Column{rule_index}"]["Value"]
+        # 欄位為固定值
+        if rule == "FixedValue":
+            output_data[target_col] = fixed_value(value, data_max_row)
+        # 搬移資料
+        elif rule == "Move":
+            output_data[target_col] = move_rule(input_data, source_col)
+        # Quantity特殊處理
+        elif rule == "MoveOrSearchUom":
+            output, error_row = move_or_search_uom(input_data, source_col, target_col, dealer_id)
+            if error_row:
+                output_data = output_data.drop(error_row).reset_index(drop=True)
+            output_data[target_col] = output
+        # Date Period欄位為 Transaction Date 最後一天
+        elif rule == "LastTransactionDate":
+            output_data[target_col] = last_transaction_date(input_data, data_max_row)
+    last_month_day = datetime.strftime(input_data["Transaction Date"][data_max_row - 1], "%Y%m%d")
+    file_name = InventoryOutputFileName.replace("{CountryCode}", InventoryOutputFileCountryCode)\
+        .replace("{LastTransactionDate}", last_month_day)
+    output_data.to_csv(os.path.join(ChangedPath, dealer_id, f"{file_name}.{InventoryOutputFileExtension}"), sep = "\t", index=False)
+
 # log需加入
-# 待寫庫存轉換
 # 待寫轉換主程式
 
 if __name__ == "__main__":
     dealerID = "111"
     FilePath = os.path.join(DealerPath, "111/111_S_20240725.xlsx")
-    change_sale_file(dealerID, FilePath)
+    # ChangeSaleFile(dealerID, FilePath)
+    ChangeInventoryFile(dealerID, FilePath)

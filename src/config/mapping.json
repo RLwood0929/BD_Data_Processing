@@ -5,7 +5,7 @@
         "ColumnName":"Area",
         "SourceName":null,
         "ChangeRule":"FixedValue",
-        "Value":"TWM"
+        "Value":"CountryCode"
       },
       "Column2":{
         "ColumnName":"Branch",
@@ -126,8 +126,8 @@
       "Column1":{
         "ColumnName":"Date Period",
         "SourceName":null,
-        "ChangeRule":null,
-        "Value":"{Last_Month_Day1}"
+        "ChangeRule":"LastTransactionDate",
+        "Value":null
       },
      "Column2":{
         "ColumnName":"Distributor Code",
@@ -139,7 +139,7 @@
         "ColumnName":"Material Code",
         "SourceName":"Product ID",
         "ChangeRule":"Move",
-        "Value":""
+        "Value":null
       },
       "Column4":{
         "ColumnName":"Type",

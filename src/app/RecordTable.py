@@ -76,9 +76,10 @@ import pandas as pd
 from datetime import datetime
 from Log import WSysLog, WRecLog
 from openpyxl.styles import Alignment
-from SystemConfig import Config, DealerConf, SubRecordJson
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
+from SystemConfig import Config, DealerConf, SubRecordJson
+
 
 GlobalConfig = Config()
 DealerConfig = DealerConf()

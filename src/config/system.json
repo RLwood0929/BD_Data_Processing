@@ -20,6 +20,7 @@
         "DealerFolderName":"02_Dealer",
         "ReportDir":"00_CheckResult",
         "ChangeFileDir":"01_ChangeFile",
+        "ErrorReportDir":"00_ErrorReport",
         "CompletedDir":"00_Completed",
         "AutoRun":true,
         "Debug":false,
@@ -179,9 +180,75 @@
             25
         ]
     },
+    "SaleErrorReport":{
+        "FileName":"Sale_Error_Report_{Date}.xlsx",
+        "Header":[
+            "ID",
+            "Dealer ID",
+            "Dealer Name",
+            "Exchange Error Issue",
+            "Record ID",
+            "Collection Date",
+            "Delivery Date",
+            "Transaction ID",
+            "TI ID",
+            "Seller ID",
+            "Original Seller Name",
+            "Buyer ID",
+            "Original Buyer Name",
+            "Distributor ID",
+            "Product ID",
+            "Original Product Name",
+            "Warehouse ID",
+            "Batch",
+            "Original UoM",
+            "Original Quantity",
+            "UoM",
+            "Quantity",
+            "Currency",
+            "Original Unit Price",
+            "Unit Price",
+            "Original Amount",
+            "Invoice Number",
+            "Transaction Date",
+            "Transaction Type",
+            "Ref Record ID",
+            "Creation Date",
+            "Last Modified Date",
+            "Remark"
+        ]
+    },
+    "InvenportErrorReport":{
+        "FileName":"Inventory_Error_Report_{Date}.xlsx",
+        "Header":[
+            "ID",
+            "Dealer ID",
+            "Dealer Name",
+            "Exchange Error Issue",
+            "Record ID",
+            "Collection Date",
+            "Delivery Date",
+            "Inventory Item ID",
+            "Product ID",
+            "Product Name",
+            "Original Product Name",
+            "Warehouse ID",
+            "Warehouse Name",
+            "Original Warehouse Name",
+            "Rack",
+            "Batch",
+            "Original UoM",
+            "Original Quantity",
+            "UoM",
+            "Quantity",
+            "Transaction Date",
+            "Creation Date",
+            "Last Modified Date"
+        ]
+    },
     "OutputFile":{
         "Sale":{
-            "FileName":"IMS_{DealerID}_{DataStartDate}_{DataEndDate}",
+            "FileName":"{DealerID}_{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}",
             "Extension":"CSV",
             "Header":[
                 "Area",
@@ -207,7 +274,7 @@
             ]
         },
         "Inventory":{
-            "FileName":"{CountryCode}_MTHQTY_M_{DataSubmissionDate}",
+            "FileName":"{CountryCode}_MTHQTY_M_{LastTransactionDate}",
             "Extension":"txt",
             "CountryCode":"TWN",
             "Header":[
@@ -216,15 +283,6 @@
                 "Material Code",
                 "Type",
                 "Qty"
-            ]
-        },
-        "ErrorReport":{
-            "FileName":"{Date}未清洗成功表",
-            "Extension":"xlsx",
-            "Header":[
-                "Dealer ID",
-                "Dealer Name",
-                "未清洗成功原因"
             ]
         }
     }
