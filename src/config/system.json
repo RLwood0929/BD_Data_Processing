@@ -183,7 +183,6 @@
     "SaleErrorReport":{
         "FileName":"Sale_Error_Report_{Date}.xlsx",
         "Header":[
-            "ID",
             "Dealer ID",
             "Dealer Name",
             "Exchange Error Issue",
@@ -218,10 +217,9 @@
             "Remark"
         ]
     },
-    "InvenportErrorReport":{
+    "InventoryErrorReport":{
         "FileName":"Inventory_Error_Report_{Date}.xlsx",
         "Header":[
-            "ID",
             "Dealer ID",
             "Dealer Name",
             "Exchange Error Issue",

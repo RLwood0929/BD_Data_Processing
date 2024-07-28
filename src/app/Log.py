@@ -56,7 +56,7 @@ ChaPath = os.path.join(LogPath, ChangeLogFileName)
 ChaFileHandler = logging.FileHandler(ChaPath, encoding="UTF-8")
 ChaFormatter = logging.Formatter\
     ("%(asctime)s - %(levelname)s - %(event)s - \
-%(OutputFileName)s - %(InputFileName)s - %(message)s")
+%(DealerID)s - %(FileName)s - %(message)s")
 ChaFileHandler.setFormatter(ChaFormatter)
 
 ChaLogger = logging.getLogger("Change")
@@ -122,13 +122,13 @@ def WCheLog(Level, Event, DealerID, FileName, Message):
     return che_message
 
 # 撰寫 Change Log 紀錄，Level：1、2
-def WChaLog(Level, Event, InputFileName, OutputFileName, Message):
+def WChaLog(Level, Event, DealerID, FileName, Message):
     Level = str(Level)
     if Level == "1":
-        ChaLogger.info(Message, extra = {"event":Event, "OutputFileName":OutputFileName, "InputFileName":InputFileName})
+        ChaLogger.info(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
         cha_message = "Writing info log is finish."
     elif Level == "2":
-        ChaLogger.warning(Message, extra = {"event":Event, "OutputFileName":OutputFileName, "InputFileName":InputFileName})
+        ChaLogger.warning(Message, extra = {"event":Event, "DealerID":DealerID, "FileName":FileName})
         cha_message = "Writing warning log is finish."
     else:
         cha_message = "Level out of range."
