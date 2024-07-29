@@ -22,6 +22,7 @@
         "ChangeFileDir":"01_ChangeFile",
         "ErrorReportDir":"00_ErrorReport",
         "CompletedDir":"00_Completed",
+        "MailTemplate":"./src/templates",
         "AutoRun":true,
         "Debug":false,
         "User":"System",

@@ -17,6 +17,8 @@ DealerConfig = "dealer.json"
 DealerFormatConfig = "dealer_format.json"
 HeaderChangeConfig = "header_change.json"
 SubRecordConfig = "sub_record.json"
+MailRuleConfig = "mail.json"
+UserConfig = "user.json"
 
 ConfigPath = os.path.join(ConfigDir, SystemConfig)
 MappingPath = os.path.join(ConfigDir, MappingConfig)
@@ -25,6 +27,8 @@ DealerPath = os.path.join(ConfigDir, DealerConfig)
 DealerFormatPath = os.path.join(ConfigDir, DealerFormatConfig)
 HeaderChangePath = os.path.join(ConfigDir, HeaderChangeConfig)
 SubRecordPath = os.path.join(ConfigDir, SubRecordConfig)
+MailRulePath = os.path.join(ConfigDir, MailRuleConfig)
+UserConfigPath = os.path.join(ConfigDir, UserConfig)
 
 # 讀取 system.json
 def Config():
@@ -55,6 +59,18 @@ def DealerFormatConf():
     with open(DealerFormatPath, "r", encoding = "UTF-8") as file:
         format_config = json.load(file)
     return format_config
+
+# 讀取 mail.json
+def MailRule():
+    with open(MailRulePath, "r", encoding = "UTF-8") as file:
+        mail_rule_config = json.load(file)
+    return mail_rule_config
+
+# 讀取 user.json
+def User():
+    with open(UserConfigPath, "r", encoding = "UTF-8") as file:
+        user_config = json.load(file)
+    return user_config
 
 # 將 excel 內容轉變為json
 def write_rule_json(file_path, sheet, data_name, output_name):

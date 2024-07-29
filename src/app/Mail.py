@@ -82,3 +82,79 @@ def send_test():
 if __name__== "__main__":
     # monitor_email()
     send_test()
+
+"""
+--------------------------------------------------------------------------------------------------------------------------
+"""
+
+from SystemConfig import MailRule, User, Config, DealerConf
+
+GlobalConfig = Config()
+DealerConfig = DealerConf()
+MailConfig = MailRule()
+UserConfig = User()
+
+DealerList = DealerConfig["DealerList"]
+TemplateFolderPath = GlobalConfig["Default"]["MailTemplate"]
+
+# 依據事件，選定收件者、信件模板等資訊
+# EFTConnectError、FileNotSub、FileReSubError、FileContentError、ChangeReport、ErrorReport、MasterFileMaintain
+def get_mail(mode, dealer_id):
+    if mode == "EFTConnectError":
+        mail_index = 1
+    elif mode == "FileNotSub":
+        mail_index = 2
+    elif mode == "FileReSubError":
+        mail_index = 3
+    elif mode == "FileContentError":
+        mail_index = 4
+    elif mode == "ChangeReport":
+        mail_index = 5
+    elif mode == "ErrorReport":
+        mail_index = 6
+    elif mode == "MasterFileMaintain":
+        mail_index = 7
+    
+    for i in range(len(DealerList)):
+        if DealerList[i] == dealer_id:
+            dealer_index = i + 1
+            break
+        
+    DealerInfo = DealerConfig[f"Dealer{dealer_index}"]
+    daeler_mail = DealerInfo.get("Contact1Mail")\
+        or DealerInfo.get("Contact2Mail")\
+        or DealerInfo.get("ContactProjectMail")
+
+    purpose = MailConfig[f"Mail{mail_index}"]["Purpose"]
+    recipient = MailConfig[f"Mail{mail_index}"]["Recipient"]
+    copy_recipient = MailConfig[f"Mail{mail_index}"]["CopyRecipient"]
+    tamplates = MailConfig[f"Mail{mail_index}"]["Content"]
+
+    recipient_list = []
+    for group in recipient:
+        if (group == "Dealer") or (group == "BD_BA"):
+            continue
+        for i in range(len(UserConfig)):
+            index = i + 1
+            user_group = UserConfig[f"User{index}"]["Group"]
+            user_mail =  UserConfig[f"User{index}"]["Mail"]
+            if group == user_group:
+                recipient_list.append(user_mail)
+
+    copy_recipient_list = []
+    if copy_recipient:
+        for group in copy_recipient:
+            if (group == "Dealer") or (group == "BD_BA"):
+                continue
+            for i in range(len(UserConfig)):
+                index = i + 1
+                user_group = UserConfig[f"User{index}"]["Group"]
+                user_mail =  UserConfig[f"User{index}"]["Mail"]
+                if group == user_group:
+                    copy_recipient_list.append(user_mail)
+
+    return purpose, recipient_list, copy_recipient_list, tamplates
+
+if __name__ == "__main__":
+    dealer_id = "111"
+    Purpose, Recipient, CopyRecipient, Tamplates = get_mail("EFTConnectError", dealer_id)

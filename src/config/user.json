@@ -1,56 +1,56 @@
 {
     "User1":{
         "ID":"001",
-        "Group":"Coign",
         "Name":"Qina",
         "Mail":"richardwu@coign.com.tw",
         "Permissions":"Administrator",
-        "ResponsibleDealer":null,
+        "Group":"Coign",
+        "ResponsibleDealerID":null,
         "Description":"System Developer"
     },
     "User2":{
         "ID":"002",
-        "Group":"Coign",
         "Name":"Pinky",
         "Mail":"pinky@coign.com.tw",
         "Permissions":"Editor",
-        "ResponsibleDealer":null,
+        "Group":"Coign",
+        "ResponsibleDealerID":null,
         "Description":"System Maintainer"
     },
     "User3":{
         "ID":"003",
-        "Group":"Coign",
         "Name":"Jimmy",
         "Mail":"jimmychang@coign.com.tw",
         "Permissions":"Editor",
-        "ResponsibleDealer":null,
+        "Group":"Coign",
+        "ResponsibleDealerID":null,
         "Description":"System Maintainer"
     },
     "User4":{
         "ID":"004",
-        "Group":"BD",
         "Name":"Patty",
         "Mail":"Patty.Chang@bd.com",
         "Permissions":"Viewer",
-        "ResponsibleDealer":null,
+        "Group":"BD",
+        "ResponsibleDealerID":null,
         "Description":"BD Manager"
     },
     "User5":{
         "ID":"005",
-        "Group":"BD",
         "Name":"Charlene",
         "Mail":"Charlene.Liu@bd.com",
         "Permissions":"Viewer",
-        "ResponsibleDealer":null,
+        "Group":"BD",
+        "ResponsibleDealerID":null,
         "Description":"BD Manager"
     },
     "User6":{
         "ID":"006",
-        "Group":"BD_BA",
         "Name":"Syvia Chang",
         "Mail":"syvia.chang@bd.com",
         "Permissions":"Viewer",
-        "ResponsibleDealer":[
+        "Group":"BD_BA",
+        "ResponsibleDealerID":[
             "AD279",
             "AD317"
         ],
@@ -58,11 +58,11 @@
     },
     "User7":{
         "ID":"007",
-        "Group":"BD_BA",
         "Name":"Flora Tsai",
         "Mail":"flora_tsai@bd.com",
         "Permissions":"Viewer",
-        "ResponsibleDealer":[
+        "Group":"BD_BA",
+        "ResponsibleDealerID":[
             "1002357130",
             "1002322861",
             "1002330660",
@@ -72,22 +72,22 @@
     },
     "User8":{
         "ID":"008",
-        "Group":"BD_BA",
         "Name":"Vivi Wang",
         "Mail":"vivi_wang@bd.com",
         "Permissions":"Viewer",
-        "ResponsibleDealer":[
+        "Group":"BD_BA",
+        "ResponsibleDealerID":[
             "1002317244"
         ],
         "Description":"BD BA"
     },
     "User9":{
         "ID":"009",
-        "Group":"BD_BA",
         "Name":"Salie Xian",
         "Mail":"salie.xian@bd.com",
         "Permissions":"Viewer",
-        "ResponsibleDealer":[
+        "Group":"BD_BA",
+        "ResponsibleDealerID":[
             "永義(香港)",
             "伯齊(香港)"
         ],
