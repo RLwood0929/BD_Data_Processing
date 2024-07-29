@@ -1,60 +1,70 @@
 {
     "Mail1":{
-        "Purpose":"EFT雲端連線失敗",
+        "Subject":"EFT雲端連線失敗",
         "Recipient":[
             "Coign",
             "BD"
         ],
         "CopyRecipient":null,
+        "Repeatedly":null,
         "Content":"EFT_Connect_Error.html"
     },
     "Mail2":{
-        "Purpose":"經銷商檔案未繳交",
+        "Subject":"經銷商檔案未繳交",
         "Recipient":[
-            "Dealer",
-            "BD_BA"
+            "Dealer"
         ],
         "CopyRecipient":[
             "Coign",
             "BD"
+        ],
+        "Repeatedly":[
+            "BD_BA"
         ],
         "Content":"Dealer_No_File.html"
+        
     },
     "Mail3":{
-        "Purpose":"經銷商檔案補繳異常",
+        "Subject":"經銷商檔案補繳異常",
         "Recipient":[
-            "Dealer",
-            "BD_BA"
+            "Dealer"
         ],
         "CopyRecipient":[
             "Coign",
             "BD"
+        ],
+        "Repeatedly":[
+            "BD_BA"
         ],
         "Content":"Dealer_File_Abnormal.html"
+        
     },
     "Mail4":{
-        "Purpose":"經銷商檔案內容錯誤",
+        "Subject":"經銷商檔案內容錯誤",
         "Recipient":[
-            "Dealer",
-            "BD_BA"
+            "Dealer"
         ],
         "CopyRecipient":[
             "Coign",
             "BD"
+        ],
+        "Repeatedly":[
+            "BD_BA"
         ],
         "Content":"Dealer_File_Error.html"
     },
     "Mail5":{
-        "Purpose":"轉換結果報告",
+        "Subject":"轉換結果報告",
         "Recipient":[
             "Coign",
             "BD"
         ],
         "CopyRecipient":null,
+        "Repeatedly":null,
         "Content":"Change_Report.html"
     },
     "Mail6":{
-        "Purpose":"Error Report",
+        "Subject":"{DealerID} Error Report",
         "Recipient":[
             "BD_BA"
         ],
@@ -62,10 +72,11 @@
             "Coign",
             "BD"
         ],
+        "Repeatedly":null,
         "Content":"Error_Report.html"
     },
     "Mail7":{
-        "Purpose":"MasterFile 維護",
+        "Subject":"{DealerID} MasterFile 維護",
         "Recipient":[
             "BD_BA"
         ],
@@ -73,6 +84,7 @@
             "Coign",
             "BD"
         ],
+        "Repeatedly":null,
         "Content":"MasterFile_Maintain.html"
     }
 }

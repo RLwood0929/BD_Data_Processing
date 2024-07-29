@@ -253,26 +253,31 @@ def SubRecordJson(mode, data):
         data = {"StartIndex" : None}
         for i in range(len(dealer_list)):
             index = i + 1
-            data[f"Dealer{index}"] = {"SaleFile" : None, "InventoryFile" : None}
+            data[f"Dealer{index}"] = {"SaleFile" : None, "InventoryFile" : None, "Mail2":0, "Mail3":0, "Mail4":0}
         with open(SubRecordPath, "w", encoding = "UTF-8") as file_json:
             json.dump(data, file_json, ensure_ascii = False, indent = 4)
-        return "成功建立檔案繳交狀態json檔"
+        return "成功建立檔案繳交狀態json檔。"
+    
     elif mode == "ReadIndex": # data = None
         with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
             running_data = json.load(file_json)
         start_index = running_data["StartIndex"]
         return start_index
+    
     elif mode == "WriteIndex": # data = int
         with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
             running_data = json.load(file_json)
-        start = data
-        running_data["StartIndex"] = start
+        running_data["StartIndex"] = data
         with open(SubRecordPath, "w", encoding = "UTF-8") as file_json:
             json.dump(running_data, file_json, ensure_ascii = False, indent = 4)
         return f"更新起始索引為： {data}."
+    
     elif mode == "WriteFileStatus": # data = {"Dealer1":{"SaleFile":Ture}}
         sale = "SaleFile"
         inventory = "InventoryFile"
+        mail2 = "Mail2"
+        mail3 = "Mail3"
+        mail4 = "Mail4"
         with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
             running_data = json.load(file_json)
         for i in data:
@@ -280,9 +285,16 @@ def SubRecordJson(mode, data):
                 running_data[i][sale] = data[i][sale]
             elif inventory in data[i]:
                 running_data[i][inventory] = data[i][inventory]
+            elif mail2 in data[i]:
+                running_data[i][mail2] = data[i][mail2]
+            elif mail3 in data[i]:
+                running_data[i][mail3] = data[i][mail3]
+            elif mail4 in data[i]:
+                running_data[i][mail4] = data[i][mail4]
         with open(SubRecordPath, "w", encoding = "UTF-8") as file_json:
             json.dump(running_data, file_json, ensure_ascii = False, indent = 4)
         return f"已更新檔案繳交參數。 Data = {data}."
+    
     elif mode == "Read": # data = None
         with open(SubRecordPath, "r", encoding = "UTF-8") as file_json:
             running_data = json.load(file_json)

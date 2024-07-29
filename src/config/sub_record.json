@@ -2,10 +2,16 @@
     "StartIndex": 0,
     "Dealer1": {
         "SaleFile": true,
-        "InventoryFile": true
+        "InventoryFile": true,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
     },
     "Dealer2": {
         "SaleFile": true,
-        "InventoryFile": true
+        "InventoryFile": true,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
     }
 }

@@ -1,7 +1,7 @@
 {
     "User1":{
         "ID":"001",
-        "Name":"Qina",
+        "Name":"Qian",
         "Mail":"richardwu@coign.com.tw",
         "Permissions":"Administrator",
         "Group":"Coign",
@@ -92,5 +92,20 @@
             "伯齊(香港)"
         ],
         "Description":"BD BA"
+    },
+    "User10":{
+        "ID":"010",
+        "Name":"Jimmy",
+        "Mail":"jimmychang@coign.com.tw",
+        "Permissions":"Editor",
+        "Group":"BD_BA",
+        "ResponsibleDealerID":[
+            "111",
+            "222",
+            "333",
+            "444",
+            "555"
+        ],
+        "Description":"System Tester"
     }
 }
