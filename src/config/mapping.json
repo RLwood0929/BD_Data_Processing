@@ -131,8 +131,8 @@
       },
      "Column2":{
         "ColumnName":"Distributor Code",
-        "SourceName":"Seller ID",
-        "ChangeRule":"Move",
+        "SourceName":"DealerID",
+        "ChangeRule":"FixedValue",
         "Value":null
       },
       "Column3":{

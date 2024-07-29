@@ -5,16 +5,16 @@
 Writer:Qian
 '''
 
-# 庫存檔案由各經銷商資料轉換後，統一合併成一份檔案
-
-import os
+import os, re
+import shutil
 import pandas as pd
 from datetime import datetime
-from CheckFile import read_data, decide_file_type
 from Log import WSysLog, WChaLog
+from CheckFile import decide_file_type
 from RecordTable import WriteSubRawData
 from SystemConfig import Config, MappingRule, DealerConf
 
+SystemTime = datetime.now()
 GlobalConfig = Config()
 DealerConfig = DealerConf()
 MappingConfig = MappingRule()
@@ -56,6 +56,18 @@ InventoryOutputFileName = InventoryOutputFileName.replace("{CountryCode}", Inven
 InventoryErrorReportFileName = GlobalConfig["InventoryErrorReport"]["FileName"]
 InventoryErrorReportHeader = GlobalConfig["InventoryErrorReport"]["Header"]
 
+# 讀取檔案
+def read_data(file_path):
+    file = os.path.basename(file_path)
+    _, file_extension = os.path.splitext(file)
+    file_extension = file_extension.lower()
+    if file_extension == ".csv":
+        df = pd.read_csv(file_path, dtype = str)
+        return df
+    elif file_extension in [".xlsx", ".xls"]:
+        df = pd.read_excel(file_path, dtype = str)
+        return df
+
 # 搬移欄位值至新欄位
 def move_rule(input_data, input_col):
     return input_data[input_col]
@@ -80,7 +92,7 @@ def read_master_file():
     WSysLog("1", "ReadMasterFile", msg)
     return True, master_data, ka_data
 
-# 比對、篩選 product id 不存在於 masterfile 中的資料 #
+# 比對、篩選 product id 不存在於 masterfile 中的資料
 def check_product_id(dealer_id, input_data):
     for i in range(len(DealerList)):
         if DealerList[i] == dealer_id:
@@ -97,7 +109,6 @@ def check_product_id(dealer_id, input_data):
         data_product = {str(pid) for pid in (set(input_data["Product ID"].to_list()))}
         not_in_masterfile = list(data_product - masterfile_product)
         for product_id in not_in_masterfile:
-            product_id = int(product_id)
             error_row = input_data[input_data["Product ID"] == product_id]
             error_index.extend(error_row.index.values.tolist())
             error_index.sort()
@@ -209,7 +220,7 @@ def merge_columns(input_data, source_col, value):
             (row.values.astype(str)), axis=1)
     return output
 
-# 依據轉換規則轉換銷售檔案 #
+# 依據轉換規則轉換銷售檔案
 def ChangeSaleFile(dealer_id, file_name):
     change_status = "OK"
     file_header = SaleOutputFileHeader
@@ -221,7 +232,9 @@ def ChangeSaleFile(dealer_id, file_name):
     dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
     dealer_country = DealerConfig[f"Dealer{index}"]["Country"]
     file_path = os.path.join(DealerPath, dealer_id, file_name)
-    input_data, _ = read_data(file_path)
+    input_data = read_data(file_path)
+    input_data["Transaction Date"] = pd.to_datetime(input_data["Transaction Date"], format = "%Y/%m/%d")
+    input_data["Creation Date"] = pd.to_datetime(input_data["Creation Date"], format = "%Y/%m/%d")
     output_data = pd.DataFrame(columns = file_header)
     error_data, error_index = check_product_id(dealer_id, input_data)
     msg = f"檔案中有 {len(error_data)} 筆資料在 master file 貨號中找不到。"
@@ -286,23 +299,29 @@ def ChangeSaleFile(dealer_id, file_name):
         .replace("{TransactionDataStartDate}", data_start_date)\
         .replace("{TransactionDataEndDate}", data_end_date)
     try:
-        output_data.to_csv(os.path.join(ChangedPath, dealer_id,\
+        output_data.to_csv(os.path.join(ChangedPath,\
             f"{changed_file_name}.{SaleOutputFileExtension}"), index=False)
         msg = f"檔案轉換完成，輸出檔名 {changed_file_name}.{SaleOutputFileExtension}。"
         WChaLog("1", "ChangeSaleFile", dealer_id, file_name, msg)
+        if error_data:
+            error_file_name = SaleErrorReportFileName.replace("{DealerID}", str(dealer_id))\
+                .replace("{Date}", datetime.strftime(SystemTime, "%Y%m%d"))
+            error_data.to_csv(os.path.join(ChangedPath, error_file_name), index = False)
+            msg = f"Error檔案輸出完成，輸出檔名 {error_file_name}。"
+            WChaLog("1", "ChangeSaleFile", dealer_id, file_name, msg)
         return change_status, f"{changed_file_name}.{SaleOutputFileExtension}",\
             len(error_data), len(output_data)
     except Exception as e:
-        check_status = "NO"
+        change_status = "NO"
         msg = f"轉換檔案失敗，遇到未知錯誤，{e}。"
         WChaLog("2", "ChangeSaleFile", dealer_id, file_name, msg)
         return change_status, None, 0, 0
 
 # 新欄位內容填寫 Transaction Date 最後一天
 def last_transaction_date(input_data, row):
-    return [str(datetime.strftime(input_data["Transaction Date"][row - 1], "%Y%m%d"))] * row
+    return [str(datetime.strftime(input_data["Transaction Date"][row - 1], "%m/%d/%Y"))] * row
 
-# 依據規則轉換庫存檔案 #
+# 依據規則轉換庫存檔案
 def ChangeInventoryFile(dealer_id, file_name):
     change_status = "OK"
     file_header = InventoryOutputFileHeader
@@ -313,7 +332,9 @@ def ChangeInventoryFile(dealer_id, file_name):
             break
     dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
     file_path = os.path.join(DealerPath, dealer_id, file_name)
-    input_data, data_max_row = read_data(file_path)
+    input_data = read_data(file_path)
+    input_data["Transaction Date"] = pd.to_datetime(input_data["Transaction Date"], format = "%Y/%m/%d")
+    input_data["Creation Date"] = pd.to_datetime(input_data["Creation Date"], format = "%Y/%m/%d")
     output_data = pd.DataFrame(columns = file_header)
     error_data, error_index = check_product_id(dealer_id, input_data)
     for i in error_index:
@@ -326,7 +347,9 @@ def ChangeInventoryFile(dealer_id, file_name):
         value = change_rules[f"Column{rule_index}"]["Value"]
         # 欄位為固定值
         if rule == "FixedValue":
-            output_data[target_col] = fixed_value(value, data_max_row)
+            if source_col == "DealerID":
+                value = dealer_id
+            output_data[target_col] = fixed_value(value, len(input_data))
         # 搬移資料
         elif rule == "Move":
             output_data[target_col] = move_rule(input_data, source_col)
@@ -344,22 +367,25 @@ def ChangeInventoryFile(dealer_id, file_name):
             output_data[target_col] = output
         # Date Period欄位為 Transaction Date 最後一天
         elif rule == "LastTransactionDate":
-            output_data[target_col] = last_transaction_date(input_data, data_max_row)
+            output_data[target_col] = last_transaction_date(input_data, len(input_data))
 
-    last_month_day = datetime.strftime(input_data["Transaction Date"][data_max_row - 1], "%Y%m%d")
-    changed_file_name = InventoryOutputFileName.replace("{CountryCode}", InventoryOutputFileCountryCode)\
-        .replace("{LastTransactionDate}", last_month_day)
+    changed_file_name = f"{dealer_id}_I_{datetime.strftime(input_data['Transaction Date'][len(input_data) - 1], '%Y%m%d')}.csv"
     try:
-        output_data.to_csv(os.path.join(ChangedPath, dealer_id,\
-            f"{changed_file_name}.{InventoryOutputFileExtension}"), sep = "\t", index=False)
-        msg = f"檔案轉換完成，輸出檔名{changed_file_name}.{InventoryOutputFileExtension}。"
-        WChaLog("1", "ChangeSaleFile", dealer_id, file_name, msg)
-        return change_status, f"{changed_file_name}.{InventoryOutputFileExtension}",\
+        output_data.to_csv(os.path.join(ChangedPath, changed_file_name), index=False)
+        msg = f"檔案轉換完成，輸出檔名 {changed_file_name}。"
+        WChaLog("1", "ChangeInventoryFile", dealer_id, file_name, msg)
+        if error_data:
+            error_file_name = InventoryErrorReportFileName.replace("{DealerID}", str(dealer_id))\
+                .replace("{Date}", datetime.strftime(SystemTime, "%Y%m%d"))
+            error_data.to_csv(os.path.join(ChangedPath, error_file_name), index = False)
+            msg = f"Error檔案輸出完成，輸出檔名 {error_file_name}。"
+            WChaLog("1", "ChangeInventoryFile", dealer_id, file_name, msg)
+        return change_status, changed_file_name,\
             len(error_data), len(output_data)
     except Exception as e:
         change_status = "NO"
         msg = f"轉換檔案失敗，遇到未知錯誤，{e}。"
-        WChaLog("2", "ChangeSaleFile", dealer_id, file_name, msg)
+        WChaLog("2", "ChangeInventoryFile", dealer_id, file_name, msg)
         return change_status, None, 0, 0
 
 # 轉換主程式
@@ -392,17 +418,59 @@ def Changing(check_right_list):
 
 # 合併 Inventory 檔案
 def MargeInventoryFile():
-    file_names = [file for file in os.listdir(ChangedPath)\
-                  if os.path.isfile(os.path.join(ChangedPath, file))]
-    marge_data = pd.DataFrame(columns = InventoryOutputFileHeader)
+    file_names = [file for file in os.listdir(ChangedPath) \
+                      if os.path.isfile(os.path.join(ChangedPath, file))]
+    
+    # 取得要合併的檔案
+    file_list, time_list = [], []
     for file_name in file_names:
-        file_path = os.path(ChangedPath, file_name)
-        data = pd.read_csv(file_name, "r", encoding = "UTF-8")
+        part = re.split(r"[._]" ,file_name)
+        if part[1] == "I":
+            file_list.append(file_name)
+            time_list.append(part[2])
+
+    # 抓取檔名中的檔案時間
+    time_list = [datetime.strptime(time_str, "%Y%m%d") for time_str in time_list]
+    file_time = time_list[-1].strftime("%Y%m%d")
+    
+    # 合併檔案
+    dataframes = [pd.read_csv(os.path.join(ChangedPath, file)) for file in file_list]
+    combined_df = pd.concat(dataframes, ignore_index=True)
+    
+    # 輸出檔案
+    changed_file_name = InventoryOutputFileName.replace("{CountryCode}", InventoryOutputFileCountryCode)\
+        .replace("{LastTransactionDate}", file_time)
+    try:
+        combined_df.to_csv(os.path.join(ChangedPath, \
+            f"{changed_file_name}.{InventoryOutputFileExtension}"), sep = "\t", index=False)
+        msg = f"{len(file_list)} 份檔案成功合併成 {changed_file_name}.{InventoryOutputFileExtension}。"
+        WSysLog("1", "MargeInventoryFile", msg)
+        for dealer_id in DealerList:
+            target_folder = os.path.join(ChangedPath, dealer_id, datetime.strftime(SystemTime, "%Y%m"))
+            for file in file_list:
+                part = re.split(r"[._]" ,file)
+                if (part[1] == dealer_id) and (part[2] == "I"):
+                    file_source = os.path.join(ChangedPath, file)
+                    file_target = os.path.join(target_folder, file)
+                    shutil.move(file_source, file_target)
+                    if os.path.exists(file_target):
+                        msg = f"檔案搬移至 {target_folder} 成功"
+                        WSysLog("1", "MoveInventoryFile", msg)
+                    else:
+                        msg = f"檔案搬移至 {target_folder} 失敗"
+                        WSysLog("2", "MoveInventoryFile", msg)
+
+    except Exception as e:
+        msg = f"合併檔案發生未知錯誤，{e}。"
+        WSysLog("3", "MargeInventoryFile", msg)
 
 if __name__ == "__main__":
     aa = {22: '111_S_20240724.csv', 23: '111_S_20240725.xlsx', 24: '222_S_20240630.csv'}
     Changing(aa)
     # ChangeSaleFile(dealerID, FilePath)
     # input_data, data_max_row = read_data(FilePath)
+    # dealerID = "111"
+    # FilePath = "111_I_20240726.csv"
     # ChangeInventoryFile(dealerID, FilePath)
     # check_product_id(dealerID, input_data)
+    # MargeInventoryFile()

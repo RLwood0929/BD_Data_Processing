@@ -181,7 +181,7 @@
         ]
     },
     "SaleErrorReport":{
-        "FileName":"Sale_Error_Report_{Date}.xlsx",
+        "FileName":"{DealerID}_Sale_Error_Report_{Date}.xlsx",
         "Header":[
             "Dealer ID",
             "Dealer Name",
@@ -218,7 +218,7 @@
         ]
     },
     "InventoryErrorReport":{
-        "FileName":"Inventory_Error_Report_{Date}.xlsx",
+        "FileName":"{DealerID}_Inventory_Error_Report_{Date}.xlsx",
         "Header":[
             "Dealer ID",
             "Dealer Name",
