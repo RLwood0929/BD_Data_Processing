@@ -17,14 +17,13 @@ from SystemConfig import Config
 GlobalConfig = Config()
 
 # 系統log存放位置
-LogPath = GlobalConfig["App"]["LogPath"] if GlobalConfig["App"]["LogPath"] \
-    else GlobalConfig["Default"]["LogPath"]
+LogPath = GlobalConfig["LogConfig"]["Path"]
 Operator = GlobalConfig["App"]["User"] if GlobalConfig["App"]["User"] \
     else GlobalConfig["Default"]["User"]
-SystemLogFileName = GlobalConfig["Default"]["SystemLogFileName"]
-RecordLogFileName = GlobalConfig["Default"]["RecordLogFileName"]
-ChangeLogFileName = GlobalConfig["Default"]["ChangeLogFileName"]
-CheckLogFileName = GlobalConfig["Default"]["CheckLogFileName"]
+SystemLogFileName = GlobalConfig["LogConfig"]["SystemLog"]
+RecordLogFileName = GlobalConfig["LogConfig"]["RecordLog"]
+ChangeLogFileName = GlobalConfig["LogConfig"]["ChangeLog"]
+CheckLogFileName = GlobalConfig["LogConfig"]["CheckLog"]
 
 logging.basicConfig(
     level=logging.DEBUG,

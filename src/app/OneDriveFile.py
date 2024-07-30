@@ -15,10 +15,9 @@ GlobalConfig = Config()
 WinUser = GlobalConfig["App"]["WinUser"]
 FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
     else GlobalConfig["Default"]["Name"]
-RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
+RootDir = GlobalConfig["DirTree"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
     else GlobalConfig["Default"]["DataPath"]
-OneDrivePath = GlobalConfig["App"]["OneDrivePath"] if GlobalConfig["App"]["OneDrivePath"] \
-    else GlobalConfig["Default"]["OneDrivePath"]
+OneDrivePath = GlobalConfig["App"]["Path"]
 OneDrivePath = OneDrivePath.replace("{username}", WinUser)
 SourcePath = os.path.join(OneDrivePath, FolderName)
 TargetPath = os.path.join(RootDir, FolderName)

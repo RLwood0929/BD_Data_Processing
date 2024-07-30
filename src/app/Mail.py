@@ -7,7 +7,7 @@ Writer：Qian
 '''
 
 """
-mode：EFTConnectError
+mode：EFTConnectError ##
 mail_data = {"DateTime": date_time}
 
 mode：FileNotSub
@@ -20,16 +20,16 @@ mode：FileContentError
 mail_data = {"FileName": file_name}
 有附件
 
-mode：ChangeReport
+mode：ChangeReport ##
 mail_data = {"FileNum" : file_num, "DataNum" : data_num, "CheckErrorNum" : check_error_num,
             "ChangeErrorNum" : change_error_num, "ReportName": report_name}
 有附件
 
-mode：ErrorReport
+mode：ErrorReport ##
 mail_data = {"ErrorReportFileName" : error_report_file_name}
 有附件
 
-mode：MasterFileMaintain
+mode：MasterFileMaintain ##
 mail_data = {"DataNum":data_num, "DateTime":date_time, "OneDriveLink":one_drive_link}
 
 """
@@ -46,16 +46,15 @@ from SystemConfig import MailRule, User, Config, DealerConf, SubRecordJson
 
 # IMAP使用ssl驗證，未加密port號143、加密port號993
 
-TestMode = True
-
 GlobalConfig = Config()
 DealerConfig = DealerConf()
 MailConfig = MailRule()
 UserConfig = User()
 MailSendConfig = SubRecordJson("Read", None)
 
+TestMode = GlobalConfig["Default"]["TestMode"]
 DealerList = DealerConfig["DealerList"]
-TemplateFolderPath = GlobalConfig["Default"]["MailTemplate"]
+TemplateFolderPath = GlobalConfig["MailTemplate"]
 
 SMTPHost = GlobalConfig["Mail"]["SMTPHost"]
 SMTPPort = GlobalConfig["Mail"]["SMTPPort"]
@@ -133,10 +132,10 @@ def GetMailInfo(mode, dealer_id, mail_data):
             mail_content = template.format(FileName = file_name, DateTime = date_time)
 
         elif mail_index == 3:
-            # mail_data = {"FileName":file_name, "FileType": file_type}
+            # mail_data = {"FileName":file_name, "SubFile": sub_file}
             file_name = mail_data["FileName"]
-            file_type = mail_data["FileType"]
-            mail_content = template.format(FileName = file_name, FileType = file_type)
+            sub_file = mail_data["SubFile"]
+            mail_content = template.format(FileName = file_name, SubFile = sub_file)
 
         elif mail_index == 4:
             # mail_data = {"FileName": file_name}
@@ -269,6 +268,7 @@ def WriteMail(subject, recipients, copy_recipients, mail_content, files_path):
 def SendMail(send_info):
     mode = send_info["Mode"]
     dealer_id = send_info["DealerID"]
+    print(dealer_id)
     mail_data = send_info["MailData"]
     files_path = send_info["FilesPath"]
     mail_info = GetMailInfo(mode, dealer_id, mail_data)

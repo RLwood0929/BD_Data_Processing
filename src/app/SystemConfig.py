@@ -72,7 +72,7 @@ def User():
         user_config = json.load(file)
     return user_config
 
-# 將 excel 內容轉變為json
+# 將 excel 內容轉變為json ##
 def write_rule_json(file_path, sheet, data_name, output_name):
     df = pd.read_excel(file_path,sheet_name=sheet)
     data_list = df.to_dict("records")
@@ -83,7 +83,7 @@ def write_rule_json(file_path, sheet, data_name, output_name):
     with open(output_path, "w",encoding="UTF-8") as f:
         json.dump(final_json, f, ensure_ascii=False, indent=2)
 
-# 合併json檔案
+# 合併json檔案 ##
 def marge_json_files(file_path, file1_name, file2_name, output_name):
     File1Path = os.path.join(file_path, file1_name)
     File2Path = os.path.join(file_path, file2_name)
@@ -102,7 +102,7 @@ def marge_json_files(file_path, file1_name, file2_name, output_name):
     except OSError as e:
         print(f"error: {e}")
 
-# 將 maping rule 的excel轉變為json
+# 將 maping rule 的excel轉變為json ##
 def MakeMappingRuleJson():
     DataName = ["Sale","Inventory"]
     FilePath = "./docs/data_format/DataFormatFromBD.xlsx"
@@ -116,7 +116,7 @@ def MakeMappingRuleJson():
     File2Name = str(DataName[1]) + Output
     marge_json_files(ConfigDir, File1Name, File2Name, MappingConfig)
 
-# 將經銷商資訊轉成 json
+# 將經銷商資訊轉成 json ##
 def DealerJson():
     output_path = os.path.join(ConfigDir, DealerConfig)
     summary_sheet_name = "Dealer Summary"
@@ -189,7 +189,7 @@ def excel_column_name(n):
         result.append(chr(65 + remainder))
     return "".join(result[::-1])
 
-# 抓取經銷商 Header，跟默認的比對
+# 抓取經銷商 Header，跟默認的比對 ##
 def HeaderChange():
     write_data = {}
     dealer_format_config = DealerFormatConf()

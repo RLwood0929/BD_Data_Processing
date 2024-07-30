@@ -6,74 +6,75 @@
         "Debug":true,
         "User":"",
         "WinUser":"wood1",
-        "MonthlyFileRange":""
+        "MonthlyFileRange":null
     },
     "Default":{
         "Name":"BD_DataProcessing",
-        "OneDrivePath":"C:\\\\Users\\\\{username}\\\\OneDrive - 嘉衡科技有限公司",
-        "DirTree":{
-            "Path":"./datas",
-            "System":{
-                "FolderName":"00_System",
-                "NextFolder":{
-                    "ConfigFolder":"Config",
-                    "LogFolder":"Log"
-                }
-            },
-            "BD":{
-                "FolderName":"01_BD",
-                "NextFolder":{
-                    "MasterFileFolder":"01_MasterFile",
-                    "ReportFolder":{
-                        "FolderName":"02_Report",
-                        "NextFolder":{
-                            "ErrorReportFolder":"00_ErrorReport"
-                        }
-                    },
-                    "BAFolder":{
-                        "FolderName":"03_BA",
-                        "NextFolder":{
-                            "BAFolder":"BA_Group"
-                        }
-                    }
-                }
-            },
-            "Dealer":{
-                "FolderName":"02_Dealer",
-                "NextFolder":{
-                    "ChangeFileFolder":{
-                        "FolderName":"00_ChangeFile",
-                        "NextFolder":{
-                            "MergeInventoryFile":"Merge_Inventory_file",
-                            "DealerGroup":"Dealer_Group"
-                        }
-                    },
-                    "DealerFile":{
-                        "FileName":"Dealer_Group",
-                        "NextFolder":{
-                            "CompletedFolder":"00_Completed"
-                        }
-                    }
-                }
-            }
-        },
-        "LogConfig":{
-            "Path":"./logs",
-            "SystemLog":"System.log",
-            "RecordLog":"Record.log",
-            "ChangeLog":"Change.log",
-            "CheckLog":"Check.log"
-        },
-        "MailTemplate":"./src/templates",
         "AutoRun":true,
         "Debug":false,
+        "TestMode":true,
         "User":"System",
-        "MonthlyFileRange":"5",
+        "MonthlyFileRange":5,
         "AllowFileExtensions":[
             ".csv",
             ".xlsx",
             ".xls"
-        ]
+        ],
+        "OneDrivePath":"C:\\\\Users\\\\{username}\\\\OneDrive - 嘉衡科技有限公司"
+    },
+    "LogConfig":{
+        "Path":"./logs",
+        "SystemLog":"System.log",
+        "RecordLog":"Record.log",
+        "ChangeLog":"Change.log",
+        "CheckLog":"Check.log"
+    },
+    "MailTemplate":"./src/templates",
+    "DirTree":{
+        "Path":"./datas",
+        "System":{
+            "FolderName":"00_System",
+            "NextFolder":{
+                "ConfigFolder":"Config",
+                "LogFolder":"Log"
+            }
+        },
+        "BD":{
+            "FolderName":"01_BD",
+            "NextFolder":{
+                "MasterFileFolder":"01_MasterFile",
+                "ReportFolder":{
+                    "FolderName":"02_Report",
+                    "NextFolder":{
+                        "ErrorReportFolder":"00_ErrorReport"
+                    }
+                },
+                "BAFolder":{
+                    "FolderName":"03_BA",
+                    "NextFolder":{
+                        "BAFolder":"BA_Group"
+                    }
+                }
+            }
+        },
+        "Dealer":{
+            "FolderName":"02_Dealer",
+            "NextFolder":{
+                "ChangeFileFolder":{
+                    "FolderName":"00_ChangeFile",
+                    "NextFolder":{
+                        "MergeInventoryFile":"Merge_Inventory_file",
+                        "DealerGroup":"Dealer_Group"
+                    }
+                },
+                "DealerFile":{
+                    "FileName":"Dealer_Group",
+                    "NextFolder":{
+                        "CompletedFolder":"00_Completed"
+                    }
+                }
+            }
+        }
     },
     "DataFormat":{
         "FilePath":"./docs/data_format/DataFormatFromBD.xlsx",
@@ -219,6 +220,46 @@
             25
         ]
     },
+    "OutputFile":{
+        "Sale":{
+            "FileName":"{DealerID}_{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}",
+            "Extension":"CSV",
+            "Header":[
+                "Area",
+                "Branch",
+                "Customer Code",
+                "Customer Name",
+                "Customer Address",
+                "Invoice No",
+                "Invoice Date",
+                "BD Sku#",
+                "Quantity",
+                "Gross Revenue",
+                "Discount Principal",
+                "Lot No",
+                "Sales Channel Group",
+                "Uom",
+                "Conversion Rate",
+                "Demand Class Desc",
+                "Ship to Customer code",
+                "Ship to Customer name",
+                "Ship to Customer Address",
+                "Invoice Line Item No"
+            ]
+        },
+        "Inventory":{
+            "FileName":"{CountryCode}_MTHQTY_M_{LastTransactionDate}",
+            "Extension":"txt",
+            "CountryCode":"TWN",
+            "Header":[
+                "Date Period",
+                "Distributor Code",
+                "Material Code",
+                "Type",
+                "Qty"
+            ]
+        }
+    },
     "ErrorReport":{
         "Sale":{
             "FileName":"{DealerID}_Sale_Error_Report_{Date}.xlsx",
@@ -282,46 +323,6 @@
                 "Transaction Date",
                 "Creation Date",
                 "Last Modified Date"
-            ]
-        }
-    },
-    "OutputFile":{
-        "Sale":{
-            "FileName":"{DealerID}_{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}",
-            "Extension":"CSV",
-            "Header":[
-                "Area",
-                "Branch",
-                "Customer Code",
-                "Customer Name",
-                "Customer Address",
-                "Invoice No",
-                "Invoice Date",
-                "BD Sku#",
-                "Quantity",
-                "Gross Revenue",
-                "Discount Principal",
-                "Lot No",
-                "Sales Channel Group",
-                "Uom",
-                "Conversion Rate",
-                "Demand Class Desc",
-                "Ship to Customer code",
-                "Ship to Customer name",
-                "Ship to Customer Address",
-                "Invoice Line Item No"
-            ]
-        },
-        "Inventory":{
-            "FileName":"{CountryCode}_MTHQTY_M_{LastTransactionDate}",
-            "Extension":"txt",
-            "CountryCode":"TWN",
-            "Header":[
-                "Date Period",
-                "Distributor Code",
-                "Material Code",
-                "Type",
-                "Qty"
             ]
         }
     }

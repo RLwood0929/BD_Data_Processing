@@ -4,7 +4,7 @@
 檔案說明：檔案進行格式轉換
 Writer:Qian
 '''
-
+# 需加入mail
 import os, re
 import shutil
 import pandas as pd
@@ -19,17 +19,17 @@ GlobalConfig = Config()
 DealerConfig = DealerConf()
 MappingConfig = MappingRule()
 
-# 全域目錄參數
 DealerList = DealerConfig["DealerList"]
 KADealerList = DealerConfig["KADealerList"]
-DealerDir = GlobalConfig["Default"]["DealerFolderName"]
+
+# 全域目錄參數
+RootDir = GlobalConfig["DirTree"]["Path"]
+DealerDir = GlobalConfig["DirTree"]["Dealer"]["FolderName"]
 FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
     else GlobalConfig["Default"]["Name"]
-RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
-    else GlobalConfig["Default"]["DataPath"]
-ChangeFileDir = GlobalConfig["Default"]["ChangeFileDir"]
-BDFolderDir = GlobalConfig["Default"]["BDFolderName"]
-MasterFileDir = GlobalConfig["Default"]["MasterFileDir"]
+ChangeFileDir = GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["FolderName"]
+BDFolderDir = GlobalConfig["DirTree"]["BD"]["FolderName"]
+MasterFileDir = GlobalConfig["DirTree"]["BD"]["NextFolder"]["MasterFileFolder"]
 
 DealerPath = os.path.join(RootDir, FolderName, DealerDir)
 ChangedPath = os.path.join(DealerPath, ChangeFileDir)
@@ -38,7 +38,6 @@ MasterFile = [file for file in os.listdir(MasterFolderPath) \
             if os.path.isfile(os.path.join(MasterFolderPath, file))]
 ErrorReportPath = os.path.join()
 
-
 SaleFileChangeRule = MappingConfig["MappingRule"]["Sale"]
 InventoryFileChangeRule = MappingConfig["MappingRule"]["Inventory"]
 
@@ -46,8 +45,8 @@ InventoryFileChangeRule = MappingConfig["MappingRule"]["Inventory"]
 SaleOutputFileName = GlobalConfig["OutputFile"]["Sale"]["FileName"]
 SaleOutputFileHeader = GlobalConfig["OutputFile"]["Sale"]["Header"]
 SaleOutputFileExtension = GlobalConfig["OutputFile"]["Sale"]["Extension"]
-SaleErrorReportFileName = GlobalConfig["SaleErrorReport"]["FileName"]
-SaleErrorReportHeader = GlobalConfig["SaleErrorReport"]["Header"]
+SaleErrorReportFileName = GlobalConfig["ErrorReport"]["Sale"]["FileName"]
+SaleErrorReportHeader = GlobalConfig["ErrorReport"]["Sale"]["Header"]
 
 # 庫存輸出參數
 InventoryOutputFileName = GlobalConfig["OutputFile"]["Inventory"]["FileName"]
@@ -55,8 +54,8 @@ InventoryOutputFileHeader = GlobalConfig["OutputFile"]["Inventory"]["Header"]
 InventoryOutputFileExtension = GlobalConfig["OutputFile"]["Inventory"]["Extension"]
 InventoryOutputFileCountryCode = GlobalConfig["OutputFile"]["Inventory"]["CountryCode"]
 InventoryOutputFileName = InventoryOutputFileName.replace("{CountryCode}", InventoryOutputFileCountryCode)
-InventoryErrorReportFileName = GlobalConfig["InventoryErrorReport"]["FileName"]
-InventoryErrorReportHeader = GlobalConfig["InventoryErrorReport"]["Header"]
+InventoryErrorReportFileName = GlobalConfig["ErrorReport"]["Inventory"]["FileName"]
+InventoryErrorReportHeader = GlobalConfig["ErrorReport"]["Inventory"]["Header"]
 
 # 讀取檔案
 def read_data(file_path):

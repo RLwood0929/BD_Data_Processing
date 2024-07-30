@@ -23,16 +23,19 @@ CheckConfig = CheckRule()
 DealerConfig = DealerConf()
 DealerFormatConfig = DealerFormatConf()
 
+TestMode = GlobalConfig["Default"]["TestMode"]
 DealerList = DealerConfig["DealerList"]
-CompletedDir = GlobalConfig["Default"]["CompletedDir"]
-DealerDir = GlobalConfig["Default"]["DealerFolderName"]
+
+# 目錄參數
+RootDir = GlobalConfig["DirTree"]["Path"]
+DealerDir = GlobalConfig["DirTree"]["Dealer"]["FolderName"]
 FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
     else GlobalConfig["Default"]["Name"]
-RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
-    else GlobalConfig["Default"]["DataPath"]
+CompletedDir = GlobalConfig["DirTree"]["Dealer"]["NextFolder"]\
+                            ["DealerFile"]["NextFolder"]["CompletedFolder"]
+
 MonthlyFileRange = GlobalConfig["App"]["MonthlyFileRange"] if GlobalConfig["App"]["MonthlyFileRange"]\
     else GlobalConfig["Default"]["MonthlyFileRange"]
-MonthlyFileRange = int(MonthlyFileRange)
 AllowFileExtensions = GlobalConfig["Default"]["AllowFileExtensions"]
 
 # 銷售檔案參數
@@ -97,10 +100,10 @@ def decide_file_type(dealer_id, file_name):
 # RecordDealerFiles
 # 寫入未繳交名單
 def write_not_sub_record(notify):
-    mail_data = []
     record_data = SubRecordJson("Read", None)
     for i in range(len(DealerList)):
         index = i + 1
+        file_list, date_time_list = [], []
         sale_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
         inventory_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
         dealer_id = DealerConfig[f"Dealer{index}"]["DealerID"]
@@ -117,7 +120,9 @@ def write_not_sub_record(notify):
                 "檔案檢查結果":"未檢查"
             }
             if notify:
-                mail_data.append("銷售檔案")
+                date_time = f"{SystemTime.date().strftime('%Y/%m/%d')} 22:00"
+                date_time_list.append(date_time)
+                file_list.append("銷售檔案")
             WriteNotSubmission(write_data)
         
         # 庫存日繳
@@ -132,7 +137,9 @@ def write_not_sub_record(notify):
                 "檔案檢查結果":"未檢查"
             }
             if notify:
-                mail_data.append("庫存檔案")
+                date_time = f"{SystemTime.date().strftime('%Y/%m/%d')} 22:00"
+                date_time_list.append(date_time)
+                file_list.append("庫存檔案")
             WriteNotSubmission(write_data)
         
         # 銷售月繳
@@ -148,7 +155,9 @@ def write_not_sub_record(notify):
                     "檔案檢查結果":"未檢查"
                 }
                 if notify:
-                    mail_data.append("銷售檔案")
+                    date_time = f"{SystemTime.date().replace(day = MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
+                    date_time_list.append(date_time)
+                    file_list.append("銷售檔案")
                 WriteNotSubmission(write_data)
         
         # 庫存月繳
@@ -164,10 +173,23 @@ def write_not_sub_record(notify):
                     "檔案檢查結果":"未檢查"
                 }
                 if notify:
-                    mail_data.append("庫存檔案")
+                    date_time = f"{SystemTime.date().replace(day = MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
+                    date_time_list.append(date_time)
+                    file_list.append("庫存檔案")
                 WriteNotSubmission(write_data)
-        if notify:
-            mail_data = "、".join(mail_data)
+        if file_list:
+            if len(date_time_list) == 1:
+                date_time = date_time_list[0]
+            elif len(date_time_list) == 2:
+                if date_time_list[0] == date_time_list[1]:
+                    date_time = date_time_list[0]
+                else:
+                    date_time = f"{date_time_list[0]} (日繳檔案)； {date_time_list[1]} (月繳檔案)"
+            else:
+                date_time = "0000/00/00 00:00"
+                msg = f"系統無法判斷檔案正確的應繳時間，{date_time_list}。"
+                WSysLog("1", "SendFileNotSubMail", msg)
+            mail_data = {"FileName" :  "、".join(file_list), "DateTime" : date_time}
             send_info = {"Mode" : "FileNotSub", "DealerID" : dealer_id, "MailData" : mail_data, "FilesPath" : None}
             SendMail(send_info)
 
@@ -425,14 +447,14 @@ def ClearSubRecordJson():
             file_type = "Sale" if j == 0 else "Inventory"
             if file_cycle == "D":
                 input_data = {f"Dealer{index}":{f"{file_type}File":None}}
-                msg = SubRecordJson("WriteFileSatus", input_data)
+                msg = SubRecordJson("WriteFileStatus", input_data)
                 WSysLog("1", "ClearSubRecordJson", msg)
             else:
                 #當月最後一天才刷新月繳的參數
                 next_day = SystemTime + timedelta(days = 1)
                 if next_day.month != SystemTime.month:
                     input_data = {f"Dealer{index}":{f"{file_type}File":None}}
-                    msg = SubRecordJson("WriteFileSatus", input_data)
+                    msg = SubRecordJson("WriteFileStatus", input_data)
                     WSysLog("1", "ClearSubRecordJson", msg)
 
 # Check共用
@@ -489,7 +511,7 @@ def CheckFileHeader(dealer_id, file_name, file_type):
                 error_txt.write(msg)
             error_file_path = move_error_file(dealer_id, [file_name, f"{file}_header_error.txt"])
             mail_data = {"FileName": file_name}
-            mail_data_path = os.path.join(error_file_path, f"{file}_header_error.txt")
+            mail_data_path = [os.path.join(error_file_path, f'{file}_header_error.txt')]
             send_info = {"Mode":"FileContentError", "DealerID": dealer_id, "MailData": mail_data, "FilesPath": mail_data_path}
             SendMail(send_info)
             
@@ -640,7 +662,7 @@ def CheckFileContent(dealer_id, file_name, file_type):
                 f.write(f"{i+1}. {error_list[i]}\n")
         error_file_path = move_error_file(dealer_id, [file_name, f"{file}_content_error.txt"])
         mail_data = {"FileName": file_name}
-        mail_data_path = os.path.join(error_file_path, f"{file}_header_error.txt")
+        mail_data_path = [os.path.join(error_file_path, f"{file}_content_error.txt")]
         send_info = {"Mode":"FileContentError", "DealerID": dealer_id, "MailData": mail_data, "FilesPath": mail_data_path}
         SendMail(send_info)
         return False, error_num
@@ -722,7 +744,7 @@ def CheckFile(have_submission, sub_dic, sub, resub):
     return change_dic
       
 if __name__ == "__main__":
-    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(True)
+    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(TestMode)
     ClearSubRecordJson()
     ChangeDic = CheckFile(HaveSubmission, SubDic, Sub, ReSub)
     print(ChangeDic)

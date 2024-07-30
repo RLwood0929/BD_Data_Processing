@@ -87,12 +87,12 @@ SystemTime = datetime.now()
 Day, Month, Year = SystemTime.day, SystemTime.month, SystemTime.year
 
 # 目錄等全域參數
-ReportDir = GlobalConfig["Default"]["ReportDir"]
-DealerDir = GlobalConfig["Default"]["DealerFolderName"]
+RootDir = GlobalConfig["DirTree"]["Path"]
+BDDir = GlobalConfig["DirTree"]["BD"]["FolderName"]
+ReportDir = GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["FolderName"]
 FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
     else GlobalConfig["Default"]["Name"]
-RootDir = GlobalConfig["App"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
-    else GlobalConfig["Default"]["DataPath"]
+
 DealerList = DealerConfig["DealerList"]
 
 # 繳交紀錄表參數
@@ -129,7 +129,7 @@ NotSubHeader = GlobalConfig["NotSubmission"]["Header"]
 NotSubColumnWidth = GlobalConfig["NotSubmission"]["ColumnWidth"]
 
 # 各檔案目錄Path
-Dir = os.path.join(RootDir, FolderName, DealerDir, ReportDir)
+Dir = os.path.join(RootDir, FolderName, BDDir, ReportDir)
 SubRawDataPath = os.path.join(Dir, SubRawDataFileName)
 DailyReportPath = os.path.join(Dir, DailyReportFileName)
 MonthlyReportPath = os.path.join(Dir, MonthlyReportFileName)
@@ -592,7 +592,6 @@ def Statistics():
     statistics_monthly_data(df,sub_file_header, monthly_file_header)
     msg = "已將繳交紀錄資訊寫入至每月總結紀錄表。"
     WSysLog("1", "Statistics", msg)
-
 
 if __name__ == "__main__":
     # data0 = {"UploadData":{
