@@ -63,7 +63,7 @@
                 "ChangeFileFolder":{
                     "FolderName":"00_ChangeFile",
                     "NextFolder":{
-                        "MergeInventoryFile":"Merge_Inventory_file",
+                        "MergeInventoryFile":"00_Merge_Inventory",
                         "DealerGroup":"Dealer_Group"
                     }
                 },
