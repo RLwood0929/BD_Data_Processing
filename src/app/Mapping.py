@@ -36,6 +36,8 @@ ChangedPath = os.path.join(DealerPath, ChangeFileDir)
 MasterFolderPath = os.path.join(RootDir, FolderName, BDFolderDir, MasterFileDir)
 MasterFile = [file for file in os.listdir(MasterFolderPath) \
             if os.path.isfile(os.path.join(MasterFolderPath, file))]
+ErrorReportPath = os.path.join()
+
 
 SaleFileChangeRule = MappingConfig["MappingRule"]["Sale"]
 InventoryFileChangeRule = MappingConfig["MappingRule"]["Inventory"]
@@ -229,16 +231,19 @@ def ChangeSaleFile(dealer_id, file_name):
         if DealerList[i] == dealer_id:
             index = i + 1
             break
+
     dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
     dealer_country = DealerConfig[f"Dealer{index}"]["Country"]
     file_path = os.path.join(DealerPath, dealer_id, file_name)
     input_data = read_data(file_path)
+
     input_data["Transaction Date"] = pd.to_datetime(input_data["Transaction Date"], format = "%Y/%m/%d")
     input_data["Creation Date"] = pd.to_datetime(input_data["Creation Date"], format = "%Y/%m/%d")
     output_data = pd.DataFrame(columns = file_header)
     error_data, error_index = check_product_id(dealer_id, input_data)
     msg = f"檔案中有 {len(error_data)} 筆資料在 master file 貨號中找不到。"
     WChaLog("2","ChangeSaleFile", dealer_id, file_name, msg)
+
     for i in error_index:
         input_data = input_data.drop(i)
     input_data = input_data.reset_index(drop = True)

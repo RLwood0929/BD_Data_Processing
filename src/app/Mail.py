@@ -21,7 +21,7 @@ mail_data = {"FileName": file_name}
 有附件
 
 mode：ChangeReport
-mail_data = {"FileNum" : file_num, "DataNum" : data_num, "CheckErrorNum" : check_error_num,\
+mail_data = {"FileNum" : file_num, "DataNum" : data_num, "CheckErrorNum" : check_error_num,
             "ChangeErrorNum" : change_error_num, "ReportName": report_name}
 有附件
 
@@ -45,6 +45,8 @@ from email.mime.application import MIMEApplication #附件使用
 from SystemConfig import MailRule, User, Config, DealerConf, SubRecordJson
 
 # IMAP使用ssl驗證，未加密port號143、加密port號993
+
+TestMode = True
 
 GlobalConfig = Config()
 DealerConfig = DealerConf()
@@ -74,12 +76,12 @@ def get_mail_index(mode, dealer_index):
     elif mode == "FileReSubError":
         index = 3
         count = MailSendConfig[f"Dealer{dealer_index}"]["Mail3"]
-    elif mode == "FileContentError":#
+    elif mode == "FileContentError":
         index = 4
         count = MailSendConfig[f"Dealer{dealer_index}"]["Mail4"]
-    elif mode == "ChangeReport":##
+    elif mode == "ChangeReport":
         index = 5
-    elif mode == "ErrorReport":#
+    elif mode == "ErrorReport":
         index = 6
     elif mode == "MasterFileMaintain":
         index = 7
@@ -271,15 +273,20 @@ def SendMail(send_info):
     files_path = send_info["FilesPath"]
     mail_info = GetMailInfo(mode, dealer_id, mail_data)
     subject = mail_info["Subject"]
-    # recipients = mail_info["Recipients"]
-    recipients = ["richardwu@coign.com.tw"]
-    # copy_recipients = mail_info["CopyRecipients"]
-    copy_recipients = []
+
+    # 測試模式
+    if TestMode:
+        recipients = ["richardwu@coign.com.tw"]
+        copy_recipients = []
+    else:
+        recipients = mail_info["Recipients"]
+        copy_recipients = mail_info["CopyRecipients"]
+    
     mail_content = mail_info["MailContent"]
     WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
 
 if __name__ == "__main__":
-    MailData = {"DataNum":"data_num", "DateTime":"date_time", "OneDriveLink":"one_drive_link"}
+    MailData = {"DataNum" : "data_num", "DateTime" : "date_time", "OneDriveLink" : "one_drive_link"}
     FilesPath = []
-    test_data = {"Mode":"MasterFileMaintain", "DealerID":"111","MailData":MailData,"FilesPath":FilesPath}
+    test_data = {"Mode" : "MasterFileMaintain", "DealerID" : "111", "MailData" : MailData, "FilesPath" : FilesPath}
     SendMail(test_data)

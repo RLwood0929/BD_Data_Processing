@@ -9,6 +9,7 @@ Writer:Qian
 import os, re
 import shutil
 import pandas as pd
+from Mail import SendMail
 from itertools import groupby
 from operator import itemgetter
 from datetime import datetime, timedelta
@@ -95,7 +96,8 @@ def decide_file_type(dealer_id, file_name):
 
 # RecordDealerFiles
 # 寫入未繳交名單
-def write_not_sub_record():
+def write_not_sub_record(notify):
+    mail_data = []
     record_data = SubRecordJson("Read", None)
     for i in range(len(DealerList)):
         index = i + 1
@@ -114,6 +116,8 @@ def write_not_sub_record():
                 "應繳時間":f"{SystemTime.date()} ~ {SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
             }
+            if notify:
+                mail_data.append("銷售檔案")
             WriteNotSubmission(write_data)
         
         # 庫存日繳
@@ -127,6 +131,8 @@ def write_not_sub_record():
                 "應繳時間":f"{SystemTime.date()} ~ {SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
             }
+            if notify:
+                mail_data.append("庫存檔案")
             WriteNotSubmission(write_data)
         
         # 銷售月繳
@@ -141,6 +147,8 @@ def write_not_sub_record():
                     "應繳時間":f"{SystemTime.date().replace(day = 1)} ~ {SystemTime.date().replace(day = MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
                 }
+                if notify:
+                    mail_data.append("銷售檔案")
                 WriteNotSubmission(write_data)
         
         # 庫存月繳
@@ -155,9 +163,15 @@ def write_not_sub_record():
                     "應繳時間":f"{SystemTime.date().replace(day = 1)} ~ {SystemTime.date().replace(day = MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
                 }
+                if notify:
+                    mail_data.append("庫存檔案")
                 WriteNotSubmission(write_data)
+        if notify:
+            mail_data = "、".join(mail_data)
+            send_info = {"Mode" : "FileNotSub", "DealerID" : dealer_id, "MailData" : mail_data, "FilesPath" : None}
+            SendMail(send_info)
 
-# 檢查檔案命名格式 #
+# 檢查檔案命名格式
 def check_file_name_format(dealer_id, file_name, file_extencion):
     flag = True
     file_name_part = re.split(r"[._]" ,file_name)
@@ -178,7 +192,7 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
             flag = False
             msg = f"檔名內容錯誤，時間內容錯誤 {e}。"
             WRecLog("2", "RecordDealerfiles", dealer_id, file_name, msg)
-    else:
+    elif len(file_name_part2) == 12:
         try:
             file_time = datetime.strptime(file_name_part2, "%Y%m%d%H%M")
             file_time = file_time.date()
@@ -193,8 +207,8 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
     
     if not flag:
         try:
-            # file_path = os.path.join(DealerPath, dealer_id, file_name)
-            # os.remove(file_path)
+            file_path = os.path.join(DealerPath, dealer_id, file_name)
+            os.remove(file_path)
             msg = f"已移除檔案 {file_name}。"
             WSysLog("1", "RecordDealerfiles", msg)
         except FileNotFoundError:
@@ -261,8 +275,20 @@ def daily_file_resub(dealer_id, file_type, file_name):
             return source
     return None
 
+# 確認補繳檔案存在於待補繳清單
+def monthly_file_resub(dealer_id, file_type, file_name):
+    # 讀取待補繳紀錄表中篩選的內容
+    header = GlobalConfig["NotSubmission"]["Header"]
+    data = WriteNotSubmission("ReadMonthly")
+    df = data[(data[header[1]] == dealer_id) & (data[header[3]] == file_type)]
+    not_sub_file = df[header[5]].values
+    if file_name in not_sub_file:
+        return True, None
+    else:
+        return False, not_sub_file
+
 # 紀錄檔案繳交主程式，回傳 有檔案名單，繳交dic，補繳交dic
-def RecordDealerFiles():
+def RecordDealerFiles(notify):
     not_submission, sub_dic, sub, resub = [], {}, {}, {}
     for dealer_id in DealerList:
         # 抓取經銷商目錄底下檔案
@@ -340,6 +366,24 @@ def RecordDealerFiles():
                     }
                     WriteNotSubmission(write_data)
 
+            #月繳補繳，檔名不符合的處理
+            if (file_cycle == "M") and (status == "補繳交"):
+                result, not_sub_files = monthly_file_resub(dealer_id, file_type, file_name)
+                if not result:
+                    mail_data = {"FileName" : file_name, "SubFile" : "、".join(not_sub_files)}
+                    send_info = {"Mode":"FileReSubError", "DealerID" : dealer_id, "MailData" : mail_data, "FilesPath" : None}
+                    SendMail(send_info)
+                    msg = f"檔案狀態為 {status}，但未存在於待補繳清單中。"
+                    WRecLog("2", "MonthlyFileReSub", dealer_id, file_name, msg)
+                    os.remove(file_path)
+                    if not os.path.exists(file_path):
+                        msg = "系統已刪除該檔案。"
+                        WRecLog("1", "MonthlyFileReSub", dealer_id, file_name, msg)
+                    else:
+                        msg = "系統刪除檔案時遇到未知問題。"
+                        WRecLog("2", "MonthlyFileReSub", dealer_id, file_name, msg)
+                    break
+
             # 寫入繳交紀錄
             write_data = {"UploadData":{
                 "經銷商ID":dealer_id,
@@ -361,7 +405,7 @@ def RecordDealerFiles():
                     sub[file_name] = time_due
 
     # 寫入未繳交紀錄
-    write_not_sub_record()
+    write_not_sub_record(notify)
 
     have_submission = list(set(DealerList) - set(not_submission))
     for dealer_id in not_submission:
@@ -409,9 +453,12 @@ def move_error_file(dealer_id, file_names):
         if os.path.exists(file_target):
             msg = f"檔案搬移至 {target_path} 成功"
             WSysLog("1", "MoveErrorFile", msg)
+            
         else:
             msg = f"檔案搬移至 {target_path} 失敗"
             WSysLog("2", "MoveErrorFile", msg)
+
+    return target_path
 
 # 檢查檔案表頭是否符合
 def CheckFileHeader(dealer_id, file_name, file_type):
@@ -440,8 +487,12 @@ def CheckFileHeader(dealer_id, file_name, file_type):
             txt_path = os.path.join(DealerPath, dealer_id, f"{file}_header_error.txt")
             with open(txt_path, "w", encoding = "UTF-8") as error_txt:
                 error_txt.write(msg)
-            move_error_file(dealer_id, [file_name, f"{file}_header_error.txt"])
-
+            error_file_path = move_error_file(dealer_id, [file_name, f"{file}_header_error.txt"])
+            mail_data = {"FileName": file_name}
+            mail_data_path = os.path.join(error_file_path, f"{file}_header_error.txt")
+            send_info = {"Mode":"FileContentError", "DealerID": dealer_id, "MailData": mail_data, "FilesPath": mail_data_path}
+            SendMail(send_info)
+            
     if flag:
         return True
     else:
@@ -587,7 +638,11 @@ def CheckFileContent(dealer_id, file_name, file_type):
         with open(file_path, "w", encoding = "UTF-8") as f:
             for i in range(len(error_list)):
                 f.write(f"{i+1}. {error_list[i]}\n")
-        move_error_file(dealer_id, [file_name, f"{file}_content_error.txt"])
+        error_file_path = move_error_file(dealer_id, [file_name, f"{file}_content_error.txt"])
+        mail_data = {"FileName": file_name}
+        mail_data_path = os.path.join(error_file_path, f"{file}_header_error.txt")
+        send_info = {"Mode":"FileContentError", "DealerID": dealer_id, "MailData": mail_data, "FilesPath": mail_data_path}
+        SendMail(send_info)
         return False, error_num
 
 # 檢查檔案主程式
@@ -666,10 +721,8 @@ def CheckFile(have_submission, sub_dic, sub, resub):
         change_dic = None
     return change_dic
       
-# 須將信件通知加入進來
-
 if __name__ == "__main__":
-    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles()
+    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(True)
     ClearSubRecordJson()
     ChangeDic = CheckFile(HaveSubmission, SubDic, Sub, ReSub)
     print(ChangeDic)

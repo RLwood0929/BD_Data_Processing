@@ -1,9 +1,7 @@
 {
     "App":{
         "Name":"BD_DataProcessing",
-        "LogPath":"",
         "OneDrivePath":"",
-        "DataPath":"",
         "AutoRun":true,
         "Debug":true,
         "User":"",
@@ -12,24 +10,64 @@
     },
     "Default":{
         "Name":"BD_DataProcessing",
-        "LogPath":"./logs",
         "OneDrivePath":"C:\\\\Users\\\\{username}\\\\OneDrive - 嘉衡科技有限公司",
-        "DataPath":"./datas",
-        "BDFolderName":"01_BD",
-        "MasterFileDir":"01_MasterFile",
-        "DealerFolderName":"02_Dealer",
-        "ReportDir":"00_CheckResult",
-        "ChangeFileDir":"01_ChangeFile",
-        "ErrorReportDir":"00_ErrorReport",
-        "CompletedDir":"00_Completed",
+        "DirTree":{
+            "Path":"./datas",
+            "System":{
+                "FolderName":"00_System",
+                "NextFolder":{
+                    "ConfigFolder":"Config",
+                    "LogFolder":"Log"
+                }
+            },
+            "BD":{
+                "FolderName":"01_BD",
+                "NextFolder":{
+                    "MasterFileFolder":"01_MasterFile",
+                    "ReportFolder":{
+                        "FolderName":"02_Report",
+                        "NextFolder":{
+                            "ErrorReportFolder":"00_ErrorReport"
+                        }
+                    },
+                    "BAFolder":{
+                        "FolderName":"03_BA",
+                        "NextFolder":{
+                            "BAFolder":"BA_Group"
+                        }
+                    }
+                }
+            },
+            "Dealer":{
+                "FolderName":"02_Dealer",
+                "NextFolder":{
+                    "ChangeFileFolder":{
+                        "FolderName":"00_ChangeFile",
+                        "NextFolder":{
+                            "MergeInventoryFile":"Merge_Inventory_file",
+                            "DealerGroup":"Dealer_Group"
+                        }
+                    },
+                    "DealerFile":{
+                        "FileName":"Dealer_Group",
+                        "NextFolder":{
+                            "CompletedFolder":"00_Completed"
+                        }
+                    }
+                }
+            }
+        },
+        "LogConfig":{
+            "Path":"./logs",
+            "SystemLog":"System.log",
+            "RecordLog":"Record.log",
+            "ChangeLog":"Change.log",
+            "CheckLog":"Check.log"
+        },
         "MailTemplate":"./src/templates",
         "AutoRun":true,
         "Debug":false,
         "User":"System",
-        "SystemLogFileName":"System.log",
-        "RecordLogFileName":"Record.log",
-        "ChangeLogFileName":"Change.log",
-        "CheckLogFileName":"Check.log",
         "MonthlyFileRange":"5",
         "AllowFileExtensions":[
             ".csv",
@@ -181,69 +219,71 @@
             25
         ]
     },
-    "SaleErrorReport":{
-        "FileName":"{DealerID}_Sale_Error_Report_{Date}.xlsx",
-        "Header":[
-            "Dealer ID",
-            "Dealer Name",
-            "Exchange Error Issue",
-            "Record ID",
-            "Collection Date",
-            "Delivery Date",
-            "Transaction ID",
-            "TI ID",
-            "Seller ID",
-            "Original Seller Name",
-            "Buyer ID",
-            "Original Buyer Name",
-            "Distributor ID",
-            "Product ID",
-            "Original Product Name",
-            "Warehouse ID",
-            "Batch",
-            "Original UoM",
-            "Original Quantity",
-            "UoM",
-            "Quantity",
-            "Currency",
-            "Original Unit Price",
-            "Unit Price",
-            "Original Amount",
-            "Invoice Number",
-            "Transaction Date",
-            "Transaction Type",
-            "Ref Record ID",
-            "Creation Date",
-            "Last Modified Date",
-            "Remark"
-        ]
-    },
-    "InventoryErrorReport":{
-        "FileName":"{DealerID}_Inventory_Error_Report_{Date}.xlsx",
-        "Header":[
-            "Dealer ID",
-            "Dealer Name",
-            "Exchange Error Issue",
-            "Record ID",
-            "Collection Date",
-            "Delivery Date",
-            "Inventory Item ID",
-            "Product ID",
-            "Product Name",
-            "Original Product Name",
-            "Warehouse ID",
-            "Warehouse Name",
-            "Original Warehouse Name",
-            "Rack",
-            "Batch",
-            "Original UoM",
-            "Original Quantity",
-            "UoM",
-            "Quantity",
-            "Transaction Date",
-            "Creation Date",
-            "Last Modified Date"
-        ]
+    "ErrorReport":{
+        "Sale":{
+            "FileName":"{DealerID}_Sale_Error_Report_{Date}.xlsx",
+            "Header":[
+                "Dealer ID",
+                "Dealer Name",
+                "Exchange Error Issue",
+                "Record ID",
+                "Collection Date",
+                "Delivery Date",
+                "Transaction ID",
+                "TI ID",
+                "Seller ID",
+                "Original Seller Name",
+                "Buyer ID",
+                "Original Buyer Name",
+                "Distributor ID",
+                "Product ID",
+                "Original Product Name",
+                "Warehouse ID",
+                "Batch",
+                "Original UoM",
+                "Original Quantity",
+                "UoM",
+                "Quantity",
+                "Currency",
+                "Original Unit Price",
+                "Unit Price",
+                "Original Amount",
+                "Invoice Number",
+                "Transaction Date",
+                "Transaction Type",
+                "Ref Record ID",
+                "Creation Date",
+                "Last Modified Date",
+                "Remark"
+            ]
+        },
+        "Inventory":{
+            "FileName":"{DealerID}_Inventory_Error_Report_{Date}.xlsx",
+            "Header":[
+                "Dealer ID",
+                "Dealer Name",
+                "Exchange Error Issue",
+                "Record ID",
+                "Collection Date",
+                "Delivery Date",
+                "Inventory Item ID",
+                "Product ID",
+                "Product Name",
+                "Original Product Name",
+                "Warehouse ID",
+                "Warehouse Name",
+                "Original Warehouse Name",
+                "Rack",
+                "Batch",
+                "Original UoM",
+                "Original Quantity",
+                "UoM",
+                "Quantity",
+                "Transaction Date",
+                "Creation Date",
+                "Last Modified Date"
+            ]
+        }
     },
     "OutputFile":{
         "Sale":{
