@@ -2,8 +2,7 @@
     "Mail1":{
         "Subject":"EFT雲端連線失敗",
         "Recipient":[
-            "Coign",
-            "BD"
+            "Coign"
         ],
         "CopyRecipient":null,
         "Repeatedly":null,

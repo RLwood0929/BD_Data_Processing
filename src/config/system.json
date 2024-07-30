@@ -52,9 +52,9 @@
     },
     "Mail":{
         "SMTPHost":"www.hibox.hinet.net",
-        "IMAPHost":"imap.hibox.biz",
-        "SMTPPort":"587",
-        "IMAPPort":"993"
+        "IMAPHost":"www.hibox.hinet.net",
+        "SMTPPort":587,
+        "IMAPPort":993
     },
     "SubRawData":{
         "FileName":"{Year}_繳交紀錄表.xlsx",

@@ -13,7 +13,7 @@
         "Name":"Pinky",
         "Mail":"pinky@coign.com.tw",
         "Permissions":"Editor",
-        "Group":"Coign",
+        "Group":"Coig",
         "ResponsibleDealerID":null,
         "Description":"System Maintainer"
     },
@@ -22,7 +22,7 @@
         "Name":"Jimmy",
         "Mail":"jimmychang@coign.com.tw",
         "Permissions":"Editor",
-        "Group":"Coign",
+        "Group":"Coig",
         "ResponsibleDealerID":null,
         "Description":"System Maintainer"
     },

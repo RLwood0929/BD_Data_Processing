@@ -3,9 +3,9 @@
     "Dealer1": {
         "SaleFile": true,
         "InventoryFile": true,
-        "Mail2": 0,
-        "Mail3": 0,
-        "Mail4": 0
+        "Mail2": 1,
+        "Mail3": 1,
+        "Mail4": 1
     },
     "Dealer2": {
         "SaleFile": true,
