@@ -73,70 +73,13 @@ Writer：Qian
 
 import os, re
 import pandas as pd
-from datetime import datetime
+from Config import AppConfig
 from Log import WSysLog, WRecLog
-from openpyxl.styles import Alignment
+from SystemConfig import SubRecordJson
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
-from SystemConfig import Config, DealerConf, SubRecordJson
 
-
-GlobalConfig = Config()
-DealerConfig = DealerConf()
-SystemTime = datetime.now()
-Day, Month, Year = SystemTime.day, SystemTime.month, SystemTime.year
-
-# 目錄等全域參數
-RootDir = GlobalConfig["DirTree"]["Path"]
-BDDir = GlobalConfig["DirTree"]["BD"]["FolderName"]
-ReportDir = GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["FolderName"]
-FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
-    else GlobalConfig["Default"]["Name"]
-
-DealerList = DealerConfig["DealerList"]
-
-# 繳交紀錄表參數
-SubRawDataFileName = GlobalConfig["SubRawData"]["FileName"]
-SubRawDataFileName = SubRawDataFileName.replace("{Year}", str(Year))
-SubRawDataSheetName = GlobalConfig["SubRawData"]["SheetName"]
-SubRawDataSheetName = SubRawDataSheetName.replace("{Month}", str(Month))
-SubRawDataHeader = GlobalConfig["SubRawData"]["Header"]
-SubRawDataColumnWidth = GlobalConfig["SubRawData"]["ColumnWidth"]
-
-# DailyReport參數
-DailyReportFileName = GlobalConfig["DailyReport"]["FileName"]
-DailyReportFileName = DailyReportFileName.replace("{Year}", str(Year))
-DailyReportSheetName = GlobalConfig["DailyReport"]["SheetName"]
-DailyReportSheetName = DailyReportSheetName.replace("{Month}", str(Month))
-DailyReportHeader = GlobalConfig["DailyReport"]["Header"]
-DailyReportColumnWidth = GlobalConfig["DailyReport"]["ColumnWidth"]
-DailyReportNewDataWidth = GlobalConfig["DailyReport"]["NewDataWidth"]
-
-# MonthlyReport參數
-MonthlyReportFileName = GlobalConfig["MonthlyReport"]["FileName"]
-MonthlyReportFileName = MonthlyReportFileName.replace("{Year}", str(Year))
-MonthlyReportSheetName = GlobalConfig["MonthlyReport"]["SheetName"]
-MonthlyReportSheetName = MonthlyReportSheetName.replace("{Month}", str(Month))
-MonthlyReportHeader = GlobalConfig["MonthlyReport"]["Header"]
-MonthlyReportColumnWidth = GlobalConfig["MonthlyReport"]["ColumnWidth"]
-
-# 待補繳紀錄表參數
-NotSubFileName = GlobalConfig["NotSubmission"]["FileName"]
-NotSubFileName = NotSubFileName.replace("{Year}", str(Year))
-NotSubSheetName = GlobalConfig["NotSubmission"]["SheetName"]
-NotSubSheetName = NotSubSheetName.replace("{Month}", str(Month))
-NotSubHeader = GlobalConfig["NotSubmission"]["Header"]
-NotSubColumnWidth = GlobalConfig["NotSubmission"]["ColumnWidth"]
-
-# 各檔案目錄Path
-Dir = os.path.join(RootDir, FolderName, BDDir, ReportDir)
-SubRawDataPath = os.path.join(Dir, SubRawDataFileName)
-DailyReportPath = os.path.join(Dir, DailyReportFileName)
-MonthlyReportPath = os.path.join(Dir, MonthlyReportFileName)
-NotSubPath = os.path.join(Dir, NotSubFileName)
-
-# 全域 Excel 樣式
-ExcelStyle = Alignment(horizontal = "center", vertical = "center")
+Config = AppConfig()
 
 # 報表共用
 # 產生對應的 Excel Column 名稱
@@ -149,7 +92,7 @@ def excel_style(ws, column_width, fixed_columns):
         ws.column_dimensions[fixed_columns[i]].width = width
     for col in fixed_columns:
         for row in range(1, ws.max_row + 1):
-            ws[f"{col}{row}"].alignment = ExcelStyle
+            ws[f"{col}{row}"].alignment = Config.ExcelStyle
 
 # 建立表頭
 def make_header(wb, file_sheet_name, file_header, file_path, column_width):
@@ -167,17 +110,17 @@ def write_dealer_info(file_path, file_name, file_sheet_name, file_header):
     ws = wb[file_sheet_name]
     dealer_data = {}
     # 取得資料內容
-    for i in range(len(DealerList)):
+    for i in range(len(Config.DealerList)):
         index  = i + 1
-        dealer_id = DealerConfig[f"Dealer{index}"]["DealerID"]
-        dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
-        sale_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-        inventory_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
+        dealer_id = Config.DealerConfig[f"Dealer{index}"]["DealerID"]
+        dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
+        sale_cycle = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        inventory_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
         dealer_data[i] = {"經銷商ID":dealer_id, "經銷商名稱":dealer_name, "檔案類型":"Sale",\
                           "檔案繳交週期":sale_cycle,"檔案類型1":"Inventory","檔案繳交週期1":inventory_cycle}
     
     # 寫入經銷商資訊
-    for i in range(2,len(DealerList)*2+2,2):
+    for i in range(2,len(Config.DealerList)*2+2,2):
         index = int((i / 2) -1)
         for col_name, input_data in dealer_data[index].items():
             row = i
@@ -189,7 +132,7 @@ def write_dealer_info(file_path, file_name, file_sheet_name, file_header):
                 row += 1
             col = search_column_name(file_header, col_name)
             ws[f"{col}{row}"] = input_data
-            ws[f"{col}{row}"].alignment = ExcelStyle
+            ws[f"{col}{row}"].alignment = Config.ExcelStyle
         ws.merge_cells(f"A{i}:A{i +1}")
         ws.merge_cells(f"B{i}:B{i +1}")
     wb.save(file_path)
@@ -200,35 +143,35 @@ def write_dealer_info(file_path, file_name, file_sheet_name, file_header):
 # 製作繳交紀錄表 RawData
 def check_templates(mode):
     if mode == "SubRawData":
-        file_path = SubRawDataPath
-        file_name = SubRawDataFileName
-        file_sheet_name = SubRawDataSheetName
-        file_header = SubRawDataHeader
-        column_width = SubRawDataColumnWidth
+        file_path = Config.SubRawDataPath
+        file_name = Config.SubRawDataFileName
+        file_sheet_name = Config.SubRawDataSheetName
+        file_header = Config.SubRawDataHeader
+        column_width = Config.SubRawDataColumnWidth
     elif mode == "Daily":
-        file_path = DailyReportPath
-        file_name = DailyReportFileName
-        file_sheet_name = DailyReportSheetName
-        file_header = DailyReportHeader
-        column_width = DailyReportColumnWidth
+        file_path = Config.DailyReportPath
+        file_name = Config.DailyReportFileName
+        file_sheet_name = Config.DailyReportSheetName
+        file_header = Config.DailyReportHeader
+        column_width = Config.DailyReportColumnWidth
     elif mode == "Monthly":
-        file_path = MonthlyReportPath
-        file_name = MonthlyReportFileName
-        file_sheet_name = MonthlyReportSheetName
-        file_header = MonthlyReportHeader
-        column_width = MonthlyReportColumnWidth
+        file_path = Config.MonthlyReportPath
+        file_name = Config.MonthlyReportFileName
+        file_sheet_name = Config.MonthlyReportSheetName
+        file_header = Config.MonthlyReportHeader
+        column_width = Config.MonthlyReportColumnWidth
     elif mode == "NotSub":
-        file_path = NotSubPath
-        file_name = NotSubFileName
-        file_sheet_name = NotSubSheetName
-        file_header = NotSubHeader
-        column_width = NotSubColumnWidth
+        file_path = Config.NotSubPath
+        file_name = Config.NotSubFileName
+        file_sheet_name = Config.NotSubSheetName
+        file_header = Config.NotSubHeader
+        column_width = Config.NotSubColumnWidth
     else:
         msg = "輸入的mode未在規範中。"
         WSysLog("3", "CheckTemplates", msg)
         return False
     
-    if os.path.exists(Dir):
+    if os.path.exists(Config.ReportFolderPath):
         try:
             wb = load_workbook(file_path)
             if file_sheet_name in wb.sheetnames:
@@ -251,7 +194,7 @@ def check_templates(mode):
             WSysLog("1", "CheckTemplates", msg)
             return True
     else:
-        msg = f"{Dir} 目錄不存在。"
+        msg = f"{Config.ReportFolderPath} 目錄不存在。"
         WSysLog("3", "CheckTemplates", msg)
         return False
 
@@ -267,25 +210,25 @@ def search_column_name(file_header, col_name):
 def write_upload_data(ws, data, file_header):
     row = ws.max_row +1
     data_id = row -1
-    for i in range(len(DealerList)):
-        if DealerList[i] == data["經銷商ID"]:
+    for i in range(len(Config.DealerList)):
+        if Config.DealerList[i] == data["經銷商ID"]:
             index = i + 1
             break
     # 搜尋檔案繳交週期
-    sale_cycle = DealerConfig [f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-    inventory_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
+    sale_cycle = Config.DealerConfig [f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+    inventory_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
     sub_cycle = sale_cycle if data["檔案類型"] == "Sale" else inventory_cycle
 
     # 寫入ID、經銷商名稱、檔案繳交週期
     data["ID"] = data_id    
-    data["經銷商名稱"] = DealerConfig[f"Dealer{index}"]["DealerName"]
+    data["經銷商名稱"] = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
     data["檔案繳交週期"] = sub_cycle
 
     # 將字典資料寫入檔案
     for col_name, input_data in data.items():
         col = search_column_name(file_header, col_name)
         ws[f"{col}{row}"] = input_data
-        ws[f"{col}{row}"].alignment = ExcelStyle
+        ws[f"{col}{row}"].alignment = Config.ExcelStyle
     
     return data_id
 
@@ -297,15 +240,15 @@ def write_check_or_change_data(ws, data, file_header):
     for col_name, input_data in data.items():
         col = search_column_name(file_header, col_name)
         ws[f"{col}{row}"] = input_data
-        ws[f"{col}{row}"].alignment = ExcelStyle
+        ws[f"{col}{row}"].alignment = Config.ExcelStyle
     return data_id
 
 # 撰寫繳交紀錄表
 def WriteSubRawData(write_data):
-    file_path = SubRawDataPath
-    file_name = SubRawDataFileName
-    file_sheet_name = SubRawDataSheetName
-    file_header = SubRawDataHeader
+    file_path = Config.SubRawDataPath
+    file_name = Config.SubRawDataFileName
+    file_sheet_name = Config.SubRawDataSheetName
+    file_header = Config.SubRawDataHeader
     result = check_templates("SubRawData")
     if result:
         wb = load_workbook(file_path)
@@ -347,11 +290,11 @@ def WriteSubRawData(write_data):
 
 # 撰寫每日總結紀錄表
 def WriteDailyReoprt(write_data):
-    file_path = DailyReportPath
-    file_name = DailyReportFileName
-    file_sheet_name = DailyReportSheetName
-    column_name = f"{Month}月{Day}日"
-    column_width = DailyReportNewDataWidth
+    file_path = Config.DailyReportPath
+    file_name = Config.DailyReportFileName
+    file_sheet_name = Config.DailyReportSheetName
+    column_name = f"{Config.Month}月{Config.Day}日"
+    column_width = Config.DailyReportNewDataWidth
     result = check_templates("Daily")
     if result:
         wb = load_workbook(file_path)
@@ -368,7 +311,7 @@ def WriteDailyReoprt(write_data):
             ws.cell(row = 1, column = column_index, value = column_name)
             column_str = get_column_letter(column_index)
             ws.column_dimensions[column_str].width = column_width
-            ws[f"{column_str}1"].alignment = ExcelStyle
+            ws[f"{column_str}1"].alignment = Config.ExcelStyle
             msg = f"{file_sheet_name} 工作表，新增資料 {column_name} ： {write_data}。"
             WRecLog("1", "WriteDailyReoprt", "All Dealer", file_name, msg)
         else:
@@ -379,7 +322,7 @@ def WriteDailyReoprt(write_data):
         # 寫入當天資料
         for row, input_data in enumerate(write_data, start = 2):
             ws.cell(row = row, column = column_index, value = input_data)
-            ws[f"{column_str}{row}"].alignment = ExcelStyle
+            ws[f"{column_str}{row}"].alignment = Config.ExcelStyle
         
         # 取出檔案總筆數
         update_num = [re.split(r"[:;：；/]", input_data)[2] for input_data in write_data]
@@ -387,7 +330,7 @@ def WriteDailyReoprt(write_data):
         # 寫入當天更新筆數欄位
         for row, input_data in enumerate(update_num, start = 2):
             ws.cell(row = row, column = 5, value = input_data)
-            ws[f"E{row}"].alignment = ExcelStyle
+            ws[f"E{row}"].alignment = Config.ExcelStyle
 
         wb.save(file_path)
         return True
@@ -398,10 +341,10 @@ def WriteDailyReoprt(write_data):
     
 # 撰寫每月總結紀錄表
 def WriteMonthlyReoprt(write_data):
-    file_path = MonthlyReportPath
-    file_name = MonthlyReportFileName
-    file_sheet_name = MonthlyReportSheetName
-    file_header = MonthlyReportHeader
+    file_path = Config.MonthlyReportPath
+    file_name = Config.MonthlyReportFileName
+    file_sheet_name = Config.MonthlyReportSheetName
+    file_header = Config.MonthlyReportHeader
     result = check_templates("Monthly")
     if result:
         wb = load_workbook(file_path)
@@ -410,8 +353,8 @@ def WriteMonthlyReoprt(write_data):
         dealer_id = write_data["經銷商ID"]
         data_type = write_data["檔案類型"]
         # 抓取row
-        for i in range(len(DealerList)):
-            if dealer_id == DealerList[i]:
+        for i in range(len(Config.DealerList)):
+            if dealer_id == Config.DealerList[i]:
                 row = (i + 1) * 2
                 break
         if data_type == "Inventory":
@@ -424,7 +367,7 @@ def WriteMonthlyReoprt(write_data):
             if old_data is None:
                 old_data = 0
             ws[f"{col}{row}"] = old_data + input_data
-            ws[f"{col}{row}"].alignment = ExcelStyle
+            ws[f"{col}{row}"].alignment = Config.ExcelStyle
             write_data[col_name] = old_data + input_data
         msg = f"{file_sheet_name} 工作表中，經銷商ID：{dealer_id}，檔案類型：{data_type}，更新資料：{write_data}"
         WRecLog("1", "WriteMonthlyReoprt", "All Dealer", file_name, msg)
@@ -437,10 +380,10 @@ def WriteMonthlyReoprt(write_data):
 
 # 撰寫待補繳紀錄表
 def WriteNotSubmission(write_data):
-    file_path = NotSubPath
-    file_name = NotSubFileName
-    file_sheet_name = NotSubSheetName
-    file_header = NotSubHeader
+    file_path = Config.NotSubPath
+    file_name = Config.NotSubFileName
+    file_sheet_name = Config.NotSubSheetName
+    file_header = Config.NotSubHeader
     result = check_templates("NotSub")
     new_data_flag = False
     if result:
@@ -448,24 +391,24 @@ def WriteNotSubmission(write_data):
         # 日繳
         if write_data == "ReadDaily":
             df = pd.read_excel(file_path, sheet_name = file_sheet_name, dtype = str, index_col = "ID")
-            df = df[df[NotSubHeader[4]] == "D"]
+            df = df[df[Config.NotSubHeader[4]] == "D"]
             return df
         # 月繳
         if write_data == "ReadMonthly":
             df = pd.read_excel(file_path, sheet_name = file_sheet_name, index_col = "ID")
-            df = df[df[NotSubHeader[4]] == "M"]
+            df = df[df[Config.NotSubHeader[4]] == "M"]
             return df
         
         wb = load_workbook(file_path)
         ws = wb[file_sheet_name]
         dealer_id = write_data["經銷商ID"]
         data_type = write_data["檔案類型"]
-        for i in range(len(DealerList)):
-            if dealer_id == DealerList[i]:
+        for i in range(len(Config.DealerList)):
+            if dealer_id == Config.DealerList[i]:
                 index = i + 1
                 break
-        dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
-        sub_cycle = DealerConfig[f"Dealer{index}"][f"{data_type}File"]["PaymentCycle"]
+        dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
+        sub_cycle = Config.DealerConfig[f"Dealer{index}"][f"{data_type}File"]["PaymentCycle"]
         column = search_column_name(file_header, "缺繳(待補繳)檔案名稱")
         not_sub_file_name = [cell.value for cell in ws[column]]
         row = None
@@ -491,7 +434,7 @@ def WriteNotSubmission(write_data):
         for col_name, input_data in write_data.items():
             col = search_column_name(file_header, col_name)
             ws[f"{col}{row}"] = input_data
-            ws[f"{col}{row}"].alignment = ExcelStyle
+            ws[f"{col}{row}"].alignment = Config.ExcelStyle
 
         wb.save(file_path)
         if new_data_flag:
@@ -508,11 +451,11 @@ def WriteNotSubmission(write_data):
 # 抓取繳交紀錄表資料，轉換寫入每日總結紀錄表
 def statistics_daily_data(df, file_header):
     daily_data = []
-    for i in range(len(DealerList)):
+    for i in range(len(Config.DealerList)):
         for j in range(2):
             num_data = []
             data_type = "Sale" if j == 0 else "Inventory"
-            sort_data =  df[(df[file_header[1]] == DealerList[i]) & (df[file_header[3]] == data_type)]
+            sort_data =  df[(df[file_header[1]] == Config.DealerList[i]) & (df[file_header[3]] == data_type)]
             sub_data = sort_data[sort_data[file_header[5]] == "有繳交"]
             resub_data = sort_data[sort_data[file_header[5]] == "補繳交"]
             for k in range(2):
@@ -539,11 +482,11 @@ def statistics_daily_data(df, file_header):
 
 # 抓取繳交紀錄表資料，轉換寫入每月總結紀錄表
 def statistics_monthly_data(df,sub_file_header, monthly_file_header):
-    for i in range(len(DealerList)):
+    for i in range(len(Config.DealerList)):
         for j in range(2):
             content_num, content_error_num, change_num, change_error_num = 0, 0, 0, 0
             data_type = "Sale" if j == 0 else "Inventory"
-            sort_data =  df[(df[sub_file_header[1]] == DealerList[i]) & (df[sub_file_header[3]] == data_type)]
+            sort_data =  df[(df[sub_file_header[1]] == Config.DealerList[i]) & (df[sub_file_header[3]] == data_type)]
             for num in sort_data[sub_file_header[9]].dropna():
                 content_num += int(num)
             for num in sort_data[sub_file_header[13]].dropna():
@@ -556,7 +499,7 @@ def statistics_monthly_data(df,sub_file_header, monthly_file_header):
                 for num in change_error_data[sub_file_header[16]].dropna():
                     change_error_num += int(num)
             monthly_data = {
-                monthly_file_header[0]:DealerList[i],
+                monthly_file_header[0]:Config.DealerList[i],
                 monthly_file_header[2]:data_type,
                 monthly_file_header[4]:len(sort_data[sub_file_header[5]].dropna()),
                 monthly_file_header[5]:content_num,
@@ -576,10 +519,10 @@ def Statistics():
     _, end_index = WriteSubRawData("Read")
     end_index = end_index - 1
     # 取得資料
-    file_path = SubRawDataPath
-    file_sheet_name = SubRawDataSheetName
-    sub_file_header = SubRawDataHeader
-    monthly_file_header = MonthlyReportHeader
+    file_path = Config.SubRawDataPath
+    file_sheet_name = Config.SubRawDataSheetName
+    sub_file_header = Config.SubRawDataHeader
+    monthly_file_header = Config.MonthlyReportHeader
     index_key = "ID"
     df = pd.read_excel(file_path, sheet_name = file_sheet_name, dtype = str, index_col = index_key)
     df = df[start_index:end_index]

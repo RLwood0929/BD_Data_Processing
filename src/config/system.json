@@ -5,7 +5,7 @@
         "AutoRun":true,
         "Debug":true,
         "User":"",
-        "WinUser":"wood1",
+        "WinUser":"Qian",
         "MonthlyFileRange":null
     },
     "Default":{
@@ -15,6 +15,7 @@
         "TestMode":true,
         "User":"System",
         "MonthlyFileRange":5,
+        "MaxTryRange":3,
         "AllowFileExtensions":[
             ".csv",
             ".xlsx",
@@ -30,6 +31,7 @@
         "CheckLog":"Check.log"
     },
     "MailTemplate":"./src/templates",
+    "ConfigPath":"./src/config",
     "DirTree":{
         "Path":"./datas",
         "System":{

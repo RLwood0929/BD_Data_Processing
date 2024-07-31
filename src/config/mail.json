@@ -86,5 +86,15 @@
         ],
         "Repeatedly":null,
         "Content":"MasterFile_Maintain.html"
+    },
+    "Mail8":{
+        "Subject":"EFT雲端上傳檔案錯誤",
+        "Recipient":[
+            "Coign",
+            "BD"
+        ],
+        "CopyRecipient":null,
+        "Repeatedly":null,
+        "Content":"EFT_Upload_File_error.html"
     }
 }

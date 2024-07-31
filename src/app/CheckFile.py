@@ -10,45 +10,15 @@ import os, re
 import shutil
 import pandas as pd
 from Mail import SendMail
+from Config import AppConfig
 from itertools import groupby
 from operator import itemgetter
+from SystemConfig import SubRecordJson
 from datetime import datetime, timedelta
 from Log import WSysLog, WRecLog, WCheLog
 from RecordTable import WriteSubRawData, WriteNotSubmission
-from SystemConfig import Config, DealerConf, DealerFormatConf, CheckRule, SubRecordJson
 
-SystemTime = datetime.now()
-GlobalConfig = Config()
-CheckConfig = CheckRule()
-DealerConfig = DealerConf()
-DealerFormatConfig = DealerFormatConf()
-
-TestMode = GlobalConfig["Default"]["TestMode"]
-DealerList = DealerConfig["DealerList"]
-
-# 目錄參數
-RootDir = GlobalConfig["DirTree"]["Path"]
-DealerDir = GlobalConfig["DirTree"]["Dealer"]["FolderName"]
-FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
-    else GlobalConfig["Default"]["Name"]
-CompletedDir = GlobalConfig["DirTree"]["Dealer"]["NextFolder"]\
-                            ["DealerFile"]["NextFolder"]["CompletedFolder"]
-
-MonthlyFileRange = GlobalConfig["App"]["MonthlyFileRange"] if GlobalConfig["App"]["MonthlyFileRange"]\
-    else GlobalConfig["Default"]["MonthlyFileRange"]
-AllowFileExtensions = GlobalConfig["Default"]["AllowFileExtensions"]
-
-# 銷售檔案參數
-SF_MustHave = CheckConfig["SaleFile"]["MustHave"]
-SF_2Choose1 = CheckConfig["SaleFile"]["2Choose1"]
-SF_Default_Header = DealerFormatConfig["Defualt"]["SaleFileHeader"]
-
-# 庫存檔案參數
-IF_MustHave = CheckConfig["InventoryFile"]["MustHave"]
-IF_2Choose1 = CheckConfig["InventoryFile"]["2Choose1"]
-IF_Default_Header = DealerFormatConfig["Defualt"]["InventoryFileHeader"]
-
-DealerPath = os.path.join(RootDir, FolderName, DealerDir)
+Config = AppConfig()
 
 # 共用函數
 # 自動切換 panda 之 csv 或 excel 讀取器
@@ -56,30 +26,30 @@ def read_data(file_path):
     file = os.path.basename(file_path)
     _, file_extension = os.path.splitext(file)
     file_extension = file_extension.lower()
-    if file_extension == AllowFileExtensions[0]:
+    if file_extension == Config.AllowFileExtensions[0]:
         df = pd.read_csv(file_path)
         return df, df.shape[0]
-    elif file_extension in AllowFileExtensions[1:]:
+    elif file_extension in Config.AllowFileExtensions[1:]:
         df = pd.read_excel(file_path)
         return df, df.shape[0]
     
 # 決定檔案類型
 def decide_file_type(dealer_id, file_name):
-    for i in range(len(DealerList)):
-        if dealer_id == DealerList[i]:
+    for i in range(len(Config.DealerList)):
+        if dealer_id == Config.DealerList[i]:
             index = i + 1
             break
     
     # 抓取與經銷商協定的表頭
-    sale_file_header = DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"]
-    inventory_file_header = DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"]
+    sale_file_header = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"]
+    inventory_file_header = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"]
 
-    folder_path = os.path.join(DealerPath, dealer_id)
+    folder_path = os.path.join(Config.DealerFolderPath, dealer_id)
     _, extension = os.path.splitext(file_name)
     sale_file_header = set(sale_file_header)
     inventory_file_header = set(inventory_file_header)
     file_path = os.path.join(folder_path, file_name)
-    if extension in AllowFileExtensions:
+    if extension in Config.AllowFileExtensions:
         data, max_row = read_data(file_path)
         file_header = set(data.columns.tolist())
         sale_result =  sale_file_header == file_header
@@ -101,79 +71,79 @@ def decide_file_type(dealer_id, file_name):
 # 寫入未繳交名單
 def write_not_sub_record(notify):
     record_data = SubRecordJson("Read", None)
-    for i in range(len(DealerList)):
+    for i in range(len(Config.DealerList)):
         index = i + 1
         file_list, date_time_list = [], []
-        sale_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-        inventory_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
-        dealer_id = DealerConfig[f"Dealer{index}"]["DealerID"]
+        sale_cycle = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        inventory_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
+        dealer_id = Config.DealerConfig[f"Dealer{index}"]["DealerID"]
         
         # 銷售日繳
         if (sale_cycle == "D") and (not record_data[f"Dealer{index}"]["SaleFile"]):
-            file_extencion = DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+            file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
             write_data = {
                 "經銷商ID":dealer_id,
                 "檔案類型":"Sale",
-                "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
+                "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{Config.SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
                 "檔案狀態":"未繳交",
-                "應繳時間":f"{SystemTime.date()} ~ {SystemTime.date() + timedelta(days = 1)}",
+                "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
             }
             if notify:
-                date_time = f"{SystemTime.date().strftime('%Y/%m/%d')} 22:00"
+                date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
                 date_time_list.append(date_time)
                 file_list.append("銷售檔案")
             WriteNotSubmission(write_data)
         
         # 庫存日繳
         if (inventory_cycle == "D") and (not record_data[f"Dealer{index}"]["InventoryFile"]):
-            file_extencion = DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
+            file_extencion = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
             write_data = {
                 "經銷商ID":dealer_id,
                 "檔案類型":"Inventory",
-                "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
+                "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{Config.SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
                 "檔案狀態":"未繳交",
-                "應繳時間":f"{SystemTime.date()} ~ {SystemTime.date() + timedelta(days = 1)}",
+                "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
             }
             if notify:
-                date_time = f"{SystemTime.date().strftime('%Y/%m/%d')} 22:00"
+                date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
                 date_time_list.append(date_time)
                 file_list.append("庫存檔案")
             WriteNotSubmission(write_data)
         
         # 銷售月繳
-        if (sale_cycle == "M") and (SystemTime == (SystemTime.replace(day = MonthlyFileRange))):
+        if (sale_cycle == "M") and (Config.SystemTime == (Config.SystemTime.replace(day = Config.MonthlyFileRange))):
             if not record_data[f"Dealer{index}"]["SaleFile"]:
-                file_extencion = DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+                file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
                 write_data = {
                     "經銷商ID":dealer_id,
                     "檔案類型":"Sale",
-                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{(SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
+                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{(Config.SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
                     "檔案狀態":"未繳交",
-                    "應繳時間":f"{SystemTime.date().replace(day = 1)} ~ {SystemTime.date().replace(day = MonthlyFileRange)}",
+                    "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
                 }
                 if notify:
-                    date_time = f"{SystemTime.date().replace(day = MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
+                    date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
                     date_time_list.append(date_time)
                     file_list.append("銷售檔案")
                 WriteNotSubmission(write_data)
         
         # 庫存月繳
-        if (inventory_cycle == "M") and (SystemTime == (SystemTime.replace(day = MonthlyFileRange))):
+        if (inventory_cycle == "M") and (Config.SystemTime == (Config.SystemTime.replace(day = Config.MonthlyFileRange))):
             if not record_data[f"Dealer{index}"]["InventoryFile"]:
-                file_extencion = DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+                file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
                 write_data = {
                     "經銷商ID":dealer_id,
                     "檔案類型":"Inventory",
-                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{(SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
+                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{(Config.SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
                     "檔案狀態":"未繳交",
-                    "應繳時間":f"{SystemTime.date().replace(day = 1)} ~ {SystemTime.date().replace(day = MonthlyFileRange)}",
+                    "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
                 }
                 if notify:
-                    date_time = f"{SystemTime.date().replace(day = MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
+                    date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
                     date_time_list.append(date_time)
                     file_list.append("庫存檔案")
                 WriteNotSubmission(write_data)
@@ -197,7 +167,7 @@ def write_not_sub_record(notify):
 def check_file_name_format(dealer_id, file_name, file_extencion):
     flag = True
     file_name_part = re.split(r"[._]" ,file_name)
-    if file_name_part[0] not in DealerList:
+    if file_name_part[0] not in Config.DealerList:
         flag = False
         msg = "檔名內容錯誤，經銷商ID不再範圍中。"
         WRecLog("2", "RecordDealerfiles", dealer_id, file_name, msg)
@@ -229,7 +199,7 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
     
     if not flag:
         try:
-            file_path = os.path.join(DealerPath, dealer_id, file_name)
+            file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
             os.remove(file_path)
             msg = f"已移除檔案 {file_name}。"
             WSysLog("1", "RecordDealerfiles", msg)
@@ -244,15 +214,15 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
 # 整理待繳紀錄表中日繳檔案
 def daily_file_resub(dealer_id, file_type, file_name):
     # 抓取紀錄中的經銷商副檔名
-    for i in range(len(DealerList)):
-        if dealer_id == DealerList[i]:
+    for i in range(len(Config.DealerList)):
+        if dealer_id == Config.DealerList[i]:
             index = i + 1
             break
-    sale_extension = DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
-    inventory_extension = DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
+    sale_extension = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+    inventory_extension = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
 
     # 讀取待補繳紀錄表中篩選的內容
-    header = GlobalConfig["NotSubmission"]["Header"]
+    header = Config.NotSubHeader
     data = WriteNotSubmission("ReadDaily")
     # 針對日繳未繳交處理
     df = data[(data[header[1]] == dealer_id) & (data[header[3]] == file_type) & (data[header[6]] == "未繳交")]
@@ -300,7 +270,7 @@ def daily_file_resub(dealer_id, file_type, file_name):
 # 確認補繳檔案存在於待補繳清單
 def monthly_file_resub(dealer_id, file_type, file_name):
     # 讀取待補繳紀錄表中篩選的內容
-    header = GlobalConfig["NotSubmission"]["Header"]
+    header = Config.NotSubHeader
     data = WriteNotSubmission("ReadMonthly")
     df = data[(data[header[1]] == dealer_id) & (data[header[3]] == file_type)]
     not_sub_file = df[header[5]].values
@@ -312,24 +282,24 @@ def monthly_file_resub(dealer_id, file_type, file_name):
 # 紀錄檔案繳交主程式，回傳 有檔案名單，繳交dic，補繳交dic
 def RecordDealerFiles(notify):
     not_submission, sub_dic, sub, resub = [], {}, {}, {}
-    for dealer_id in DealerList:
+    for dealer_id in Config.DealerList:
         # 抓取經銷商目錄底下檔案
-        dealer_path = os.path.join(DealerPath, dealer_id)
+        dealer_path = os.path.join(Config.DealerFolderPath, dealer_id)
         file_names = [file for file in os.listdir(dealer_path) \
                       if os.path.isfile(os.path.join(dealer_path, file))]
         
-        for i in range(len(DealerList)):
-            if DealerList[i] == dealer_id:
+        for i in range(len(Config.DealerList)):
+            if Config.DealerList[i] == dealer_id:
                 index = i + 1
                 break
 
         # 取得經銷商檔案繳交週期
-        sale_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-        inventory_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
+        sale_cycle = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        inventory_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
         
         # 取得經銷商檔案副檔名
-        sale_extension = DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
-        inventory_extension = DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
+        sale_extension = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+        inventory_extension = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
         
         # 目錄無檔案的經銷商ID，加入List
         if not file_names:
@@ -364,8 +334,8 @@ def RecordDealerFiles(notify):
                     start_time = file_time
                     end_time = file_time + timedelta(days = 1)
                 else:
-                    start_time = SystemTime.date().replace(day = 1)
-                    end_time = SystemTime.date().replace(day = MonthlyFileRange)
+                    start_time = Config.SystemTime.date().replace(day = 1)
+                    end_time = Config.SystemTime.date().replace(day = Config.MonthlyFileRange)
                 time_due = f"{start_time} ~ {end_time}"
                 if (start_time <= file_update_time) and (file_update_time <= end_time):
                     status = "有繳交"
@@ -429,7 +399,7 @@ def RecordDealerFiles(notify):
     # 寫入未繳交紀錄
     write_not_sub_record(notify)
 
-    have_submission = list(set(DealerList) - set(not_submission))
+    have_submission = list(set(Config.DealerList) - set(not_submission))
     for dealer_id in not_submission:
         msg = "檔案未繳交"
         WRecLog("2", "RecordDealerFiles", dealer_id, None, msg)
@@ -438,10 +408,10 @@ def RecordDealerFiles(notify):
 
 # 清空sub_record.json
 def ClearSubRecordJson():
-    for i in range(len(DealerList)):
+    for i in range(len(Config.DealerList)):
         index = i + 1
-        sale_file_cycle = DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-        inventory_file_cycle = DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
+        sale_file_cycle = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        inventory_file_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
         for j in range(2):
             file_cycle = sale_file_cycle if j == 0 else inventory_file_cycle
             file_type = "Sale" if j == 0 else "Inventory"
@@ -451,8 +421,8 @@ def ClearSubRecordJson():
                 WSysLog("1", "ClearSubRecordJson", msg)
             else:
                 #當月最後一天才刷新月繳的參數
-                next_day = SystemTime + timedelta(days = 1)
-                if next_day.month != SystemTime.month:
+                next_day = Config.SystemTime + timedelta(days = 1)
+                if next_day.month != Config.SystemTime.month:
                     input_data = {f"Dealer{index}":{f"{file_type}File":None}}
                     msg = SubRecordJson("WriteFileStatus", input_data)
                     WSysLog("1", "ClearSubRecordJson", msg)
@@ -460,12 +430,12 @@ def ClearSubRecordJson():
 # Check共用
 # 搬移檢查出錯誤的檔案
 def move_error_file(dealer_id, file_names):
-    folder_name = SystemTime.strftime("%Y%m")
-    source_path = os.path.join(DealerPath, dealer_id)
-    target_path = os.path.join(source_path, CompletedDir, folder_name)
+    folder_name = Config.SystemTime.strftime("%Y%m")
+    source_path = os.path.join(Config.DealerFolderPath, dealer_id)
+    target_path = os.path.join(source_path, Config.CompleteFolder, folder_name)
     if not os.path.exists(target_path):
         os.makedirs(target_path)
-        msg = f"已在 {CompletedDir} 目錄下建立資料夾，資料夾名稱 {folder_name}"
+        msg = f"已在 {Config.CompleteFolder} 目錄下建立資料夾，資料夾名稱 {folder_name}"
         WSysLog("1", "MoveErrorFile", msg)
 
     for file_name in file_names:
@@ -485,10 +455,10 @@ def move_error_file(dealer_id, file_names):
 # 檢查檔案表頭是否符合
 def CheckFileHeader(dealer_id, file_name, file_type):
     flag = False
-    format_header = SF_Default_Header if file_type == "Sale" else IF_Default_Header
-    must_have_header = SF_MustHave if file_type == "Sale" else IF_MustHave
-    two_choose_one = SF_2Choose1 if file_type == "Sale" else IF_2Choose1
-    file_path = os.path.join(DealerPath, dealer_id, file_name)
+    format_header = Config.SF_Default_Header if file_type == "Sale" else Config.IF_Default_Header
+    must_have_header = Config.SF_MustHave if file_type == "Sale" else Config.IF_MustHave
+    two_choose_one = Config.SF_2Choose1 if file_type == "Sale" else Config.IF_2Choose1
+    file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     file_data, _ = read_data(file_path)
     file_header = file_data.columns.tolist()
     if set(file_header) == set(format_header):
@@ -506,7 +476,7 @@ def CheckFileHeader(dealer_id, file_name, file_type):
             msg = f"必要表頭缺失，缺少表頭 {less_header}。"
             WCheLog("2", "CheckFileHeader", dealer_id, file_name, msg)
             file = os.path.splitext(file_name)[0]
-            txt_path = os.path.join(DealerPath, dealer_id, f"{file}_header_error.txt")
+            txt_path = os.path.join(Config.DealerFolderPath, dealer_id, f"{file}_header_error.txt")
             with open(txt_path, "w", encoding = "UTF-8") as error_txt:
                 error_txt.write(msg)
             error_file_path = move_error_file(dealer_id, [file_name, f"{file}_header_error.txt"])
@@ -564,7 +534,7 @@ def merge_ranges(values):
 def check_date_time(dealer_id, file_name):
     flag = False
     cell_value, error_list = [], []
-    file_path = os.path.join(DealerPath, dealer_id, file_name)
+    file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     file_update_time = os.path.getmtime(file_path)
     file_update_time = datetime.fromtimestamp(file_update_time).date()
     df, _ = read_data(file_path)
@@ -592,10 +562,10 @@ def check_date_time(dealer_id, file_name):
 
 # 檢查檔案內容是否符合
 def CheckFileContent(dealer_id, file_name, file_type):
-    must_have_header = SF_MustHave if file_type == "Sale" else IF_MustHave
-    two_choose_one = SF_2Choose1 if file_type == "Sale" else IF_2Choose1
-    file_dir = os.path.join(DealerPath, dealer_id)
-    file_path = os.path.join(DealerPath, dealer_id, file_name)
+    must_have_header = Config.SF_MustHave if file_type == "Sale" else Config.IF_MustHave
+    two_choose_one = Config.SF_2Choose1 if file_type == "Sale" else Config.IF_2Choose1
+    file_dir = os.path.join(Config.DealerFolderPath, dealer_id)
+    file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     file_data, _ = read_data(file_path)
     error_list, must_have_values = [], {}
     
@@ -671,7 +641,7 @@ def CheckFileContent(dealer_id, file_name, file_type):
 def CheckFile(have_submission, sub_dic, sub, resub):
     change_dic = {}
     for dealer_id in have_submission:
-        folder_path = os.path.join(DealerPath, dealer_id)
+        folder_path = os.path.join(Config.DealerFolderPath, dealer_id)
         file_names = [file for file in os.listdir(folder_path) \
                       if os.path.isfile(os.path.join(folder_path, file))]
         for file_name in file_names:
@@ -744,7 +714,7 @@ def CheckFile(have_submission, sub_dic, sub, resub):
     return change_dic
       
 if __name__ == "__main__":
-    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(TestMode)
+    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(Config.TestMode)
     ClearSubRecordJson()
     ChangeDic = CheckFile(HaveSubmission, SubDic, Sub, ReSub)
     print(ChangeDic)

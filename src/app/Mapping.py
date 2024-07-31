@@ -8,54 +8,13 @@ Writer:Qian
 import os, re
 import shutil
 import pandas as pd
+from Config import AppConfig
 from datetime import datetime
 from Log import WSysLog, WChaLog
 from CheckFile import decide_file_type
 from RecordTable import WriteSubRawData
-from SystemConfig import Config, MappingRule, DealerConf
 
-SystemTime = datetime.now()
-GlobalConfig = Config()
-DealerConfig = DealerConf()
-MappingConfig = MappingRule()
-
-DealerList = DealerConfig["DealerList"]
-KADealerList = DealerConfig["KADealerList"]
-
-# 全域目錄參數
-RootDir = GlobalConfig["DirTree"]["Path"]
-DealerDir = GlobalConfig["DirTree"]["Dealer"]["FolderName"]
-FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
-    else GlobalConfig["Default"]["Name"]
-ChangeFileDir = GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["FolderName"]
-BDFolderDir = GlobalConfig["DirTree"]["BD"]["FolderName"]
-MasterFileDir = GlobalConfig["DirTree"]["BD"]["NextFolder"]["MasterFileFolder"]
-
-DealerPath = os.path.join(RootDir, FolderName, DealerDir)
-ChangedPath = os.path.join(DealerPath, ChangeFileDir)
-MasterFolderPath = os.path.join(RootDir, FolderName, BDFolderDir, MasterFileDir)
-MasterFile = [file for file in os.listdir(MasterFolderPath) \
-            if os.path.isfile(os.path.join(MasterFolderPath, file))]
-ErrorReportPath = os.path.join()
-
-SaleFileChangeRule = MappingConfig["MappingRule"]["Sale"]
-InventoryFileChangeRule = MappingConfig["MappingRule"]["Inventory"]
-
-# 銷售輸出參數
-SaleOutputFileName = GlobalConfig["OutputFile"]["Sale"]["FileName"]
-SaleOutputFileHeader = GlobalConfig["OutputFile"]["Sale"]["Header"]
-SaleOutputFileExtension = GlobalConfig["OutputFile"]["Sale"]["Extension"]
-SaleErrorReportFileName = GlobalConfig["ErrorReport"]["Sale"]["FileName"]
-SaleErrorReportHeader = GlobalConfig["ErrorReport"]["Sale"]["Header"]
-
-# 庫存輸出參數
-InventoryOutputFileName = GlobalConfig["OutputFile"]["Inventory"]["FileName"]
-InventoryOutputFileHeader = GlobalConfig["OutputFile"]["Inventory"]["Header"]
-InventoryOutputFileExtension = GlobalConfig["OutputFile"]["Inventory"]["Extension"]
-InventoryOutputFileCountryCode = GlobalConfig["OutputFile"]["Inventory"]["CountryCode"]
-InventoryOutputFileName = InventoryOutputFileName.replace("{CountryCode}", InventoryOutputFileCountryCode)
-InventoryErrorReportFileName = GlobalConfig["ErrorReport"]["Inventory"]["FileName"]
-InventoryErrorReportHeader = GlobalConfig["ErrorReport"]["Inventory"]["Header"]
+Config = AppConfig()
 
 # 讀取檔案
 def read_data(file_path):
@@ -83,10 +42,10 @@ def change_time_format(input_data, input_col, date_format):
 
 # 讀取MasterFile
 def read_master_file():
-    if len(MasterFile) != 1:
-        msg = f"{MasterFolderPath} 目標路徑下存在多份MasterFile，系統無法辨別使用何MasterFile。"
+    if len(Config.MasterFile) != 1:
+        msg = f"{Config.MasterFolderPath} 目標路徑下存在多份MasterFile，系統無法辨別使用何MasterFile。"
         return False, None, None
-    master_file_path = os.path.join(MasterFolderPath, MasterFile[0])
+    master_file_path = os.path.join(Config.MasterFolderPath, Config.MasterFile[0])
     master_data = pd.read_excel(master_file_path,sheet_name = "MasterFile", dtype = str)
     ka_data = pd.read_excel(master_file_path,sheet_name = "KAList", dtype = str)
     msg = "成功讀取 MasterFile 資料。"
@@ -95,11 +54,11 @@ def read_master_file():
 
 # 比對、篩選 product id 不存在於 masterfile 中的資料
 def check_product_id(dealer_id, input_data):
-    for i in range(len(DealerList)):
-        if DealerList[i] == dealer_id:
+    for i in range(len(Config.DealerList)):
+        if Config.DealerList[i] == dealer_id:
             index = i + 1
             break
-    dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
+    dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
     result, master_data, _ = read_master_file()
     error_data = pd.DataFrame(columns = input_data.columns)
     error_index = []
@@ -174,7 +133,7 @@ def search_dp(input_data, dealer_id):
             search_data = search_data.reset_index(drop=True)
 
             # 針對KA經銷商進行DP價判斷
-            if dealer_id in KADealerList:
+            if dealer_id in Config.KADealerList:
                 buyer = input_data["Buyer ID"][row]
                 search_ka_data = ka_data[(ka_data[ka_col[0]] == dealer_id) &\
                                          (ka_data[ka_col[1]] == buyer)]
@@ -224,16 +183,16 @@ def merge_columns(input_data, source_col, value):
 # 依據轉換規則轉換銷售檔案
 def ChangeSaleFile(dealer_id, file_name):
     change_status = "OK"
-    file_header = SaleOutputFileHeader
-    change_rules = SaleFileChangeRule
-    for i in range(len(DealerList)):
-        if DealerList[i] == dealer_id:
+    file_header = Config.SaleOutputFileHeader
+    change_rules = Config.SaleFileChangeRule
+    for i in range(len(Config.DealerList)):
+        if Config.DealerList[i] == dealer_id:
             index = i + 1
             break
 
-    dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
-    dealer_country = DealerConfig[f"Dealer{index}"]["Country"]
-    file_path = os.path.join(DealerPath, dealer_id, file_name)
+    dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
+    dealer_country = Config.DealerConfig[f"Dealer{index}"]["Country"]
+    file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     input_data = read_data(file_path)
 
     input_data["Transaction Date"] = pd.to_datetime(input_data["Transaction Date"], format = "%Y/%m/%d")
@@ -299,21 +258,21 @@ def ChangeSaleFile(dealer_id, file_name):
     # 輸出傳換後的sale檔案
     data_start_date = datetime.strftime(input_data["Transaction Date"][0], "%Y%m%d")
     data_end_date = datetime.strftime(input_data["Transaction Date"][len(input_data)- 1], "%Y%m%d")
-    changed_file_name = SaleOutputFileName.replace("{DealerID}", str(dealer_id))\
+    changed_file_name = Config.SaleOutputFileName.replace("{DealerID}", str(dealer_id))\
         .replace("{TransactionDataStartDate}", data_start_date)\
         .replace("{TransactionDataEndDate}", data_end_date)
     try:
-        output_data.to_csv(os.path.join(ChangedPath,\
-            f"{changed_file_name}.{SaleOutputFileExtension}"), index=False)
-        msg = f"檔案轉換完成，輸出檔名 {changed_file_name}.{SaleOutputFileExtension}。"
+        output_data.to_csv(os.path.join(Config.ChangeFolderPath,\
+            f"{changed_file_name}.{Config.SaleOutputFileExtension}"), index=False)
+        msg = f"檔案轉換完成，輸出檔名 {changed_file_name}.{Config.SaleOutputFileExtension}。"
         WChaLog("1", "ChangeSaleFile", dealer_id, file_name, msg)
         if error_data:
-            error_file_name = SaleErrorReportFileName.replace("{DealerID}", str(dealer_id))\
-                .replace("{Date}", datetime.strftime(SystemTime, "%Y%m%d"))
-            error_data.to_csv(os.path.join(ChangedPath, error_file_name), index = False)
+            error_file_name = Config.SaleErrorReportFileName.replace("{DealerID}", str(dealer_id))\
+                .replace("{Date}", datetime.strftime(Config.SystemTime, "%Y%m%d"))
+            error_data.to_csv(os.path.join(Config.ChangeFolderPath, error_file_name), index = False)
             msg = f"Error檔案輸出完成，輸出檔名 {error_file_name}。"
             WChaLog("1", "ChangeSaleFile", dealer_id, file_name, msg)
-        return change_status, f"{changed_file_name}.{SaleOutputFileExtension}",\
+        return change_status, f"{changed_file_name}.{Config.SaleOutputFileExtension}",\
             len(error_data), len(output_data)
     except Exception as e:
         change_status = "NO"
@@ -328,14 +287,14 @@ def last_transaction_date(input_data, row):
 # 依據規則轉換庫存檔案
 def ChangeInventoryFile(dealer_id, file_name):
     change_status = "OK"
-    file_header = InventoryOutputFileHeader
-    change_rules = InventoryFileChangeRule
-    for i in range(len(DealerList)):
-        if DealerList[i] == dealer_id:
+    file_header = Config.InventoryOutputFileHeader
+    change_rules = Config.InventoryFileChangeRule
+    for i in range(len(Config.DealerList)):
+        if Config.DealerList[i] == dealer_id:
             index = i + 1
             break
-    dealer_name = DealerConfig[f"Dealer{index}"]["DealerName"]
-    file_path = os.path.join(DealerPath, dealer_id, file_name)
+    dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
+    file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     input_data = read_data(file_path)
     input_data["Transaction Date"] = pd.to_datetime(input_data["Transaction Date"], format = "%Y/%m/%d")
     input_data["Creation Date"] = pd.to_datetime(input_data["Creation Date"], format = "%Y/%m/%d")
@@ -375,13 +334,13 @@ def ChangeInventoryFile(dealer_id, file_name):
 
     changed_file_name = f"{dealer_id}_I_{datetime.strftime(input_data['Transaction Date'][len(input_data) - 1], '%Y%m%d')}.csv"
     try:
-        output_data.to_csv(os.path.join(ChangedPath, changed_file_name), index=False)
+        output_data.to_csv(os.path.join(Config.ChangeFolderPath, changed_file_name), index=False)
         msg = f"檔案轉換完成，輸出檔名 {changed_file_name}。"
         WChaLog("1", "ChangeInventoryFile", dealer_id, file_name, msg)
         if error_data:
-            error_file_name = InventoryErrorReportFileName.replace("{DealerID}", str(dealer_id))\
-                .replace("{Date}", datetime.strftime(SystemTime, "%Y%m%d"))
-            error_data.to_csv(os.path.join(ChangedPath, error_file_name), index = False)
+            error_file_name = Config.InventoryErrorReportFileName.replace("{DealerID}", str(dealer_id))\
+                .replace("{Date}", datetime.strftime(Config.SystemTime, "%Y%m%d"))
+            error_data.to_csv(os.path.join(Config.ChangeFolderPath, error_file_name), index = False)
             msg = f"Error檔案輸出完成，輸出檔名 {error_file_name}。"
             WChaLog("1", "ChangeInventoryFile", dealer_id, file_name, msg)
         return change_status, changed_file_name,\
@@ -394,8 +353,8 @@ def ChangeInventoryFile(dealer_id, file_name):
 
 # 轉換主程式
 def Changing(check_right_list):
-    for dealer_id in DealerList:
-        dealer_path = os.path.join(DealerPath, dealer_id)
+    for dealer_id in Config.DealerList:
+        dealer_path = os.path.join(Config.DealerFolderPath, dealer_id)
         file_names = [file for file in os.listdir(dealer_path)\
                       if os.path.isfile(os.path.join(dealer_path, file))]
         for file_name in file_names:
@@ -422,8 +381,8 @@ def Changing(check_right_list):
 
 # 合併 Inventory 檔案
 def MargeInventoryFile():
-    file_names = [file for file in os.listdir(ChangedPath) \
-                      if os.path.isfile(os.path.join(ChangedPath, file))]
+    file_names = [file for file in os.listdir(Config.ChangeFolderPath) \
+                      if os.path.isfile(os.path.join(Config.ChangeFolderPath, file))]
     
     # 取得要合併的檔案
     file_list, time_list = [], []
@@ -438,23 +397,23 @@ def MargeInventoryFile():
     file_time = time_list[-1].strftime("%Y%m%d")
     
     # 合併檔案
-    dataframes = [pd.read_csv(os.path.join(ChangedPath, file)) for file in file_list]
+    dataframes = [pd.read_csv(os.path.join(Config.ChangeFolderPath, file)) for file in file_list]
     combined_df = pd.concat(dataframes, ignore_index=True)
     
     # 輸出檔案
-    changed_file_name = InventoryOutputFileName.replace("{CountryCode}", InventoryOutputFileCountryCode)\
+    changed_file_name = Config.InventoryOutputFileName.replace("{CountryCode}", Config.InventoryOutputFileCountryCode)\
         .replace("{LastTransactionDate}", file_time)
     try:
-        combined_df.to_csv(os.path.join(ChangedPath, \
-            f"{changed_file_name}.{InventoryOutputFileExtension}"), sep = "\t", index=False)
-        msg = f"{len(file_list)} 份檔案成功合併成 {changed_file_name}.{InventoryOutputFileExtension}。"
+        combined_df.to_csv(os.path.join(Config.ChangeFolderPath, \
+            f"{changed_file_name}.{Config.InventoryOutputFileExtension}"), sep = "\t", index=False)
+        msg = f"{len(file_list)} 份檔案成功合併成 {changed_file_name}.{Config.InventoryOutputFileExtension}。"
         WSysLog("1", "MargeInventoryFile", msg)
-        for dealer_id in DealerList:
-            target_folder = os.path.join(ChangedPath, dealer_id, datetime.strftime(SystemTime, "%Y%m"))
+        for dealer_id in Config.DealerList:
+            target_folder = os.path.join(Config.ChangeFolderPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
             for file in file_list:
                 part = re.split(r"[._]" ,file)
                 if (part[1] == dealer_id) and (part[2] == "I"):
-                    file_source = os.path.join(ChangedPath, file)
+                    file_source = os.path.join(Config.ChangeFolderPath, file)
                     file_target = os.path.join(target_folder, file)
                     shutil.move(file_source, file_target)
                     if os.path.exists(file_target):

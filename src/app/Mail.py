@@ -7,7 +7,7 @@ Writer：Qian
 '''
 
 """
-mode：EFTConnectError ##
+mode：EFTConnectError
 mail_data = {"DateTime": date_time}
 
 mode：FileNotSub
@@ -32,58 +32,49 @@ mail_data = {"ErrorReportFileName" : error_report_file_name}
 mode：MasterFileMaintain ##
 mail_data = {"DataNum":data_num, "DateTime":date_time, "OneDriveLink":one_drive_link}
 
+mode：EFTUploadFileError
+mail_data = {"FileName" = file_name}
+
 """
 
 import os
 import smtplib
 import mimetypes
 from Log import WSysLog
-from dotenv import load_dotenv
+from Config import AppConfig
 from email.mime.text import MIMEText #內容使用
+from SystemConfig import SubRecordJson
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication #附件使用
-from SystemConfig import MailRule, User, Config, DealerConf, SubRecordJson
 
 # IMAP使用ssl驗證，未加密port號143、加密port號993
 
-GlobalConfig = Config()
-DealerConfig = DealerConf()
-MailConfig = MailRule()
-UserConfig = User()
-MailSendConfig = SubRecordJson("Read", None)
-
-TestMode = GlobalConfig["Default"]["TestMode"]
-DealerList = DealerConfig["DealerList"]
-TemplateFolderPath = GlobalConfig["MailTemplate"]
-
-SMTPHost = GlobalConfig["Mail"]["SMTPHost"]
-SMTPPort = GlobalConfig["Mail"]["SMTPPort"]
-
-load_dotenv()
-Sender = os.getenv("Sender")
-Password = os.getenv("SenderPassword")
+Config = AppConfig()
 
 # 依據mode event回傳對應的 index
 def get_mail_index(mode, dealer_index):
+    record_data = SubRecordJson("Read", None)
     flag = True
     count = 0
     if mode == "EFTConnectError":
         index = 1
     elif mode == "FileNotSub":
         index = 2
-        count = MailSendConfig[f"Dealer{dealer_index}"]["Mail2"]
+        count = record_data[f"Dealer{dealer_index}"]["Mail2"]
     elif mode == "FileReSubError":
         index = 3
-        count = MailSendConfig[f"Dealer{dealer_index}"]["Mail3"]
+        count = record_data[f"Dealer{dealer_index}"]["Mail3"]
     elif mode == "FileContentError":
         index = 4
-        count = MailSendConfig[f"Dealer{dealer_index}"]["Mail4"]
+        count = record_data[f"Dealer{dealer_index}"]["Mail4"]
     elif mode == "ChangeReport":
         index = 5
     elif mode == "ErrorReport":
         index = 6
     elif mode == "MasterFileMaintain":
         index = 7
+    elif mode == "EFTUploadFileError":
+        index = 8
     else:
         flag = False
         index = 0
@@ -91,7 +82,7 @@ def get_mail_index(mode, dealer_index):
 
 # 讀取信件 html 模板
 def load_template(template_name):
-    template_path = os.path.join(TemplateFolderPath, template_name)
+    template_path = os.path.join(Config.TemplateFolderPath, template_name)
     with open(template_path, "r", encoding = "UTF-8") as html_file:
         template_content = html_file.read()
     return template_content
@@ -101,23 +92,26 @@ def load_template(template_name):
 # mail_info = {"Mode" : mode, "Subject" : subject, "Recipients" : recipient_list,\
 #              "CopyRecipients" : copy_recipient_list, "MailContent" : mail_content}
 def GetMailInfo(mode, dealer_id, mail_data):
-    for i in range(len(DealerList)):
-        if DealerList[i] == dealer_id:
-            dealer_index = i + 1
-            DealerInfo = DealerConfig[f"Dealer{dealer_index}"]
-            dealer_mail = DealerInfo.get("Contact1Mail")\
-                or DealerInfo.get("Contact2Mail")\
-                or DealerInfo.get("ContactProjectMail")
-            break
+    if dealer_id is None:
+        dealer_index = None
+    else:
+        for i in range(len(Config.DealerList)):
+            if Config.DealerList[i] == dealer_id:
+                dealer_index = i + 1
+                DealerInfo = Config.DealerConfig[f"Dealer{dealer_index}"]
+                dealer_mail = DealerInfo.get("Contact1Mail")\
+                    or DealerInfo.get("Contact2Mail")\
+                    or DealerInfo.get("ContactProjectMail")
+                break
 
     result, mail_index, mail_count = get_mail_index(mode, dealer_index)
     if result:
-        subject = MailConfig[f"Mail{mail_index}"]["Subject"]
-        recipient = MailConfig[f"Mail{mail_index}"]["Recipient"]
-        copy_recipient = MailConfig[f"Mail{mail_index}"]["CopyRecipient"]
-        templates = MailConfig[f"Mail{mail_index}"]["Content"]
+        subject = Config.MailConfig[f"Mail{mail_index}"]["Subject"]
+        recipient = Config.MailConfig[f"Mail{mail_index}"]["Recipient"]
+        copy_recipient = Config.MailConfig[f"Mail{mail_index}"]["CopyRecipient"]
+        templates = Config.MailConfig[f"Mail{mail_index}"]["Content"]
         template = load_template(templates)
-        repeatedly = MailConfig[f"Mail{mail_index}"]["Repeatedly"]
+        repeatedly = Config.MailConfig[f"Mail{mail_index}"]["Repeatedly"]
 
         # 取得信件內容，html中的變量給予值
         if mail_index == 1:
@@ -171,6 +165,10 @@ def GetMailInfo(mode, dealer_id, mail_data):
                                         DateTime = date_time,\
                                         OneDriveLink = one_drive_link)
             subject = subject.replace("{DealerID}", dealer_id)
+        elif mail_index == 8:
+            # mail_data = {"FileName":file_name}
+            file_name = mail_data["FileName"]
+            mail_content = template.format(FileName = file_name)
 
         # 取得收件者 Mail
         recipient_list = []
@@ -182,15 +180,15 @@ def GetMailInfo(mode, dealer_id, mail_data):
             if mail_count >= 3:
                 recipient.extend(repeatedly)
 
-        for i in range(len(UserConfig)):
+        for i in range(len(Config.UserConfig)):
             index = i + 1
-            user_group = UserConfig[f"User{index}"]["Group"]
-            user_mail =  UserConfig[f"User{index}"]["Mail"]
+            user_group = Config.UserConfig[f"User{index}"]["Group"]
+            user_mail =  Config.UserConfig[f"User{index}"]["Mail"]
             if user_group in recipient:                
                 if (mail_count >= 3) and (user_group == "BD_BA"):
-                    ba_responsible = UserConfig[f"User{index}"]["ResponsibleDealerID"]
+                    ba_responsible = Config.UserConfig[f"User{index}"]["ResponsibleDealerID"]
                     if ba_responsible and (dealer_id in ba_responsible):
-                        ba_mail = UserConfig[f"User{index}"]["Mail"]
+                        ba_mail = Config.UserConfig[f"User{index}"]["Mail"]
                         recipient_list.append(ba_mail)
                 else:
                     recipient_list.append(user_mail)
@@ -199,10 +197,10 @@ def GetMailInfo(mode, dealer_id, mail_data):
         copy_recipient_list = []
         if copy_recipient:
             for group in copy_recipient:
-                for i in range(len(UserConfig)):
+                for i in range(len(Config.UserConfig)):
                     index = i + 1
-                    user_group = UserConfig[f"User{index}"]["Group"]
-                    user_mail =  UserConfig[f"User{index}"]["Mail"]
+                    user_group = Config.UserConfig[f"User{index}"]["Group"]
+                    user_mail =  Config.UserConfig[f"User{index}"]["Mail"]
                     if group == user_group:
                         copy_recipient_list.append(user_mail)
 
@@ -214,10 +212,10 @@ def GetMailInfo(mode, dealer_id, mail_data):
 # 使用SMTP寄送郵件
 def send(mail):
     try:
-        with smtplib.SMTP(SMTPHost, SMTPPort) as smtp:
+        with smtplib.SMTP(Config.SMTPHost, Config.SMTPPort) as smtp:
             smtp.ehlo() #驗證smtp伺服器
             smtp.starttls() #建立加密傳輸
-            smtp.login(Sender, Password)
+            smtp.login(Config.EmailSender, Config.EmailPassword)
             smtp.send_message(mail)
             return True, "send_success"
     except Exception as e:
@@ -228,7 +226,7 @@ def send(mail):
 def WriteMail(subject, recipients, copy_recipients, mail_content, files_path):
     #設定郵件資訊
     mail = MIMEMultipart()
-    mail["From"] = Sender
+    mail["From"] = Config.EmailSender
     mail["To"] = ", ".join(recipients)
     mail["Cc"] = ", ".join(copy_recipients)
     mail["Subject"] = subject
@@ -268,14 +266,13 @@ def WriteMail(subject, recipients, copy_recipients, mail_content, files_path):
 def SendMail(send_info):
     mode = send_info["Mode"]
     dealer_id = send_info["DealerID"]
-    print(dealer_id)
     mail_data = send_info["MailData"]
     files_path = send_info["FilesPath"]
     mail_info = GetMailInfo(mode, dealer_id, mail_data)
     subject = mail_info["Subject"]
 
     # 測試模式
-    if TestMode:
+    if Config.TestMode:
         recipients = ["richardwu@coign.com.tw"]
         copy_recipients = []
     else:

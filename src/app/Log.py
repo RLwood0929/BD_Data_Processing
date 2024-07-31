@@ -12,18 +12,9 @@ level 4 對應 critical   適用範圍:嚴重錯誤，程式不能繼續運行
 
 import os
 import logging
-from SystemConfig import Config
+from Config import AppConfig
 
-GlobalConfig = Config()
-
-# 系統log存放位置
-LogPath = GlobalConfig["LogConfig"]["Path"]
-Operator = GlobalConfig["App"]["User"] if GlobalConfig["App"]["User"] \
-    else GlobalConfig["Default"]["User"]
-SystemLogFileName = GlobalConfig["LogConfig"]["SystemLog"]
-RecordLogFileName = GlobalConfig["LogConfig"]["RecordLog"]
-ChangeLogFileName = GlobalConfig["LogConfig"]["ChangeLog"]
-CheckLogFileName = GlobalConfig["LogConfig"]["CheckLog"]
+Config = AppConfig()
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -31,7 +22,7 @@ logging.basicConfig(
 )
 
 # 建立 SystemLog，紀錄系統日誌
-SysPath = os.path.join(LogPath, SystemLogFileName)
+SysPath = os.path.join(Config.LogPath, Config.SystemLogFileName)
 SysFileHandler = logging.FileHandler(SysPath, encoding="UTF-8")
 SysFormatter = logging.Formatter\
     ("%(asctime)s - %(levelname)s - %(event)s - %(operator)s - %(message)s")
@@ -41,7 +32,7 @@ SysLogger = logging.getLogger("App")
 SysLogger.addHandler(SysFileHandler)
 
 # 建立 RecordLog，紀錄檔案繳交日誌
-RecPath = os.path.join(LogPath, RecordLogFileName)
+RecPath = os.path.join(Config.LogPath, Config.RecordLogFileName)
 RecFileHandler = logging.FileHandler(RecPath, encoding="UTF-8")
 RecFormatter = logging.Formatter\
     ("%(asctime)s - %(levelname)s - %(event)s - %(DealerID)s - %(FileName)s - %(message)s")
@@ -51,7 +42,7 @@ RecLogger = logging.getLogger("Record")
 RecLogger.addHandler(RecFileHandler)
 
 # 建立 ChangeLog，紀錄轉換日誌
-ChaPath = os.path.join(LogPath, ChangeLogFileName)
+ChaPath = os.path.join(Config.LogPath, Config.ChangeLogFileName)
 ChaFileHandler = logging.FileHandler(ChaPath, encoding="UTF-8")
 ChaFormatter = logging.Formatter\
     ("%(asctime)s - %(levelname)s - %(event)s - \
@@ -62,7 +53,7 @@ ChaLogger = logging.getLogger("Change")
 ChaLogger.addHandler(ChaFileHandler)
 
 # 建立 CheckLog，紀錄檔案檢查日誌
-ChePath = os.path.join(LogPath, CheckLogFileName)
+ChePath = os.path.join(Config.LogPath, Config.CheckLogFileName)
 CheFileHandler = logging.FileHandler(ChePath, encoding="UTF-8")
 CheFormatter = logging.Formatter\
     ("%(asctime)s - %(levelname)s - %(event)s - \
@@ -79,16 +70,16 @@ def WSysLog(Level, Event, Message):
         SysLogger.debug("Debug Message.", extra = {"event":"log功能除錯", "operator":"System"})
         sys_message = "Writing debug log is finish."
     elif Level == "1":
-        SysLogger.info(Message, extra = {"event":Event, "operator":Operator})
+        SysLogger.info(Message, extra = {"event":Event, "operator":Config.Operator})
         sys_message = "Writing info log is finish."
     elif Level == "2":
-        SysLogger.warning(Message, extra = {"event":Event, "operator":Operator})
+        SysLogger.warning(Message, extra = {"event":Event, "operator":Config.Operator})
         sys_message = "Writing warning log is finish."
     elif Level == "3":
-        SysLogger.error(Message, extra = {"event":Event, "operator":Operator})
+        SysLogger.error(Message, extra = {"event":Event, "operator":Config.Operator})
         sys_message = "Writing error log is finish."
     elif Level == "4":
-        SysLogger.critical(Message, extra = {"event":Event, "operator":Operator})
+        SysLogger.critical(Message, extra = {"event":Event, "operator":Config.Operator})
         sys_message = "Writing critical log is finish."
     else:
         sys_message = "Level out of range."
