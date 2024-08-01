@@ -8,8 +8,8 @@ Writer：Qian
 import os
 import ftplib
 from Log import WSysLog
-from Mail import SendMail
-from Config import AppConfig
+from .Mail import SendMail
+from .Config import AppConfig
 
 Config = AppConfig()
 

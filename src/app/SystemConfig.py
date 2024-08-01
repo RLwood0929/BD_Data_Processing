@@ -86,11 +86,11 @@ def MakeMappingRuleJson():
         write_rule_json(FilePath, SheetName, i, OutputName)
     File1Name = str(DataName[0]) + Output
     File2Name = str(DataName[1]) + Output
-    marge_json_files(ConfigInfo.ConfigDir, File1Name, File2Name, ConfigInfo.MappingConfig)
+    marge_json_files(ConfigInfo.ConfigPath, File1Name, File2Name, ConfigInfo.MappingPath)
 
 # 將經銷商資訊轉成 json ##
 def DealerJson():
-    output_path = os.path.join(ConfigInfo.ConfigDir, ConfigInfo.DealerConfig)
+    output_path = os.path.join(ConfigInfo.ConfigPath, ConfigInfo.DealerPath)
     summary_sheet_name = "Dealer Summary"
     file_path = "./docs/dealer/BD合作之經銷商資料.xlsx"
     contact_list = ["Contact1","Contact2","ContactProject"]

@@ -12,7 +12,7 @@ level 4 對應 critical   適用範圍:嚴重錯誤，程式不能繼續運行
 
 import os
 import logging
-from Config import AppConfig
+from .Config import AppConfig
 
 Config = AppConfig()
 
