@@ -14,7 +14,7 @@ mode：FileNotSub
 mail_data = {"FileName": file_name,"DateTime":date_time}
 
 mode：FileReSubError
-mail_data = {"FileName":file_name, "FileType": file_type}
+mail_data = {"FileName":file_name, "SubFile": sub_file_name}
 
 mode：FileContentError
 mail_data = {"FileName": file_name}
@@ -33,7 +33,10 @@ mode：MasterFileMaintain ##
 mail_data = {"DataNum":data_num, "DateTime":date_time, "OneDriveLink":one_drive_link}
 
 mode：EFTUploadFileError
-mail_data = {"FileName" = file_name}
+mail_data = {"FileName" : file_name}
+
+mode：MasterFileError
+mail_data = {"MasterFileName": file_name}
 
 """
 
@@ -75,6 +78,8 @@ def get_mail_index(mode, dealer_index):
         index = 7
     elif mode == "EFTUploadFileError":
         index = 8
+    elif mode == "MasterFileError":
+        index = 9
     else:
         flag = False
         index = 0
@@ -169,6 +174,12 @@ def GetMailInfo(mode, dealer_id, mail_data):
             # mail_data = {"FileName":file_name}
             file_name = mail_data["FileName"]
             mail_content = template.format(FileName = file_name)
+
+        elif mail_index == 9:
+            # mail_data = {"MasterFileName": file_name}
+            file_name = mail_data["MasterFileName"]
+            mail_content = template.format(MasterFileName = file_name)
+            subject = subject.replace("{DealerID}", dealer_id)
 
         # 取得收件者 Mail
         recipient_list = []
@@ -283,7 +294,7 @@ def SendMail(send_info):
     WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
 
 if __name__ == "__main__":
-    MailData = {"DataNum" : "data_num", "DateTime" : "date_time", "OneDriveLink" : "one_drive_link"}
+    MailData = {"MasterFileName" : "Error Master FileName"}
     FilesPath = []
-    test_data = {"Mode" : "MasterFileMaintain", "DealerID" : "111", "MailData" : MailData, "FilesPath" : FilesPath}
+    test_data = {"Mode" : "MasterFileError", "DealerID" : "111", "MailData" : MailData, "FilesPath" : FilesPath}
     SendMail(test_data)

@@ -54,7 +54,7 @@
             "AD279",
             "AD317"
         ],
-        "Description":"BD BA"
+        "Description":"BD BA01"
     },
     "User7":{
         "ID":"007",
@@ -68,7 +68,7 @@
             "1002330660",
             "1002689487"
         ],
-        "Description":"BD BA"
+        "Description":"BD BA02"
     },
     "User8":{
         "ID":"008",
@@ -79,7 +79,7 @@
         "ResponsibleDealerID":[
             "1002317244"
         ],
-        "Description":"BD BA"
+        "Description":"BD BA03"
     },
     "User9":{
         "ID":"009",
@@ -91,6 +91,6 @@
             "永義(香港)",
             "伯齊(香港)"
         ],
-        "Description":"BD BA"
+        "Description":"BD BA04"
     }
 }
