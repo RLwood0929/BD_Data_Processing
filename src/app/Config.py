@@ -5,6 +5,7 @@ from openpyxl.styles import Alignment
 from SystemConfig import Config, DealerConf, CheckRule, DealerFormatConf,\
                          MappingRule, MailRule, User
 
+# 程式全域參數
 class AppConfig:
     def __init__(self):
         # 設定全域系統時間
