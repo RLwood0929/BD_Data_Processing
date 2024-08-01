@@ -9,9 +9,9 @@
       },
       "Column2":{
         "ColumnName":"Branch",
-        "SourceName":"Seller ID",
-        "ChangeRule":"Move",
-        "Value":null
+        "SourceName":null,
+        "ChangeRule":"FixedValue",
+        "Value":"DealerID"
       },
       "Column3":{
         "ColumnName":"Customer Code",

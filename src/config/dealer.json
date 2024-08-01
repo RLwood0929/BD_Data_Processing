@@ -9,6 +9,7 @@
   "Dealer1": {
     "DealerID": "111",
     "DealerCompiled": "1111-1111",
+    "Country":"TWM",
     "DealerName": "AAA",
     "DealerKind": NaN,
     "TelephoneNumber": "0000-0000",
@@ -91,6 +92,7 @@
     "DealerID": "222",
     "DealerCompiled": "1111-1111",
     "DealerName": "BBB",
+    "Country":"TWM",
     "DealerKind": NaN,
     "TelephoneNumber": "0000-0000",
     "Contact1Position": "聯絡人-1",

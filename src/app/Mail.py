@@ -20,12 +20,12 @@ mode：FileContentError
 mail_data = {"FileName": file_name}
 有附件
 
-mode：ChangeReport ##
+mode：ChangeReport
 mail_data = {"FileNum" : file_num, "DataNum" : data_num, "CheckErrorNum" : check_error_num,
             "ChangeErrorNum" : change_error_num, "ReportName": report_name}
 有附件
 
-mode：ErrorReport ##
+mode：ErrorReport 
 mail_data = {"ErrorReportFileName" : error_report_file_name}
 有附件
 
@@ -35,7 +35,7 @@ mail_data = {"DataNum":data_num, "DateTime":date_time, "OneDriveLink":one_drive_
 mode：EFTUploadFileError
 mail_data = {"FileName" : file_name}
 
-mode：MasterFileError
+mode：MasterFileError ##
 mail_data = {"MasterFileName": file_name}
 
 """

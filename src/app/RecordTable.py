@@ -73,6 +73,7 @@ Writer：Qian
 
 import os, re
 import pandas as pd
+from Mail import SendMail
 from Config import AppConfig
 from Log import WSysLog, WRecLog
 from SystemConfig import SubRecordJson
@@ -463,19 +464,36 @@ def statistics_daily_data(df, file_header):
                 total_content_num = 0
                 for num in data[file_header[9]].dropna():
                     total_content_num += int(num)
+                
+                # num_data[0]、[2]
                 num_data.append(len(data))
+                
+                # num_data[1]、[3]
                 num_data.append(total_content_num)
+            
+            # num_data[4]
             num_data.append(len(sort_data[sort_data[file_header[10]] == "OK"]))
+            
+            # num_data[5]
             num_data.append(len(sort_data[sort_data[file_header[10]] == "NO"]))
             total_content_num = 0
             for num in sort_data[file_header[13]].dropna():
                 total_content_num += int(num)
+            
+            # num_data[6]
             num_data.append(total_content_num)
+            
+            # num_data[7]
             num_data.append(len(sort_data[file_header[14]].dropna()))
+            
             total_content_num = 0
             for num in sort_data[file_header[16]].dropna():
                 total_content_num += int(num)
+            
+            ## num_data[8]
             num_data.append(total_content_num)
+            
+            # 繳交：檔案數/資料總比數；補繳：檔案數/資料總比數；檢查：檢查正確檔案數/檢查錯誤檔案數/內容錯誤總筆數；轉換:轉換總檔案數/轉換錯誤總筆數
             write_data = f"繳交：{num_data[0]}/{num_data[1]}；補繳：{num_data[2]}/{num_data[3]}；檢查：{num_data[4]}/{num_data[5]}/{num_data[6]}；轉換：{num_data[7]}/{num_data[8]}"
             daily_data.append(write_data)
     return daily_data
@@ -512,6 +530,58 @@ def statistics_monthly_data(df,sub_file_header, monthly_file_header):
             }
             WriteMonthlyReoprt(monthly_data)
 
+# 取得轉換報告之信件參數
+def WriteChangeReportMail(df, file_header):
+    mail_data_num = [0] * 6
+    for i in range(len(Config.DealerList)):
+        for j in range(2):
+            num_data = []
+            data_type = "Sale" if j == 0 else "Inventory"
+            sort_data =  df[(df[file_header[1]] == Config.DealerList[i]) & (df[file_header[3]] == data_type)]
+            sub_data = sort_data[sort_data[file_header[5]] == "有繳交"]
+            resub_data = sort_data[sort_data[file_header[5]] == "補繳交"]
+            for k in range(2):
+                data = sub_data if k == 0 else resub_data
+                total_content_num = 0
+                for num in data[file_header[9]].dropna():
+                    total_content_num += int(num)
+                
+                # num_data[0]、[2]
+                num_data.append(len(data))
+                
+                # num_data[1]、[3]
+                num_data.append(total_content_num)
+
+            # num_data[4]
+            total_content_num = 0
+            for num in sort_data[file_header[13]].dropna():
+                total_content_num += int(num)
+            num_data.append(total_content_num)
+
+            ## num_data[5]
+            total_content_num = 0
+            for num in sort_data[file_header[16]].dropna():
+                total_content_num += int(num)
+            num_data.append(total_content_num)
+            mail_data_num[0] = mail_data_num[0] + num_data[0]
+            mail_data_num[1] = mail_data_num[1] + num_data[1]
+            mail_data_num[2] = mail_data_num[2] + num_data[2]
+            mail_data_num[3] = mail_data_num[3] + num_data[3]
+            mail_data_num[4] = mail_data_num[4] + num_data[4]
+            mail_data_num[5] = mail_data_num[5] + num_data[5]
+    mail_data_num[0] = mail_data_num[0] + mail_data_num[2]
+    mail_data_num[1] = mail_data_num[1] + mail_data_num[3]
+    del mail_data_num[3]
+    del mail_data_num[2]
+    # 繳交檔案總數；繳交檔案總比數；內容錯誤總筆數；轉換錯誤筆數
+
+    report_name = [Config.DailyReportFileName, Config.MonthlyReportFileName]
+    mail_data = {"FileNum" : mail_data_num[0], "DataNum" : mail_data_num[1], "CheckErrorNum" : mail_data_num[2],
+            "ChangeErrorNum" : mail_data_num[3], "ReportName": "、".join(report_name)}
+    report_paths = [Config.DailyReportPath, Config.MonthlyReportPath]
+    send_info = {"Mode" : "ChangeReport", "DealerID" : None, "MailData" : mail_data, "FilesPath" : report_paths}
+    SendMail(send_info)
+
 # 讀取 SubRawData 資料
 def Statistics():
     # 取得資料範圍    
@@ -535,7 +605,9 @@ def Statistics():
     statistics_monthly_data(df,sub_file_header, monthly_file_header)
     msg = "已將繳交紀錄資訊寫入至每月總結紀錄表。"
     WSysLog("1", "Statistics", msg)
-
+    WriteChangeReportMail(df, sub_file_header)
+    print("00")
+    
 if __name__ == "__main__":
     # data0 = {"UploadData":{
     #     "經銷商ID":"111",
@@ -577,3 +649,4 @@ if __name__ == "__main__":
     # }
     # WriteNotSubmission(data0)
     Statistics()
+    # print(Config.DailyReportFileName)

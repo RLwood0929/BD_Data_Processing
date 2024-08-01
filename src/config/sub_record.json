@@ -1,9 +1,9 @@
 {
     "StartIndex": 0,
     "Dealer1": {
-        "SaleFile": true,
+        "SaleFile": null,
         "InventoryFile": null,
-        "Mail2": 3,
+        "Mail2": 4,
         "Mail3": 1,
         "Mail4": 1
     },
