@@ -139,7 +139,7 @@ class AppConfig:
         self.BDFolder = self.GlobalConfig["DirTree"]["BD"]["FolderName"]
         self.MasterFileFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["MasterFileFolder"]
         self.ReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["FolderName"]
-
+        self.ErrorReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["NextFolder"]["ErrorReportFolder"]
 
         self.DealerFolder = self.GlobalConfig["DirTree"]["Dealer"]["FolderName"]
         self.ChangeFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["FolderName"]
@@ -149,6 +149,7 @@ class AppConfig:
         self.BDFolderPath = os.path.join(self.RootDir, self.FolderName, self.BDFolder)
         self.MasterFolderPath = os.path.join(self.BDFolderPath, self.MasterFileFolder)
         self.ReportFolderPath = os.path.join(self.BDFolderPath, self.ReportFolder)
+        self.ErrorReportPath = os.path.join(self.ReportFolderPath, self.ErrorReportFolder)
         self.SubRawDataPath = os.path.join(self.ReportFolderPath, self.SubRawDataFileName)
         self.DailyReportPath = os.path.join(self.ReportFolderPath, self.DailyReportFileName)
         self.MonthlyReportPath = os.path.join(self.ReportFolderPath, self.MonthlyReportFileName)

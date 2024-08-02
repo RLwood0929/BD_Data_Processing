@@ -228,6 +228,8 @@ def ChangeSaleFile(dealer_id, file_name):
     input_data["Creation Date"] = pd.to_datetime(input_data["Creation Date"], format = "%Y/%m/%d")
     output_data = pd.DataFrame(columns = file_header)
     error_data, error_index = check_product_id(dealer_id, input_data)
+    if len(error_data) > 0:
+        change_status = "NO"
     msg = f"檔案中有 {len(error_data)} 筆資料在 master file 貨號中找不到。"
     WChaLog("2","ChangeSaleFile", dealer_id, file_name, msg)
 
@@ -317,7 +319,7 @@ def ChangeSaleFile(dealer_id, file_name):
         if not error_data.empty:
             error_file_name = Config.SaleErrorReportFileName.replace("{DealerID}", str(dealer_id))\
                 .replace("{Date}", datetime.strftime(Config.SystemTime, "%Y%m%d"))
-            error_report_folder_path = os.path.join(Config.ReportFolderPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
+            error_report_folder_path = os.path.join(Config.ErrorReportPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
             
             if not os.path.exists(error_report_folder_path):
                 os.makedirs(error_report_folder_path)
@@ -362,7 +364,11 @@ def ChangeInventoryFile(dealer_id, file_name):
     input_data["Creation Date"] = pd.to_datetime(input_data["Creation Date"], format = "%Y/%m/%d")
     output_data = pd.DataFrame(columns = file_header)
     error_data, error_index = check_product_id(dealer_id, input_data)
-    
+    if len(error_data) > 0:
+        change_status = "NO"
+    msg = f"檔案中有 {len(error_data)} 筆資料在 master file 貨號中找不到。"
+    WChaLog("2","ChangeInventoryFile", dealer_id, file_name, msg)
+
     for i in error_index:
         input_data = input_data.drop(i)
     input_data = input_data.reset_index(drop = True)
@@ -413,7 +419,7 @@ def ChangeInventoryFile(dealer_id, file_name):
         if not error_data.empty:
             error_file_name = Config.InventoryErrorReportFileName.replace("{DealerID}", str(dealer_id))\
                 .replace("{Date}", datetime.strftime(Config.SystemTime, "%Y%m%d"))
-            error_report_folder_path = os.path.join(Config.ReportFolderPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
+            error_report_folder_path = os.path.join(Config.ErrorReportPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
 
             if not os.path.exists(error_report_folder_path):
                 os.makedirs(error_report_folder_path)
@@ -540,7 +546,7 @@ def MargeInventoryFile():
         WSysLog("3", "MargeInventoryFile", msg)
 
 if __name__ == "__main__":
-    aa = {2: '111_I_202408010845_DAILY.csv', 3: '111_S_20240801.csv'}
+    aa = {17: '111_I_20240726.csv', 18: '111_S_20240726.csv'}
     Changing(aa)
     # ChangeSaleFile(dealerID, FilePath)
     # input_data, data_max_row = read_data(FilePath)
