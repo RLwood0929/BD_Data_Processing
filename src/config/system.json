@@ -1,106 +1,108 @@
 {
-    "App":{
-        "Name":"BD_DataProcessing",
-        "OneDrivePath":"",
-        "AutoRun":true,
-        "Debug":true,
-        "User":"",
-        "WinUser":"wood1",
-        "MonthlyFileRange":null
+    "App": {
+        "Name": "BD_DataProcessing",
+        "OneDrivePath": "",
+        "AutoRun": true,
+        "Debug": true,
+        "User": "",
+        "WinUser": "wood1",
+        "MonthlyFileRange": null
     },
-    "Default":{
-        "Name":"BD_DataProcessing",
-        "AutoRun":true,
-        "Debug":false,
-        "TestMode":true,
-        "User":"System",
-        "MonthlyFileRange":5,
-        "MaxTryRange":3,
-        "AllowFileExtensions":[
+    "Default": {
+        "Name": "BD_DataProcessing",
+        "AutoRun": true,
+        "Debug": false,
+        "TestMode": true,
+        "User": "System",
+        "MonthlyFileRange": 5,
+        "MaxTryRange": 3,
+        "AllowFileExtensions": [
             ".csv",
             ".xlsx",
             ".xls"
         ],
-        "OneDrivePath":"C:\\\\Users\\\\{username}\\\\OneDrive - 嘉衡科技有限公司"
+        "OneDrivePath": "C:\\Users\\{username}\\OneDrive - 嘉衡科技有限公司"
     },
-    "LogConfig":{
-        "Path":"./logs",
-        "SystemLog":"System.log",
-        "RecordLog":"Record.log",
-        "ChangeLog":"Change.log",
-        "CheckLog":"Check.log"
+    "SystemRoot": "C:\\",
+    "OneDirveFolder": "OneDrive - 嘉衡科技有限公司",
+    "LogConfig": {
+        "Path": "./logs",
+        "SystemLog": "System.log",
+        "RecordLog": "Record.log",
+        "ChangeLog": "Change.log",
+        "CheckLog": "Check.log"
     },
-    "MailTemplate":"./src/templates",
-    "ConfigPath":"./src/config",
-    "DirTree":{
-        "Path":"./datas",
-        "System":{
-            "FolderName":"00_System",
-            "NextFolder":{
-                "ConfigFolder":"Config",
-                "LogFolder":"Log"
+    "MailTemplate": "./src/templates",
+    "ConfigPath": "./src/config",
+    "DirTree": {
+        "Path": "./datas",
+        "System": {
+            "FolderName": "00_System",
+            "NextFolder": {
+                "ConfigFolder": "Config",
+                "LogFolder": "Log"
             }
         },
-        "BD":{
-            "FolderName":"01_BD",
-            "NextFolder":{
-                "MasterFileFolder":"01_MasterFile",
-                "ReportFolder":{
-                    "FolderName":"02_Report",
-                    "NextFolder":{
-                        "ErrorReportFolder":"00_ErrorReport"
+        "BD": {
+            "FolderName": "01_BD",
+            "NextFolder": {
+                "MasterFileFolder": "01_MasterFile",
+                "ReportFolder": {
+                    "FolderName": "02_Report",
+                    "NextFolder": {
+                        "ErrorReportFolder": "00_ErrorReport"
                     }
                 },
-                "BAFolder":{
-                    "FolderName":"03_BA",
-                    "NextFolder":{
-                        "BAFolder":"BA_Group"
+                "BAFolder": {
+                    "FolderName": "03_BA",
+                    "NextFolder": {
+                        "BAFolder": "BA_Group"
                     }
                 }
             }
         },
-        "Dealer":{
-            "FolderName":"02_Dealer",
-            "NextFolder":{
-                "ChangeFileFolder":{
-                    "FolderName":"00_ChangeFile",
-                    "NextFolder":{
-                        "MergeInventoryFile":"00_Merge_Inventory",
-                        "DealerGroup":"Dealer_Group"
+        "Dealer": {
+            "FolderName": "02_Dealer",
+            "NextFolder": {
+                "ChangeFileFolder": {
+                    "FolderName": "00_ChangeFile",
+                    "NextFolder": {
+                        "MergeInventoryFile": "00_Merge_Inventory",
+                        "DealerGroup": "Dealer_Group"
                     }
                 },
-                "DealerFile":{
-                    "FileName":"Dealer_Group",
-                    "NextFolder":{
-                        "CompletedFolder":"00_Completed"
+                "DealerFile": {
+                    "FileName": "Dealer_Group",
+                    "NextFolder": {
+                        "CompletedFolder": "00_Completed"
                     }
                 }
             }
         }
     },
-    "DataFormat":{
-        "FilePath":"./docs/data_format/DataFormatFromBD.xlsx",
-        "MappingSales":"銷售檔案配對規則",
-        "MappingInventory":"庫存檔案配對規則",
-        "SalesFormatToDealer":"經銷商銷售檔案規定格式",
-        "InventoryFormatToDealer":"經銷商庫存檔案規定格式",
-        "SalesFormatToBD":"BD資料庫銷售檔案規定格式",
-        "InventoryFormatToBD":"BD資料庫庫存檔案規定格式"
+    "DataFormat": {
+        "FilePath": "./docs/data_format/DataFormatFromBD.xlsx",
+        "MappingSales": "銷售檔案配對規則",
+        "MappingInventory": "庫存檔案配對規則",
+        "SalesFormatToDealer": "經銷商銷售檔案規定格式",
+        "InventoryFormatToDealer": "經銷商庫存檔案規定格式",
+        "SalesFormatToBD": "BD資料庫銷售檔案規定格式",
+        "InventoryFormatToBD": "BD資料庫庫存檔案規定格式"
     },
-    "EFT":{
-        "HostName":"eft.carefusion.com",
-        "Dir":"archive"
+    "EFT": {
+        "HostName": "eft.carefusion.com",
+        "Dir": "archive"
     },
-    "Mail":{
-        "SMTPHost":"www.hibox.hinet.net",
-        "IMAPHost":"www.hibox.hinet.net",
-        "SMTPPort":587,
-        "IMAPPort":993
+    "Mail": {
+        "SMTPHost": "www.hibox.hinet.net",
+        "IMAPHost": "www.hibox.hinet.net",
+        "SMTPPort": 587,
+        "IMAPPort": 993
     },
-    "SubRawData":{
-        "FileName":"{Year}_繳交紀錄表.xlsx",
-        "SheetName":"{Month}月",
-        "Header":[
+    "SubRawData": {
+        "FileName": "{Year}_繳交紀錄表.xlsx",
+        "SheetName": "{Month}月",
+        "Header": [
             "ID",
             "經銷商ID",
             "經銷商名稱",
@@ -120,20 +122,20 @@
             "轉換錯誤筆數",
             "轉換後總筆數"
         ],
-        "ColumnWidth":[
+        "ColumnWidth": [
             10,
             15,
             15,
             10,
-            15, 
-            10, 
+            15,
+            10,
             40,
             30,
-            20, 
             20,
-            10, 
-            15, 
-            15, 
+            20,
+            10,
+            15,
+            15,
             15,
             10,
             30,
@@ -141,43 +143,43 @@
             15
         ]
     },
-    "DailyReport":{
-        "FileName":"{Year}_每日總結紀錄表.xlsx",
-        "SheetName":"{Month}月",
-        "Header":[
+    "DailyReport": {
+        "FileName": "{Year}_每日總結紀錄表.xlsx",
+        "SheetName": "{Month}月",
+        "Header": [
             "經銷商ID",
             "經銷商名稱",
             "檔案類型",
             "檔案繳交週期",
             "當日更新筆數"
         ],
-        "ColumnWidth":[
+        "ColumnWidth": [
             15,
             15,
             15,
             20,
             20
         ],
-        "NewDataWidth":65
+        "NewDataWidth": 65
     },
-    "MonthlyReport":{
-        "FileName":"{Year}_每月總結紀錄表.xlsx",
-        "SheetName":"{Month}月",
-        "Header":[
+    "MonthlyReport": {
+        "FileName": "{Year}_每月總結紀錄表.xlsx",
+        "SheetName": "{Month}月",
+        "Header": [
             "經銷商ID",
             "經銷商名稱",
             "檔案類型",
             "檔案繳交週期",
-            "當月繳交次數", 
+            "當月繳交次數",
             "當月繳交筆數",
-            "當月繳交錯誤次數", 
+            "當月繳交錯誤次數",
             "當月繳交內容錯誤筆數",
-            "當月轉換次數", 
+            "當月轉換次數",
             "當月轉換筆數",
-            "當月轉換錯誤次數", 
+            "當月轉換錯誤次數",
             "當月轉換錯誤筆數"
         ],
-        "ColumnWidth":[
+        "ColumnWidth": [
             15,
             15,
             15,
@@ -189,13 +191,13 @@
             20,
             20,
             25,
-            25 
+            25
         ]
     },
-    "NotSubmission":{
-        "FileName":"{Year}_待補繳紀錄表.xlsx",
-        "SheetName":"{Month}月",
-        "Header":[
+    "NotSubmission": {
+        "FileName": "{Year}_待補繳紀錄表.xlsx",
+        "SheetName": "{Month}月",
+        "Header": [
             "ID",
             "經銷商ID",
             "經銷商名稱",
@@ -208,7 +210,7 @@
             "補繳時間",
             "補繳檢查結果"
         ],
-        "ColumnWidth":[
+        "ColumnWidth": [
             10,
             15,
             15,
@@ -222,11 +224,11 @@
             25
         ]
     },
-    "OutputFile":{
-        "Sale":{
-            "FileName":"{DealerID}_{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}",
-            "Extension":"CSV",
-            "Header":[
+    "OutputFile": {
+        "Sale": {
+            "FileName": "{DealerID}_{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}",
+            "Extension": "CSV",
+            "Header": [
                 "Area",
                 "Branch",
                 "Customer Code",
@@ -249,11 +251,11 @@
                 "Invoice Line Item No"
             ]
         },
-        "Inventory":{
-            "FileName":"{CountryCode}_MTHQTY_M_{LastTransactionDate}",
-            "Extension":"txt",
-            "CountryCode":"TWN",
-            "Header":[
+        "Inventory": {
+            "FileName": "{CountryCode}_MTHQTY_M_{LastTransactionDate}",
+            "Extension": "txt",
+            "CountryCode": "TWN",
+            "Header": [
                 "Date Period",
                 "Distributor Code",
                 "Material Code",
@@ -262,10 +264,10 @@
             ]
         }
     },
-    "ErrorReport":{
-        "Sale":{
-            "FileName":"{DealerID}_Sale_Error_Report_{Date}.xlsx",
-            "Header":[
+    "ErrorReport": {
+        "Sale": {
+            "FileName": "{DealerID}_Sale_Error_Report_{Date}.xlsx",
+            "Header": [
                 "Dealer ID",
                 "Dealer Name",
                 "Exchange Error Issue",
@@ -300,9 +302,9 @@
                 "Remark"
             ]
         },
-        "Inventory":{
-            "FileName":"{DealerID}_Inventory_Error_Report_{Date}.xlsx",
-            "Header":[
+        "Inventory": {
+            "FileName": "{DealerID}_Inventory_Error_Report_{Date}.xlsx",
+            "Header": [
                 "Dealer ID",
                 "Dealer Name",
                 "Exchange Error Issue",

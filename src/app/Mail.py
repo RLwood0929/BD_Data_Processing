@@ -294,7 +294,7 @@ def SendMail(send_info):
     WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
 
 if __name__ == "__main__":
-    MailData = {"MasterFileName" : "Error Master FileName"}
+    MailData = {"DataNum":50, "DateTime":"2024/08/01", "OneDriveLink":"one_drive_link"}
     FilesPath = []
-    test_data = {"Mode" : "MasterFileError", "DealerID" : "111", "MailData" : MailData, "FilesPath" : FilesPath}
+    test_data = {"Mode" : "MasterFileMaintain", "DealerID" : "111", "MailData" : MailData, "FilesPath" : FilesPath}
     SendMail(test_data)

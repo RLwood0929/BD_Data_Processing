@@ -272,6 +272,25 @@ def SubRecordJson(mode, data):
     else: # data = None
         return False
 
+# 更新系統使用者名稱至system.json
+def WrightWinUser(user_name):
+    data = Config()
+    data["App"]["WinUser"] = user_name
+    with open(ConfigInfo.ConfigPath, "w", encoding = "UTF-8") as file:
+        json.dump(data, file, ensure_ascii = False, indent = 4)
+    msg = f"更新使用者名稱：{user_name}。"
+    return msg
+
+# 更新OneDrive路徑至system.json
+def WrightOneDrivePath(file_path):
+    data = Config()
+    data["App"]["OneDrivePath"] = file_path
+    with open(ConfigInfo.ConfigPath, "w", encoding = "UTF-8") as file:
+        json.dump(data, file, ensure_ascii = False, indent = 4)
+    msg = f"OneDrive目錄更新，目錄：{file_path}。"
+    return msg
+
+
 if __name__ == "__main__":
     # DealerJson()
     # HeaderChange()

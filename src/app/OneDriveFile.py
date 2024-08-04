@@ -143,3 +143,138 @@ if __name__ == "__main__":
     # 略過的目錄
     SkipList = []
     DownloadFOD(SkipList)
+
+"""
+===================================================================================
+"""
+
+import os, shutil
+from Log import WSysLog
+from Config import AppConfig
+from SystemConfig import WrightWinUser, WrightOneDrivePath
+
+Config = AppConfig()
+
+# 取得使用者名稱，寫入config
+def GetUserName():
+    try:
+        username = os.getlogin()
+        WinUser = Config.WinUser
+        if username != WinUser:
+            msg = "系統使用者名稱，與紀錄不符，需更新紀錄檔。"
+            WSysLog("1", "GetUserName", msg)
+            msg = WrightWinUser(username)
+            WSysLog("1", "WindowsUserNameUpdate", msg)
+    except OSError as e:
+        msg = f"取得使用者名稱時錯誤，錯誤訊息：{e}。"
+        WSysLog("3", "GetUserName", msg)
+    except AttributeError as e:
+        msg = f"屬性錯誤，錯誤訊息：{e}。"
+        WSysLog("3", "GetUserName", msg)
+    except Exception as e:
+        msg = f"例外錯誤，錯誤訊息：{e}。"
+        WSysLog("3", "GetUserName", msg)
+
+# 檢查OneDrive目錄在本地是否存在
+def check_onedrive_path():
+    if not os.path.exists(Config.OneDrivePath):
+        msg = f"{Config.OneDrivePath}目錄不存在，請檢查本地 OneDrive 目錄，並且登入嘉衡公司帳戶。"
+        WSysLog("3", "CheckOenDrivePath", msg)
+        GetUserName()
+
+        # 歷遍系統C槽目錄，找尋OneDrive資料夾
+        for dirs, folders, _ in os.walk(Config.SystemRoot):
+            if Config.OneDeiveFolder in folders:
+                one_drive_path = os.path.join(dirs, Config.OneDeiveFolder)
+                break
+        if Config.OneDrivePath != one_drive_path:
+            msg = WrightOneDrivePath(one_drive_path)
+            WSysLog("1", "CheckOenDrivePath", msg)
+    else:
+        msg = "確認OneDrive目錄存在。"
+        WSysLog("1", "CheckOneDrivePath", msg)
+
+def sync_folder(source_dir, target_dir, skip_list = []):
+    sync_flag = False
+    
+    # 歷遍來源目錄
+    for root, dirs, files in os.walk(source_dir):
+        # 從目錄清單中刪除要跳過的目錄
+        dirs[:] = [d for d in dirs if d not in skip_list]
+
+        # 拷貝子目錄
+        for folder in dirs:
+            source_folder = os.path.join(root, folder)
+            target_folder = os.path.join(target_dir, os.path.realpath(source_folder, source_dir))
+            try:
+                if not os.path.exists(target_folder):
+                    os.makedirs(target_folder)
+                    msg = f"建立目錄 {target_folder}。"
+                    WSysLog("1", "SyncFolder_MakeFolder", msg)
+                    sync_flag = True
+            except OSError as e:
+                msg = f"創建目錄錯誤 {target_folder} : {e}。"
+                WSysLog("3", "SyncFolder_MakeFolder", msg)
+
+        # 拷貝檔案
+        for file in files:
+            source_file = os.path.join(root, file)
+            target_file = os.path.join(target_dir, os.path.realpath(source_file, source_dir))
+            try:
+                if not os.path.exists(target_file) or os.stat(source_file).st_mtime > os.stat(target_file).st_mtime:
+                    shutil.copy2(source_file, target_file)
+                    msg = f"拷貝檔案 {source_file} 至 {target_file}。"
+                    WSysLog("1", "SyncFolder_CopyFile", msg)
+                    sync_flag = True
+            except (IOError, shutil.Error) as e:
+                msg = f"拷貝 {source_file} 至 {target_file} 錯誤，錯誤原因： {e}。"
+                WSysLog("3", "SyncFolder_CopyFile", msg)
+
+    # 歷遍目標目錄
+    for root, dirs, files in os.walk(target_dir):
+        # 刪除差異子目錄
+        for folder in dirs:
+            source_folder = os.path.join(root, folder)
+            rel_folder = os.path.join(source_folder, target_dir)
+            source_folder_full = os.path.join(source_dir, rel_folder)
+            if not os.path.exists(source_folder_full):
+                try:
+                    shutil.rmtree(source_folder)
+                    msg = f"刪除目錄 {source_folder}。"
+                    WSysLog("1", "SyncFolder_RemoveExtraFolder", msg)
+                    sync_flag = True
+                except Exception as e:
+                    msg = f"刪除 {source_folder} 目錄遇到錯誤，錯誤原因： {e}。"
+                    WSysLog("3", "SyncFolder_RemoveExtraFolder", msg)
+        
+        # 刪除差異檔案
+        for file in files:
+            source_file = os.path.join(root, file)
+            rel_file = os.path.relpath(source_file, target_dir)
+            source_file_full = os.path.join(source_dir, rel_file)
+            if not os.path.exists(source_file_full):
+                try:
+                    os.remove(source_file)
+                    msg = f"刪除檔案 {source_file}。"
+                    WSysLog("1", "SyncFolder_RemoveExtraFile", msg)
+                    sync_flag = True
+                except Exception as e:
+                    msg = f"刪除 {source_file} 檔案時遇到錯誤，錯誤原因： {e}。"
+                    WSysLog("3", "SyncFolder_RemoveExtraFile", msg)
+    if not sync_flag:
+        msg = "OneDrive與本地目錄無差異。"
+        WSysLog("1", "SyncFolder", msg)
+
+# 本地檔案同步上OneDrive
+def UploadOneDrive():
+    print()
+
+# OneDrive檔案同步至雲端
+def DownloadOneDrive():
+    print()
+
+if __name__ == "__main__":
+    # GetUserName()
+    check_onedrive_path()
+    # aa = os.path.join(SystemRoot, "654654")
+    # print(aa)

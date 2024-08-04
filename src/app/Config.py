@@ -44,8 +44,17 @@ class AppConfig:
                             if self.GlobalConfig["App"]["MonthlyFileRange"]\
                             else self.GlobalConfig["Default"]["MonthlyFileRange"]
 
+        # C槽
+        self.SystemRoot = self.GlobalConfig["SystemRoot"]
+
+        # OneDrive檔案名稱
+        self.OneDeiveFolder = self.GlobalConfig["OneDirveFolder"]
+
         # 許可的副檔名
         self.AllowFileExtensions = self.GlobalConfig["Default"]["AllowFileExtensions"]
+
+        # 取得Windows使用者名稱
+        self.WinUser = self.GlobalConfig["App"]["WinUser"]
 
         # Log參數
         self.Operator = self.GlobalConfig["App"]["User"] \
@@ -77,7 +86,6 @@ class AppConfig:
         self.SaleOutputFileHeader = self.GlobalConfig["OutputFile"]["Sale"]["Header"]
         self.SaleOutputFileExtension = self.GlobalConfig["OutputFile"]["Sale"]["Extension"]
         self.SaleErrorReportFileName = self.GlobalConfig["ErrorReport"]["Sale"]["FileName"]
-        # SaleErrorReportHeader = GlobalConfig["ErrorReport"]["Sale"]["Header"]
 
         # 庫存輸出參數
         self.InventoryOutputFileName = self.GlobalConfig["OutputFile"]["Inventory"]["FileName"]
@@ -85,7 +93,6 @@ class AppConfig:
         self.InventoryOutputFileExtension = self.GlobalConfig["OutputFile"]["Inventory"]["Extension"]
         self.InventoryOutputFileCountryCode = self.GlobalConfig["OutputFile"]["Inventory"]["CountryCode"]
         self.InventoryErrorReportFileName = self.GlobalConfig["ErrorReport"]["Inventory"]["FileName"]
-        # InventoryErrorReportHeader = GlobalConfig["ErrorReport"]["Inventory"]["Header"]
 
         # 繳交紀錄表參數
         self.SubRawDataFileName = self.GlobalConfig["SubRawData"]["FileName"]
@@ -131,16 +138,18 @@ class AppConfig:
         self.IF_Default_Header = self.DealerFormatConfig["Defualt"]["InventoryFileHeader"]
 
         # 取得目錄參數
+        self.OneDrivePath = self.GlobalConfig["App"]["OneDrivePath"]\
+                        if self.GlobalConfig["App"]["OneDrivePath"]\
+                        else self.GlobalConfig["Default"]["OneDrivePath"]
+        self.OneDrivePath = self.OneDrivePath.replace("{username}", self.WinUser)
         self.RootDir = self.GlobalConfig["DirTree"]["Path"]
         self.FolderName = self.GlobalConfig["App"]["Name"] \
                     if self.GlobalConfig["App"]["Name"] \
                     else self.GlobalConfig["Default"]["Name"]
-
         self.BDFolder = self.GlobalConfig["DirTree"]["BD"]["FolderName"]
         self.MasterFileFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["MasterFileFolder"]
         self.ReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["FolderName"]
         self.ErrorReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["NextFolder"]["ErrorReportFolder"]
-
         self.DealerFolder = self.GlobalConfig["DirTree"]["Dealer"]["FolderName"]
         self.ChangeFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["FolderName"]
         self.CompleteFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["DealerFile"]["NextFolder"]["CompletedFolder"]
@@ -160,7 +169,7 @@ class AppConfig:
         # 取得路徑
         self.LogPath = self.GlobalConfig["LogConfig"]["Path"]
         self.TemplateFolderPath = self.GlobalConfig["MailTemplate"]
-
+        
         # 取得MasterFile檔案
         self.MasterFile = [file for file in os.listdir(self.MasterFolderPath) \
                     if os.path.isfile(os.path.join(self.MasterFolderPath, file))] 
