@@ -58,7 +58,8 @@
                     "NextFolder": {
                         "BAFolder": "BA_Group"
                     }
-                }
+                },
+                "DealerFolder":"04_DealerInfo"
             }
         },
         "Dealer": {
@@ -67,7 +68,7 @@
                 "ChangeFileFolder": {
                     "FolderName": "00_ChangeFile",
                     "NextFolder": {
-                        "MergeInventoryFile": "00_Merge_Inventory",
+                        "MergeInventoryFolder": "00_Merge_Inventory",
                         "DealerGroup": "Dealer_Group"
                     }
                 },

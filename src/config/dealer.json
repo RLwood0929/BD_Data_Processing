@@ -29,6 +29,7 @@
       "PaymentCycle": "D",
       "KeyWord": NaN,
       "Extension": "csv",
+      "OUPType":false,
       "FileHeader": [
         "Record ID",
         "Collection Date",
@@ -110,6 +111,7 @@
     "SaleFile": {
       "PaymentCycle": "M",
       "KeyWord": NaN,
+      "OUPType":true,
       "Extension": "csv",
       "FileHeader": [
         "Record ID",

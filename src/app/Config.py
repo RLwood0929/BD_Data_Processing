@@ -152,6 +152,7 @@ class AppConfig:
         self.ErrorReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["NextFolder"]["ErrorReportFolder"]
         self.DealerFolder = self.GlobalConfig["DirTree"]["Dealer"]["FolderName"]
         self.ChangeFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["FolderName"]
+        self.MergeInventoryFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["NextFolder"]["MergeInventoryFolder"]
         self.CompleteFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["DealerFile"]["NextFolder"]["CompletedFolder"]
 
         # 制定全域目錄參數

@@ -199,6 +199,38 @@ def search_dp(input_data, dealer_id):
                 dp = dp_list[-1]
                 output.append(dp)
         return output, error_row
+    
+def search_cost(input_data, dealer_id):
+    result, master_data, _ = read_master_file()
+    output, error_row = [], {}
+    if result:
+        master_col = master_data.columns.values
+        for row in range(len(input_data)):
+            product_id = str(input_data["Product ID"][row])
+            data_date = input_data["Transaction Date"][row]
+            search_data = master_data[(master_data[master_col[0]] == dealer_id) & \
+                                        (master_data[master_col[1]] == product_id)]
+            search_data = search_data.reset_index(drop=True)
+            in_range_flag = False
+            cost_list = []
+
+            for i in range(len(search_data)):
+                start_date = datetime.strptime(search_data[master_col[7]][i], "%Y%m%d")
+                end_date = datetime.strptime(search_data[master_col[8]][i], "%Y%m%d")
+
+                if start_date <= data_date <= end_date:
+                    in_range_flag = True
+                    cost = search_data[master_col[3]][i]
+                    cost_list.append(cost)
+            
+            if not in_range_flag:
+                msg = f"此貨號未搜尋到起迄區間符合 {datetime.strftime(data_date, '%Y/%m/%d')} 之資料。"
+                error_row[row] = msg
+
+            else:
+                cost = cost_list[-1]
+                output.append(cost)
+        return output, error_row
 
 # 多欄位值合併
 def merge_columns(input_data, source_col, value):
@@ -221,6 +253,7 @@ def ChangeSaleFile(dealer_id, file_name):
 
     dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
     dealer_country = Config.DealerConfig[f"Dealer{index}"]["Country"]
+    dealer_OUP_type = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["OUPType"]
     file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     input_data = read_data(file_path)
 
@@ -242,10 +275,13 @@ def ChangeSaleFile(dealer_id, file_name):
         target_col = change_rules[f"Column{rule_index}"]["ColumnName"]
         rule = change_rules[f"Column{rule_index}"]["ChangeRule"]
         value = change_rules[f"Column{rule_index}"]["Value"]
-        
+        if (target_col == "Gross Revenue") and (dealer_OUP_type == False):
+            rule = "SearchDP"
+        if (target_col == "Demand Class Desc") and (dealer_OUP_type == False):
+            rule = "SearchCost"
+
         # 欄位為固定值
         if rule == "FixedValue":
-            
             if target_col == "Area":
                 value = dealer_country
             
@@ -255,6 +291,7 @@ def ChangeSaleFile(dealer_id, file_name):
         
         # 搬移資料
         elif rule == "Move":
+            
             output_data[target_col] = move_rule(input_data, source_col)
         
         # 變更時間格式
@@ -289,6 +326,19 @@ def ChangeSaleFile(dealer_id, file_name):
                 error_data.loc[len(error_data)] = new_error
             output_data[target_col] = output
         
+        elif rule == "SearchCost":
+            output, error_row = search_cost(input_data, dealer_id)
+            
+            for row, msg in error_row.items():
+                change_status = "NO"
+                output_data = output_data.drop(row).reset_index(drop=True)
+                new_error = input_data.iloc[row].to_dict()
+                new_error["Dealer ID"] = dealer_id
+                new_error["Dealer Name"] = dealer_name
+                new_error["Exchange Error Issue"] = msg
+                error_data.loc[len(error_data)] = new_error
+            output_data[target_col] = output
+
         # 多欄位內容合併
         elif rule == "MergeColumns":
             output_data[target_col] = merge_columns(input_data, source_col, value)
@@ -545,9 +595,46 @@ def MargeInventoryFile():
         msg = f"合併檔案發生未知錯誤，{e}。"
         WSysLog("3", "MargeInventoryFile", msg)
 
+# 檔案上傳EFT雲端完成後歸檔
+def FileArchiving():
+    file_names = [file for file in os.listdir(Config.ChangeFolderPath) \
+                if os.path.isfile(os.path.join(Config.ChangeFolderPath, file))]
+    
+    for file in file_names:
+        part = file.split("_")
+        for dealer_id in Config.DealerList:
+            if part[0] == dealer_id:
+                target_folder = os.path.join(Config.ChangeFolderPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
+                if not os.path.exists(target_folder):
+                    os.makedirs(target_folder)
+                file_source = os.path.join(Config.ChangeFolderPath, file)
+                file_target = os.path.join(target_folder, file)
+                shutil.move(file_source, file_target)
+                if os.path.exists(file_target):
+                    msg = f"檔案搬移至 {target_folder} 成功"
+                    WSysLog("1", "MoveInventoryFile", msg)
+                else:
+                    msg = f"檔案搬移至 {target_folder} 失敗"
+                    WSysLog("2", "MoveInventoryFile", msg)
+                # break
+
+        if part[0] == Config.InventoryOutputFileCountryCode:
+            target_folder = os.path.join(Config.ChangeFolderPath, Config.MergeInventoryFolder, datetime.strftime(Config.SystemTime, "%Y%m"))
+            if not os.path.exists(target_folder):
+                os.makedirs(target_folder)
+            file_source = os.path.join(Config.ChangeFolderPath, file)
+            file_target = os.path.join(target_folder, file)
+            shutil.move(file_source, file_target)
+            if os.path.exists(file_target):
+                msg = f"檔案搬移至 {target_folder} 成功"
+                WSysLog("1", "MoveInventoryFile", msg)
+            else:
+                msg = f"檔案搬移至 {target_folder} 失敗"
+                WSysLog("2", "MoveInventoryFile", msg)
+
 if __name__ == "__main__":
-    aa = {17: '111_I_20240726.csv', 18: '111_S_20240726.csv'}
-    Changing(aa)
+    # aa = {17: '111_I_20240726.csv', 18: '111_S_20240726.csv'}
+    # Changing(aa)
     # ChangeSaleFile(dealerID, FilePath)
     # input_data, data_max_row = read_data(FilePath)
     # dealerID = "111"
@@ -555,3 +642,4 @@ if __name__ == "__main__":
     # ChangeInventoryFile(dealerID, FilePath)
     # check_product_id(dealerID, input_data)
     # MargeInventoryFile()
+    FileArchiving()
