@@ -8,9 +8,9 @@ Writer：Qian
 # 三個合併檔案待寫
 
 import os
-from datetime import datetime
 from Log import WSysLog
 from Config import AppConfig
+from datetime import datetime
 from SystemConfig import WrightFileJson
 from openpyxl import Workbook, load_workbook
 
