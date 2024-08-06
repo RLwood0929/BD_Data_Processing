@@ -210,7 +210,7 @@ def check_ba():
         BA_id = ba["BA_ID"]
         if BA_id not in json_data["FileInfo"]:
             flag = False
-            json_data["FileInfo"][BA_id] = {"MasterFile":None, "KAList":None, "DealerInfo":None}
+            json_data["FileInfo"][BA_id] = {"MasterFile":None, "DealerInfo":None, "KAList":None}
 
     if flag:
         msg = "files.json資料無異動。"

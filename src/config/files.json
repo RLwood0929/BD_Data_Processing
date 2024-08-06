@@ -1,24 +1,30 @@
 {
     "FileInfo": {
         "BA01": {
-            "MasterFile": "2024/08/06 12:03:12",
-            "KAList": null,
-            "DealerInfo": "2024/08/06 12:03:12"
+            "MasterFile": "2024/08/06 12:28:27",
+            "DealerInfo": "2024/08/06 12:28:27",
+            "KAList": null
         },
         "BA02": {
-            "MasterFile": "2024/08/06 12:03:12",
-            "KAList": null,
-            "DealerInfo": "2024/08/06 12:03:12"
+            "MasterFile": "2024/08/06 12:28:27",
+            "DealerInfo": "2024/08/06 12:28:27",
+            "KAList": null
         },
         "BA03": {
-            "MasterFile": "2024/08/06 12:03:12",
-            "KAList": null,
-            "DealerInfo": "2024/08/06 12:03:12"
+            "MasterFile": "2024/08/06 12:28:27",
+            "DealerInfo": "2024/08/06 12:28:27",
+            "KAList": null
         },
         "BA04": {
-            "MasterFile": "2024/08/06 12:03:12",
-            "KAList": null,
-            "DealerInfo": "2024/08/06 12:03:12"
+            "MasterFile": "2024/08/06 12:28:27",
+            "DealerInfo": "2024/08/06 12:28:27",
+            "KAList": null
+        }
+    },
+    "System": {
+        "Config1": {
+            "FileName": "",
+            "FileWriteTime": ""
         }
     }
 }
