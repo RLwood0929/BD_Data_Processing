@@ -100,6 +100,88 @@
         "SMTPPort": 587,
         "IMAPPort": 993
     },
+    "MasterFile": {
+        "FileName": "MasterFile.xlsx",
+        "SheetName": "MasterFile",
+        "Header": [
+            "經銷商號碼\nSold-to code",
+            "貨號",
+            "UOM",
+            "std cost (EA)",
+            "DP(EA)",
+            "KADP(EA)",
+            "IVY (EA)",
+            "起",
+            "迄"
+        ],
+        "ColumnWidth":[
+            15,
+            25,
+            10,
+            15,
+            15,
+            15,
+            15,
+            10,
+            10
+        ]
+    },
+    "KAList": {
+        "FileName": "KAList.xlsx",
+        "SheetName": "KAList",
+        "Header": [
+            "客戶號",
+            "起",
+            "迄",
+            "Price TYPE"
+        ],
+        "ColumnWidth":[
+            15,
+            10,
+            10,
+            15
+        ]
+    },
+    "DealerInfo": {
+        "FileName": "DealerInfo.xlsx",
+        "SheetName": "DealerInfo",
+        "Header": [
+            "ID",
+            "Dealer ID",
+            "Dealer Compiled",
+            "Dealer Name",
+            "Dealer Kind",
+            "Telephone Number",
+            "Position",
+            "Name",
+            "Mail",
+            "Ex",
+            "KA Dealer",
+            "Sale File Payment Cycle",
+            "Sale File Extension",
+            "Sale File OUP Type",
+            "Inventory File Paymeny Cycle",
+            "Inventory File Extension"
+        ],
+        "ColumnWidth":[
+            10,
+            10,
+            20,
+            15,
+            15,
+            20,
+            40,
+            15,
+            25,
+            15,
+            15,
+            30,
+            30,
+            30,
+            30,
+            30
+        ]
+    },
     "SubRawData": {
         "FileName": "{Year}_繳交紀錄表.xlsx",
         "SheetName": "{Month}月",

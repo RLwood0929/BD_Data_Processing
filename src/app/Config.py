@@ -3,7 +3,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from openpyxl.styles import Alignment
 from SystemConfig import Config, DealerConf, CheckRule, DealerFormatConf,\
-                         MappingRule, MailRule, User
+                         MappingRule, MailRule, User, File
 
 # 程式全域參數
 class AppConfig:
@@ -32,6 +32,7 @@ class AppConfig:
         self.DealerFormatConfig = DealerFormatConf()
         self.MailConfig = MailRule()
         self.UserConfig = User()
+        self.FileConfig = File()
 
         # 測試模式
         self.TestMode = self.GlobalConfig["Default"]["TestMode"]
@@ -76,6 +77,23 @@ class AppConfig:
         # 取得EFT Config
         self.EFTHostName = self.GlobalConfig["EFT"]["HostName"]
         self.EFTDir = self.GlobalConfig["EFT"]["Dir"]
+
+        
+        self.MasterFileName= self.GlobalConfig["MasterFile"]["FileName"]
+        self.MasterFileSheetName = self.GlobalConfig["MasterFile"]["SheetName"]
+        self.MasterFileHeader = self.GlobalConfig["MasterFile"]["Header"]
+        self.MasterFileColumnWidth = self.GlobalConfig["MasterFile"]["ColumnWidth"]
+
+        self.KAListFileName = self.GlobalConfig["KAList"]["FileName"]
+        self.KAListFileSheetName = self.GlobalConfig["KAList"]["SheetName"]
+        self.KAListFileHeader = self.GlobalConfig["KAList"]["Header"]
+        self.KAListFileColumnWidth = self.GlobalConfig["KAList"]["ColumnWidth"]
+
+        self.DealerInfoFileName = self.GlobalConfig["DealerInfo"]["FileName"]
+        self.DealerInfoFileSheetName = self.GlobalConfig["DealerInfo"]["SheetName"]
+        self.DealerInfoFileHeader = self.GlobalConfig["DealerInfo"]["Header"]
+        self.DealerInfoFileColumnWidth = self.GlobalConfig["DealerInfo"]["ColumnWidth"]
+
 
         # 檔案轉換規則
         self.SaleFileChangeRule = self.MappingConfig["MappingRule"]["Sale"]
@@ -150,6 +168,7 @@ class AppConfig:
         self.MasterFileFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["MasterFileFolder"]
         self.ReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["FolderName"]
         self.ErrorReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["NextFolder"]["ErrorReportFolder"]
+        self.BAFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["BAFolder"]["FolderName"]
         self.DealerFolder = self.GlobalConfig["DirTree"]["Dealer"]["FolderName"]
         self.ChangeFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["FolderName"]
         self.MergeInventoryFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["NextFolder"]["MergeInventoryFolder"]
@@ -164,6 +183,7 @@ class AppConfig:
         self.DailyReportPath = os.path.join(self.ReportFolderPath, self.DailyReportFileName)
         self.MonthlyReportPath = os.path.join(self.ReportFolderPath, self.MonthlyReportFileName)
         self.NotSubPath = os.path.join(self.ReportFolderPath, self.NotSubFileName)
+        self.BAFolderPath = os.path.join(self.BDFolderPath, self.BAFolder)
         self.DealerFolderPath = os.path.join(self.RootDir, self.FolderName, self.DealerFolder)
         self.ChangeFolderPath = os.path.join(self.DealerFolderPath, self.ChangeFolder)
 

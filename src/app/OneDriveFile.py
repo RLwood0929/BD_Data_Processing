@@ -264,7 +264,7 @@ def sync_folder(source_dir, target_dir, skip_list = []):
     #                 msg = f"刪除 {target_file} 檔案時遇到錯誤，錯誤原因： {e}。"
     #                 WSysLog("3", "SyncFolder_RemoveExtraFile", msg)
     if not sync_flag:
-        msg = "OneDrive與本地目錄無差異。"
+        msg = "OneDrive與本地目錄結構無差異。"
         WSysLog("1", "SyncFolder", msg)
 
 # 本地檔案同步上OneDrive

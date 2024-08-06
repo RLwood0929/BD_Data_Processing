@@ -13,6 +13,7 @@ class ConfigJsonFile:
     SUB_RECORD_CONFIG = "sub_record.json"
     MAIL_RULE_CONFIG = "mail.json"
     USER_CONFIG = "user.json"
+    FILE_CONFIG = "files.json"
 
     def __init__(self):
         self.ConfigPath = os.path.join(self.CONFIG_FOLDER, self.SYSTEM_CONFIG)
@@ -24,3 +25,4 @@ class ConfigJsonFile:
         self.SubRecordPath = os.path.join(self.CONFIG_FOLDER, self.SUB_RECORD_CONFIG)
         self.MailRulePath = os.path.join(self.CONFIG_FOLDER, self.MAIL_RULE_CONFIG)
         self.UserConfigPath = os.path.join(self.CONFIG_FOLDER, self.USER_CONFIG)
+        self.FileConfigPath = os.path.join(self.CONFIG_FOLDER, self.FILE_CONFIG)

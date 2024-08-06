@@ -44,6 +44,10 @@ def MailRule():
 def User():
     return read_json(ConfigInfo.UserConfigPath)
 
+# 讀取 files.json
+def File():
+    return read_json(ConfigInfo.FileConfigPath)
+
 # 將 excel 內容轉變為json ##
 def write_rule_json(file_path, sheet, data_name, output_name):
     df = pd.read_excel(file_path,sheet_name=sheet)
@@ -290,6 +294,11 @@ def WrightOneDrivePath(file_path):
     msg = f"OneDrive目錄更新，目錄：{file_path}。"
     return msg
 
+def WrightFileJson(data):
+    with open(ConfigInfo.FileConfigPath, "w", encoding = "UTF-8") as file:
+        json.dump(data, file, ensure_ascii = False, indent = 4)
+    msg = f"File.json BA資訊更新，{data['FileInfo']}。"
+    return msg
 
 if __name__ == "__main__":
     # DealerJson()

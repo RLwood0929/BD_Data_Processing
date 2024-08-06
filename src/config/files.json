@@ -1,0 +1,29 @@
+{
+    "FileInfo": {
+        "BA01": {
+            "MasterFile": null,
+            "KAList": null,
+            "DealerInfo": null
+        },
+        "BA02": {
+            "MasterFile": null,
+            "KAList": null,
+            "DealerInfo": null
+        },
+        "BA03": {
+            "MasterFile": null,
+            "KAList": null,
+            "DealerInfo": null
+        },
+        "BA04": {
+            "MasterFile": null,
+            "KAList": null,
+            "DealerInfo": null
+        }
+    },
+    "System":{
+        "Config01":{
+            "FileName":""
+        }
+    }
+}
