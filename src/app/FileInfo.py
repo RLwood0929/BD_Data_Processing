@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+
+'''
+檔案說明：MasterFile、DealerInfo、KAList等檔案初始化建立、合併
+Writer：Qian
+'''
+
+# 三個合併檔案待寫
+
 import os
 from datetime import datetime
 from Log import WSysLog
@@ -92,10 +101,12 @@ def wright_dealer_info_in_file(file_path, sheet_name, file_header, BA_dealer_id)
 # 檢查BA目錄底下檔案
 def CheckBAFolderFiles():
     BA_list = get_BA()
-    flag = True
+    # 初始建立旗幟
+    flag = False
     master_file = Config.MasterFileName
     dealer_info_file = Config.DealerInfoFileName
     kalist_file = Config.KAListFileName
+    json_data = Config.FileConfig
     file_time_dic = {}
     for ba in BA_list:
         file_time = {}
@@ -112,41 +123,53 @@ def CheckBAFolderFiles():
         master_file_path = os.path.join(folder_path, master_file)
         dealer_info_file_path = os.path.join(folder_path, dealer_info_file)
 
-        # 目標目錄找不到 masterfile 時須建立一份空的 masterfile
+        # 目標目錄找不到 MasterFile 時須建立一份空的 MasterFile
         if not os.path.exists(master_file_path):
-            flag = False
+            flag = True
             msg = f"{ba_folder_name}目錄下缺少{master_file}檔案，系統將建立空白檔案。"
             WSysLog("2", "CheckBAFolderFiles", msg)
             sheet_name = Config.MasterFileSheetName
             file_header = Config.MasterFileHeader
             column_width = Config.MasterFileColumnWidth
             make_format_file(folder_path, master_file, sheet_name, file_header, column_width)
+            file_write_time = datetime.fromtimestamp(os.path.getatime(master_file_path))
+            file_write_time = datetime.strftime(file_write_time, "%Y/%m/%d %H:%M:%S")
+            json_data["FileInfo"][BA_id]["MasterFile"] = file_write_time
+            msg = WrightFileJson(json_data)
+            WSysLog("1", "CheckBAFolderFiles", msg)
             file_time["MasterFile"] = None
         else:
             file_time["MasterFile"] = datetime.fromtimestamp(os.path.getatime(master_file_path))
 
-        # 目標目錄找不到 dealerinfo 時須建立一份空的 dealerinfo
+        # 目標目錄找不到 DealerInfo 時須建立一份空的 DealerInfo
         if not os.path.exists(dealer_info_file_path):
-            flag = False
+            flag = True
             msg = f"{ba_folder_name}目錄下缺少{dealer_info_file}檔案，系統將建立空白檔案。"
             WSysLog("2", "CheckBAFolderFiles", msg)
             sheet_name = Config.DealerInfoFileSheetName
             file_header = Config.DealerInfoFileHeader
+            file_header = file_header[1:]
             column_width = Config.DealerInfoFileColumnWidth
+            column_width = column_width[1:]
             make_format_file(folder_path, dealer_info_file, sheet_name, file_header, column_width)
             wright_dealer_info_in_file(dealer_info_file_path, sheet_name, file_header, BA_dealer_id)
+            file_write_time = datetime.fromtimestamp(os.path.getatime(dealer_info_file_path))
+            file_write_time = datetime.strftime(file_write_time, "%Y/%m/%d %H:%M:%S")
+            json_data["FileInfo"][BA_id]["DealerInfo"] = file_write_time
+            msg = WrightFileJson(json_data)
+            WSysLog("1", "CheckBAFolderFiles", msg)
             file_time["DealerInfo"] = None
         else:
             file_time["DealerInfo"] = datetime.fromtimestamp(os.path.getatime(dealer_info_file_path))
 
-        # KAList
+        # 目標目錄找不到 KAList 時須建立一份空的 KAList
         for ka_dealer in Config.KADealerList:
             if ka_dealer in BA_dealer_id:
                 ka_list_file_path = os.path.join(folder_path, kalist_file)
                 
                 # 目標目錄找不到kalist時須建立一份空的kalist
                 if not os.path.exists(ka_list_file_path):
-                    flag = False
+                    flag = True
                     msg = f"{ba_folder_name}目錄下缺少{kalist_file}檔案，系統將建立空白檔案。"
                     WSysLog("2", "CheckBAFolderFiles", msg)
                     sheet_name = Config.KAListFileSheetName
@@ -160,18 +183,22 @@ def CheckBAFolderFiles():
                     file_header[0] = dealer_name + file_header[0]
                     column_width = Config.KAListFileColumnWidth
                     make_format_file(folder_path, kalist_file, sheet_name, file_header, column_width)
+                    file_write_time = datetime.fromtimestamp(os.path.getatime(ka_list_file_path))
+                    file_write_time = datetime.strftime(file_write_time, "%Y/%m/%d %H:%M:%S")
+                    json_data["FileInfo"][BA_id]["KAList"] = file_write_time
+                    msg = WrightFileJson(json_data)
                     file_time["KAList"] = None
                 else:
                     file_time["KAList"] = datetime.fromtimestamp(os.path.getatime(ka_list_file_path))
 
         file_time_dic[BA_id] = file_time
     
-    if flag:
+    if not flag:
         msg = "BA目錄底下應有檔案都存在。" 
         WSysLog("1", "CheckBAFolderFiles", msg)
         return file_time_dic
     else:
-        return None
+        return file_time_dic
     
 # 依據BA人數調整files.json格式
 def check_ba():
@@ -188,17 +215,71 @@ def check_ba():
     if flag:
         msg = "files.json資料無異動。"
         WSysLog("1", "CheckBA", msg)
+        return json_data
     else:
         msg = WrightFileJson(json_data)
         WSysLog("1", "CheckBA", msg)
+        return json_data
+
+#
+def merge_masterfile():
+    print()
+
+#
+def merge_dealerinfo():
+    print()
+
+#
+def merge_kalist():
+    print()
 
 # 檢查檔案資訊主程式
 def CheckFileInfo():
-    result = CheckBAFolderFiles()
-    if result is not None:
-        check_ba()
-        BA_list = get_BA()
+    master_flag, kalist_flag, dealerinfo_flag = False, False, False
+    os_file_time = CheckBAFolderFiles()
+    json_data = check_ba()
+    record_file_time = json_data["FileInfo"]
 
+    # 取得作業系統檔案更新時與紀錄中比對，判定是否需要更新
+    for BA_id, files_time in os_file_time.items():
+        for file_name, file_time in files_time.items():
+            if file_time:
+                last_file_time = record_file_time[BA_id][file_name]
+                last_file_time = datetime.strptime(last_file_time, "%Y/%m/%d %H:%M:%S")
+                if last_file_time != file_time:
+                    if file_time > last_file_time:
+                        msg = f"{BA_id} 的 {file_name} 檔案內容更新，系統需更新 {file_name} 總表。"
+                        WSysLog("1", "CheckFileInfo", msg)
+                        file_time = datetime.strftime(file_time, "%Y/%m/%d %H:%M:%S")
+                        record_file_time[BA_id][file_name] = file_time
+                        json_data["FileInfo"] = record_file_time
+                        msg = WrightFileJson(json_data)
+                        WSysLog("1", "CheckFileInfo", msg)
+
+                        if file_name == "MasterFile":
+                            master_flag = True
+                        elif file_name == "DealerInfo":
+                            dealerinfo_flag = True
+                        elif file_name == "KAList":
+                            kalist_flag = True
+
+                    else:
+                        msg = f"{BA_id} 的 {file_name}檔案異動時間異常，小於系統紀錄時間。"
+                        WSysLog("3", "CheckFileInfo", msg)
+
+                else:
+                    msg = f"系統偵測 {BA_id} 的 {file_name} 檔案無更新。"
+                    WSysLog("1", "CheckFileInfo", msg)
+            else:
+                msg = f"系統初始化建立 {file_name} 檔案於 {BA_id} 中，請填寫完畢後，在執行一次系統。"
+                WSysLog("1", "CheckFileInfo", msg)
+
+    if master_flag:
+        merge_masterfile()
+    if dealerinfo_flag:
+        merge_dealerinfo()
+    if kalist_flag:
+        merge_kalist()
 
 if __name__ == "__main__":
-    CheckBAFolderFiles()
+    CheckFileInfo()
