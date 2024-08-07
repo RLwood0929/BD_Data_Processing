@@ -8,6 +8,7 @@ Writer：Qian
 # 三個合併檔案待寫
 
 import os
+import pandas as pd
 from Log import WSysLog
 from Config import AppConfig
 from datetime import datetime
@@ -71,7 +72,7 @@ def wright_dealer_info_in_file(file_path, sheet_name, file_header, BA_dealer_id)
     try:
         wb = load_workbook(file_path)
         ws = wb[sheet_name]
-        position_list = ["業務窗口","專案聯絡人(IT人員 or 資料管理人員","財務窗口"]
+        position_list = ["業務窗口","IT人員 or 資料管理人員","專案負責人"]
         content_col = ["Position", "Name", "Mail", "Ex"]
         for row in range(2, (len(BA_dealer_id))*3+1, 3):
             index = int((row - 2) / 3)
@@ -133,7 +134,7 @@ def CheckBAFolderFiles():
             column_width = Config.MasterFileColumnWidth
             make_format_file(folder_path, master_file, sheet_name, file_header, column_width)
             file_write_time = datetime.fromtimestamp(os.path.getatime(master_file_path))
-            file_write_time = datetime.strftime(file_write_time, "%Y/%m/%d %H:%M:%S")
+            file_write_time = file_write_time.isoformat()
             json_data["FileInfo"][BA_id]["MasterFile"] = file_write_time
             msg = WrightFileJson(json_data)
             WSysLog("1", "CheckBAFolderFiles", msg)
@@ -154,7 +155,7 @@ def CheckBAFolderFiles():
             make_format_file(folder_path, dealer_info_file, sheet_name, file_header, column_width)
             wright_dealer_info_in_file(dealer_info_file_path, sheet_name, file_header, BA_dealer_id)
             file_write_time = datetime.fromtimestamp(os.path.getatime(dealer_info_file_path))
-            file_write_time = datetime.strftime(file_write_time, "%Y/%m/%d %H:%M:%S")
+            file_write_time = file_write_time.isoformat()
             json_data["FileInfo"][BA_id]["DealerInfo"] = file_write_time
             msg = WrightFileJson(json_data)
             WSysLog("1", "CheckBAFolderFiles", msg)
@@ -184,7 +185,7 @@ def CheckBAFolderFiles():
                     column_width = Config.KAListFileColumnWidth
                     make_format_file(folder_path, kalist_file, sheet_name, file_header, column_width)
                     file_write_time = datetime.fromtimestamp(os.path.getatime(ka_list_file_path))
-                    file_write_time = datetime.strftime(file_write_time, "%Y/%m/%d %H:%M:%S")
+                    file_write_time = file_write_time.isoformat()
                     json_data["FileInfo"][BA_id]["KAList"] = file_write_time
                     msg = WrightFileJson(json_data)
                     file_time["KAList"] = None
@@ -221,21 +222,69 @@ def check_ba():
         WSysLog("1", "CheckBA", msg)
         return json_data
 
-#
-def merge_masterfile():
-    print()
+# 系統合併 masterfile 檔案
+def merge_masterfile(aa):
+    print(aa)
 
-#
-def merge_dealerinfo():
-    print()
+# 系統合併 DealerInfo 檔案 #
+def merge_dealerinfo(write_new_list):
+    BA_list = get_BA()
+    folder_path = Config.DealerInfoPath
+    file_name = Config.DealerInfoFileName
+    sheet_name = Config.DealerInfoFileSheetName
+    file_header = Config.DealerInfoFileHeader
+    column_width = Config.DealerInfoFileColumnWidth
+    general_data_path = os.path.join(folder_path, file_name)
+    content_col = ["Position", "Name", "Mail", "Ex"]
 
-#
+    # 總表存放目錄底下沒有總表檔案時，直接合併全部產生一份檔案
+    if not os.path.exists(general_data_path):
+        msg = f"{folder_path} 目錄底下無 {file_name} 總表檔案，系統將重新產生。"
+        WSysLog("2", "MergeDealerInfo", msg)
+        wb = Workbook()
+        wb.remove(wb.active)
+        ws = wb.create_sheet(title = sheet_name)
+    else:
+        wb = load_workbook(general_data_path)
+        ws = wb[sheet_name]
+
+    dataframes = []
+    for ba in BA_list:
+        BA_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+        file_path = os.path.join(Config.BAFolderPath, BA_folder_name, file_name)
+        dataframes.append(pd.read_excel(file_path))
+    conbined_df = pd.concat(dataframes, ignore_index = True)
+    dealer_id = [f"Dealer{i + 1}" for i in range(int(len(conbined_df) / 3))]
+    conbined_df.insert(0, "ID", None)
+    # 將id資料寫入合併後的df
+    for row in range(0, len(conbined_df), 3):
+        conbined_df.loc[row, "ID"] = dealer_id[int(row / 3)]
+
+    fixed_columns = get_excel_colmun_name(file_header)
+    for col, data in zip(fixed_columns, file_header):
+            ws[f"{col}1"] = data
+    excel_style(ws, column_width, fixed_columns)
+    # 將資料寫入工作表
+    for row in range(len(conbined_df)):
+        for col_name in conbined_df.columns.values:
+            col = search_column_name(file_header, col_name)
+            ws[f"{col}{row + 2}"] = conbined_df[col_name][row]
+            ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
+    
+    for row in range(2, len(conbined_df) + 1, 3):
+        for col_name in conbined_df.columns.values:
+            if col_name not in content_col:
+                col = search_column_name(file_header, col_name)
+                ws.merge_cells(f"{col}{row}:{col}{row + 2}")
+    wb.save(general_data_path)
+
+# 系統合併 KAList 檔案
 def merge_kalist():
     print()
 
 # 檢查檔案資訊主程式
 def CheckFileInfo():
-    master_flag, kalist_flag, dealerinfo_flag = False, False, False
+    master_new, kalist_new, dealerinfo_new = [], [], []
     os_file_time = CheckBAFolderFiles()
     json_data = check_ba()
     record_file_time = json_data["FileInfo"]
@@ -245,23 +294,24 @@ def CheckFileInfo():
         for file_name, file_time in files_time.items():
             if file_time:
                 last_file_time = record_file_time[BA_id][file_name]
-                last_file_time = datetime.strptime(last_file_time, "%Y/%m/%d %H:%M:%S")
+                last_file_time = datetime.fromisoformat(last_file_time)
+
                 if last_file_time != file_time:
                     if file_time > last_file_time:
                         msg = f"{BA_id} 的 {file_name} 檔案內容更新，系統需更新 {file_name} 總表。"
                         WSysLog("1", "CheckFileInfo", msg)
-                        file_time = datetime.strftime(file_time, "%Y/%m/%d %H:%M:%S")
+                        file_time = file_time.isoformat()
                         record_file_time[BA_id][file_name] = file_time
                         json_data["FileInfo"] = record_file_time
                         msg = WrightFileJson(json_data)
                         WSysLog("1", "CheckFileInfo", msg)
 
                         if file_name == "MasterFile":
-                            master_flag = True
+                            master_new.append(BA_id)
                         elif file_name == "DealerInfo":
-                            dealerinfo_flag = True
+                            dealerinfo_new.append(BA_id)
                         elif file_name == "KAList":
-                            kalist_flag = True
+                            kalist_new.append(BA_id)
 
                     else:
                         msg = f"{BA_id} 的 {file_name}檔案異動時間異常，小於系統紀錄時間。"
@@ -274,12 +324,14 @@ def CheckFileInfo():
                 msg = f"系統初始化建立 {file_name} 檔案於 {BA_id} 中，請填寫完畢後，在執行一次系統。"
                 WSysLog("1", "CheckFileInfo", msg)
 
-    if master_flag:
-        merge_masterfile()
-    if dealerinfo_flag:
-        merge_dealerinfo()
-    if kalist_flag:
-        merge_kalist()
+    if master_new:
+        merge_masterfile(master_new)
+    if dealerinfo_new:
+        merge_dealerinfo(dealerinfo_new)
+    if kalist_new:
+        merge_kalist(kalist_new)
 
 if __name__ == "__main__":
-    CheckFileInfo()
+    # CheckFileInfo()
+    aa = []
+    merge_dealerinfo(aa)

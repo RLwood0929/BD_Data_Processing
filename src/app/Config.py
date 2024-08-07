@@ -169,6 +169,7 @@ class AppConfig:
         self.ReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["FolderName"]
         self.ErrorReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["NextFolder"]["ErrorReportFolder"]
         self.BAFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["BAFolder"]["FolderName"]
+        self.DealerInfoFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["DealerFolder"]
         self.DealerFolder = self.GlobalConfig["DirTree"]["Dealer"]["FolderName"]
         self.ChangeFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["FolderName"]
         self.MergeInventoryFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["ChangeFileFolder"]["NextFolder"]["MergeInventoryFolder"]
@@ -184,6 +185,7 @@ class AppConfig:
         self.MonthlyReportPath = os.path.join(self.ReportFolderPath, self.MonthlyReportFileName)
         self.NotSubPath = os.path.join(self.ReportFolderPath, self.NotSubFileName)
         self.BAFolderPath = os.path.join(self.BDFolderPath, self.BAFolder)
+        self.DealerInfoPath = os.path.join(self.BDFolderPath, self.DealerInfoFolder)
         self.DealerFolderPath = os.path.join(self.RootDir, self.FolderName, self.DealerFolder)
         self.ChangeFolderPath = os.path.join(self.DealerFolderPath, self.ChangeFolder)
 
