@@ -12,7 +12,7 @@ import pandas as pd
 from Log import WSysLog
 from Config import AppConfig
 from datetime import datetime
-from SystemConfig import WrightFileJson
+from SystemConfig import WriteFileJson, WriteDealerJson
 from openpyxl import Workbook, load_workbook
 
 Config = AppConfig()
@@ -136,7 +136,7 @@ def CheckBAFolderFiles():
             file_write_time = datetime.fromtimestamp(os.path.getatime(master_file_path))
             file_write_time = file_write_time.isoformat()
             json_data["FileInfo"][BA_id]["MasterFile"] = file_write_time
-            msg = WrightFileJson(json_data)
+            msg = WriteFileJson(json_data)
             WSysLog("1", "CheckBAFolderFiles", msg)
             file_time["MasterFile"] = None
         else:
@@ -157,7 +157,7 @@ def CheckBAFolderFiles():
             file_write_time = datetime.fromtimestamp(os.path.getatime(dealer_info_file_path))
             file_write_time = file_write_time.isoformat()
             json_data["FileInfo"][BA_id]["DealerInfo"] = file_write_time
-            msg = WrightFileJson(json_data)
+            msg = WriteFileJson(json_data)
             WSysLog("1", "CheckBAFolderFiles", msg)
             file_time["DealerInfo"] = None
         else:
@@ -187,7 +187,7 @@ def CheckBAFolderFiles():
                     file_write_time = datetime.fromtimestamp(os.path.getatime(ka_list_file_path))
                     file_write_time = file_write_time.isoformat()
                     json_data["FileInfo"][BA_id]["KAList"] = file_write_time
-                    msg = WrightFileJson(json_data)
+                    msg = WriteFileJson(json_data)
                     file_time["KAList"] = None
                 else:
                     file_time["KAList"] = datetime.fromtimestamp(os.path.getatime(ka_list_file_path))
@@ -218,7 +218,7 @@ def check_ba():
         WSysLog("1", "CheckBA", msg)
         return json_data
     else:
-        msg = WrightFileJson(json_data)
+        msg = WriteFileJson(json_data)
         WSysLog("1", "CheckBA", msg)
         return json_data
 
@@ -229,6 +229,7 @@ def merge_masterfile(aa):
 # 系統合併 DealerInfo 檔案 #
 def merge_dealerinfo(write_new_list):
     BA_list = get_BA()
+    dealer_list = Config.DealerList
     folder_path = Config.DealerInfoPath
     file_name = Config.DealerInfoFileName
     sheet_name = Config.DealerInfoFileSheetName
@@ -236,6 +237,7 @@ def merge_dealerinfo(write_new_list):
     column_width = Config.DealerInfoFileColumnWidth
     general_data_path = os.path.join(folder_path, file_name)
     content_col = ["Position", "Name", "Mail", "Ex"]
+    
 
     # 總表存放目錄底下沒有總表檔案時，直接合併全部產生一份檔案
     if not os.path.exists(general_data_path):
@@ -244,42 +246,101 @@ def merge_dealerinfo(write_new_list):
         wb = Workbook()
         wb.remove(wb.active)
         ws = wb.create_sheet(title = sheet_name)
+        dataframes, dealers, dealer_part, dealer_part_dct = [], [], [], {}
+
+        for ba in BA_list:
+            BA_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+            file_path = os.path.join(Config.BAFolderPath, BA_folder_name, file_name)
+            dealer_data = pd.read_excel(file_path, dtype = str)
+            part = [dealer_data.iloc[i:i+3].reset_index(drop=True) for i in range(0, len(dealer_data), 3)]
+            dealer_part.extend(part)
+            dealers.extend(ba["BA_Dealer_ID"])
+            for dealer in ba["BA_Dealer_ID"]:
+                if dealer not in dealer_list:
+                    dealer_list.append(dealer)
+                    result = WriteDealerJson(dealer_list)
+                    if result:
+                        msg = f"將 {dealer} 加入 DealerList 紀錄中。"
+                        WSysLog("1", "WriteDealerJson", msg)
+
+        for i in range(len(dealer_part)):
+            dealer_part_dct[dealer_part[i]["Dealer ID"][0]] = dealer_part[i]
+
+        for dealer in dealer_part_dct:
+            dealer_part_dct[dealer].insert(0, "ID", None)
+            dealer_part_dct[dealer].loc[0, "ID"] = f"Dealer{(dealer_list.index(dealer_part_dct[dealer]['Dealer ID'][0]) + 1)}"
+            dataframes.append(dealer_part_dct[dealer])
+        
+        conbined_df = pd.concat(dataframes, ignore_index = True)
+        fixed_columns = get_excel_colmun_name(file_header)
+        for col, data in zip(fixed_columns, file_header):
+            ws[f"{col}1"] = data
+        excel_style(ws, column_width, fixed_columns)
+
+        # # 將資料寫入工作表
+        for row in range(len(conbined_df)):
+            for col_name in conbined_df.columns.values:
+                col = search_column_name(file_header, col_name)
+                ws[f"{col}{row + 2}"] = conbined_df[col_name][row]
+                ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
+        
+        for row in range(2, len(conbined_df) + 1, 3):
+            for col_name in conbined_df.columns.values:
+                if col_name not in content_col:
+                    col = search_column_name(file_header, col_name)
+                    ws.merge_cells(f"{col}{row}:{col}{row + 2}")
+        wb.save(general_data_path)
+    
     else:
         wb = load_workbook(general_data_path)
         ws = wb[sheet_name]
+        dataframes, dealers, dealer_part, dealer_part_dct = [], [], [], {}
 
-    dataframes = []
-    for ba in BA_list:
-        BA_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
-        file_path = os.path.join(Config.BAFolderPath, BA_folder_name, file_name)
-        dataframes.append(pd.read_excel(file_path))
-    conbined_df = pd.concat(dataframes, ignore_index = True)
-    dealer_id = [f"Dealer{i + 1}" for i in range(int(len(conbined_df) / 3))]
-    conbined_df.insert(0, "ID", None)
-    # 將id資料寫入合併後的df
-    for row in range(0, len(conbined_df), 3):
-        conbined_df.loc[row, "ID"] = dealer_id[int(row / 3)]
+        for ba_id in write_new_list:
+            for ba in BA_list:
+                dealers.extend(ba["BA_Dealer_ID"])
+                for dealer in ba["BA_Dealer_ID"]:
+                    if dealer not in dealer_list:
+                        dealer_list.append(dealer)
+                        result = WriteDealerJson(dealer_list)
 
-    fixed_columns = get_excel_colmun_name(file_header)
-    for col, data in zip(fixed_columns, file_header):
-            ws[f"{col}1"] = data
-    excel_style(ws, column_width, fixed_columns)
-    # 將資料寫入工作表
-    for row in range(len(conbined_df)):
-        for col_name in conbined_df.columns.values:
-            col = search_column_name(file_header, col_name)
-            ws[f"{col}{row + 2}"] = conbined_df[col_name][row]
-            ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
-    
-    for row in range(2, len(conbined_df) + 1, 3):
-        for col_name in conbined_df.columns.values:
-            if col_name not in content_col:
+                        if result:
+                            msg = f"將 {dealer} 加入 DealerList 紀錄中。"
+                            WSysLog("1", "WriteDealerJson", msg)
+
+                if ba["BA_ID"] == ba_id:
+                    BA_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+                    break
+            file_path = os.path.join(Config.BAFolderPath, BA_folder_name, file_name)
+            dealer_data = pd.read_excel(file_path, dtype = str)
+            dealer_data = dealer_data.applymap(lambda x: None if pd.isna(x) else x)
+            part = [dealer_data.iloc[i:i+3].reset_index(drop=True) for i in range(0, len(dealer_data), 3)]
+            dealer_part.extend(part)
+            dealers.extend(ba["BA_Dealer_ID"])
+
+        for i in range(len(dealer_part)):
+            dealer_part_dct[dealer_part[i]["Dealer ID"][0]] = dealer_part[i]
+        
+        for dealer in dealer_part_dct:
+            dealer_part_dct[dealer].insert(0, "ID", None)
+            dealer_part_dct[dealer].loc[0, "ID"] = f"Dealer{(dealer_list.index(dealer_part_dct[dealer]['Dealer ID'][0]) + 1)}"
+
+            index = dealer_list.index(dealer)
+            row = ((index - 2) * 3) + 2
+            for col_name in dealer_part_dct[dealer].columns.values:
                 col = search_column_name(file_header, col_name)
-                ws.merge_cells(f"{col}{row}:{col}{row + 2}")
-    wb.save(general_data_path)
+                for i in range(len(dealer_part_dct[dealer])):
+                    if ws[f"{col}{row + i}"].value != dealer_part_dct[dealer][col_name][i]:
+                        msg = f"更新總表 {col}{row + i} 資訊為： {dealer_part_dct[dealer][col_name][i]}。"
+                        WSysLog("1", "MergeDealerInfo", msg)
+                        ws[f"{col}{row + i}"] = dealer_part_dct[dealer][col_name][i]
+        # 樣式要調整 #
+        wb.save(general_data_path)
+        
+
 
 # 系統合併 KAList 檔案
-def merge_kalist():
+def merge_kalist(aa):
     print()
 
 # 檢查檔案資訊主程式
@@ -303,7 +364,7 @@ def CheckFileInfo():
                         file_time = file_time.isoformat()
                         record_file_time[BA_id][file_name] = file_time
                         json_data["FileInfo"] = record_file_time
-                        msg = WrightFileJson(json_data)
+                        msg = WriteFileJson(json_data)
                         WSysLog("1", "CheckFileInfo", msg)
 
                         if file_name == "MasterFile":
@@ -333,5 +394,5 @@ def CheckFileInfo():
 
 if __name__ == "__main__":
     # CheckFileInfo()
-    aa = []
+    aa = ["BA01"]
     merge_dealerinfo(aa)

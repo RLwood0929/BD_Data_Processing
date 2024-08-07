@@ -5,6 +5,8 @@
 Writer:Qian
 '''
 
+# 僅需下載特定目錄進入本地 #
+
 import os
 import shutil
 from Log import WSysLog
@@ -151,7 +153,7 @@ if __name__ == "__main__":
 import os, shutil
 from Log import WSysLog
 from Config import AppConfig
-from SystemConfig import WrightWinUser, WrightOneDrivePath
+from SystemConfig import WriteWinUser, WriteOneDrivePath
 
 Config = AppConfig()
 
@@ -163,7 +165,7 @@ def GetUserName():
         if username != WinUser:
             msg = "系統使用者名稱，與紀錄不符，需更新紀錄檔。"
             WSysLog("1", "GetUserName", msg)
-            msg = WrightWinUser(username)
+            msg = WriteWinUser(username)
             WSysLog("1", "WindowsUserNameUpdate", msg)
     except OSError as e:
         msg = f"取得使用者名稱時錯誤，錯誤訊息：{e}。"
@@ -188,7 +190,7 @@ def check_onedrive_path():
                 one_drive_path = os.path.join(dirs, Config.OneDeiveFolder)
                 break
         if Config.OneDrivePath != one_drive_path:
-            msg = WrightOneDrivePath(one_drive_path)
+            msg = WriteOneDrivePath(one_drive_path)
             WSysLog("1", "CheckOenDrivePath", msg)
     else:
         msg = "確認OneDrive目錄存在。"
