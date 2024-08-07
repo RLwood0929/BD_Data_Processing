@@ -236,13 +236,21 @@ def WriteFileJson(data):
     msg = f"File.json BA資訊更新，{data['FileInfo']}。"
     return msg
 
-# 將新的 DealerList 寫入 dealer.json
-def WriteDealerJson(dealer_list):
-    data = DealerConf()
-    data["DealerList"] = dealer_list
-    with open(ConfigInfo.DealerPath, "w", encoding = "UTF-8") as file:
-        json.dump(data, file, ensure_ascii = False, indent = 4)
-    return True
+# 寫入Dealer.json
+def WriteDealerJson(mode, data):
+    # 將新的 DealerList 寫入 dealer.json
+    if mode == "DealerList":
+        dealer_list = data
+        data = DealerConf()
+        data["DealerList"] = dealer_list
+        with open(ConfigInfo.DealerPath, "w", encoding = "UTF-8") as file:
+            json.dump(data, file, ensure_ascii = False, indent = 4)
+        return True
+    # Dealer.json寫入新的新銷商資訊
+    elif mode == "DealerInfo":
+        with open(ConfigInfo.DealerPath, "w", encoding = "UTF-8") as file:
+            json.dump(data, file, ensure_ascii = False, indent = 4)
+        return True
 
 if __name__ == "__main__":
     # DealerJson()

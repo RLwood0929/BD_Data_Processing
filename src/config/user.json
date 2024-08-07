@@ -52,10 +52,12 @@
         "Group":"BD_BA",
         "ResponsibleDealerID":[
             "AD279",
-            "AD317",
-            "AD318"
+            "AD317"
         ],
-        "Description":"BD BA01"
+        "Description":"BD BA01",
+        "OneDriveLink":{
+            "BA":"https://z27576941-my.sharepoint.com/:f:/g/personal/bdservice_coign_com_tw/ElZqf1bUwUxBt6_So1HbgYEBXvfBkcaNg5qTyPKL3vN45g"
+        }
     },
     "User7":{
         "ID":"007",
@@ -69,7 +71,10 @@
             "1002330660",
             "1002689487"
         ],
-        "Description":"BD BA02"
+        "Description":"BD BA02",
+        "OneDriveLink":{
+            "BA":"https://z27576941-my.sharepoint.com/:f:/g/personal/bdservice_coign_com_tw/EoEdCoJgm4hIt7q9-_4yHhoBwtPAYiJ8oFSvI5sV66nsrw"
+        }
     },
     "User8":{
         "ID":"008",
@@ -80,7 +85,10 @@
         "ResponsibleDealerID":[
             "1002317244"
         ],
-        "Description":"BD BA03"
+        "Description":"BD BA03",
+        "OneDriveLink":{
+            "BA":"https://z27576941-my.sharepoint.com/:f:/g/personal/bdservice_coign_com_tw/En36LCs1yPNBo-7q-2mEQqQBWZgBXo5rjCXvGvO4vOvjsA"
+        }
     },
     "User9":{
         "ID":"009",
@@ -92,6 +100,9 @@
             "永義(香港)",
             "伯齊(香港)"
         ],
-        "Description":"BD BA04"
+        "Description":"BD BA04",
+        "OneDriveLink":{
+            "BA":"https://z27576941-my.sharepoint.com/:f:/g/personal/bdservice_coign_com_tw/EuG3beECIJNNlQM9iblYB8ABfl09bBq80KIGqzbqWImzGA"
+        }
     }
 }

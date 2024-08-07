@@ -5,7 +5,8 @@
 Writer：Qian
 '''
 
-# 三個合併檔案待寫
+# masterfile、kalist合併檔案待寫
+# DealerInfo轉成json待寫
 
 import os
 import pandas as pd
@@ -123,7 +124,7 @@ def CheckBAFolderFiles():
 
         master_file_path = os.path.join(folder_path, master_file)
         dealer_info_file_path = os.path.join(folder_path, dealer_info_file)
-
+        
         # 目標目錄找不到 MasterFile 時須建立一份空的 MasterFile
         if not os.path.exists(master_file_path):
             flag = True
@@ -133,14 +134,14 @@ def CheckBAFolderFiles():
             file_header = Config.MasterFileHeader
             column_width = Config.MasterFileColumnWidth
             make_format_file(folder_path, master_file, sheet_name, file_header, column_width)
-            file_write_time = datetime.fromtimestamp(os.path.getatime(master_file_path))
+            file_write_time = datetime.fromtimestamp(os.path.getmtime(master_file_path))
             file_write_time = file_write_time.isoformat()
             json_data["FileInfo"][BA_id]["MasterFile"] = file_write_time
             msg = WriteFileJson(json_data)
             WSysLog("1", "CheckBAFolderFiles", msg)
             file_time["MasterFile"] = None
         else:
-            file_time["MasterFile"] = datetime.fromtimestamp(os.path.getatime(master_file_path))
+            file_time["MasterFile"] = datetime.fromtimestamp(os.path.getmtime(master_file_path))
 
         # 目標目錄找不到 DealerInfo 時須建立一份空的 DealerInfo
         if not os.path.exists(dealer_info_file_path):
@@ -154,14 +155,14 @@ def CheckBAFolderFiles():
             column_width = column_width[1:]
             make_format_file(folder_path, dealer_info_file, sheet_name, file_header, column_width)
             wright_dealer_info_in_file(dealer_info_file_path, sheet_name, file_header, BA_dealer_id)
-            file_write_time = datetime.fromtimestamp(os.path.getatime(dealer_info_file_path))
+            file_write_time = datetime.fromtimestamp(os.path.getmtime(dealer_info_file_path))
             file_write_time = file_write_time.isoformat()
             json_data["FileInfo"][BA_id]["DealerInfo"] = file_write_time
             msg = WriteFileJson(json_data)
             WSysLog("1", "CheckBAFolderFiles", msg)
             file_time["DealerInfo"] = None
         else:
-            file_time["DealerInfo"] = datetime.fromtimestamp(os.path.getatime(dealer_info_file_path))
+            file_time["DealerInfo"] = datetime.fromtimestamp(os.path.getmtime(dealer_info_file_path))
 
         # 目標目錄找不到 KAList 時須建立一份空的 KAList
         for ka_dealer in Config.KADealerList:
@@ -184,13 +185,13 @@ def CheckBAFolderFiles():
                     file_header[0] = dealer_name + file_header[0]
                     column_width = Config.KAListFileColumnWidth
                     make_format_file(folder_path, kalist_file, sheet_name, file_header, column_width)
-                    file_write_time = datetime.fromtimestamp(os.path.getatime(ka_list_file_path))
+                    file_write_time = datetime.fromtimestamp(os.path.getmtime(ka_list_file_path))
                     file_write_time = file_write_time.isoformat()
                     json_data["FileInfo"][BA_id]["KAList"] = file_write_time
                     msg = WriteFileJson(json_data)
                     file_time["KAList"] = None
                 else:
-                    file_time["KAList"] = datetime.fromtimestamp(os.path.getatime(ka_list_file_path))
+                    file_time["KAList"] = datetime.fromtimestamp(os.path.getmtime(ka_list_file_path))
 
         file_time_dic[BA_id] = file_time
     
@@ -226,8 +227,8 @@ def check_ba():
 def merge_masterfile(aa):
     print(aa)
 
-# 系統合併 DealerInfo 檔案 #
-def merge_dealerinfo(write_new_list):
+# 系統合併 DealerInfo 檔案
+def MergeDealerInfo(write_new_list):
     BA_list = get_BA()
     dealer_list = Config.DealerList
     folder_path = Config.DealerInfoPath
@@ -237,7 +238,6 @@ def merge_dealerinfo(write_new_list):
     column_width = Config.DealerInfoFileColumnWidth
     general_data_path = os.path.join(folder_path, file_name)
     content_col = ["Position", "Name", "Mail", "Ex"]
-    
 
     # 總表存放目錄底下沒有總表檔案時，直接合併全部產生一份檔案
     if not os.path.exists(general_data_path):
@@ -252,13 +252,29 @@ def merge_dealerinfo(write_new_list):
             BA_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
             file_path = os.path.join(Config.BAFolderPath, BA_folder_name, file_name)
             dealer_data = pd.read_excel(file_path, dtype = str)
+            dealer_id_in_data = dealer_data[dealer_data["Dealer ID"].notna()]
             part = [dealer_data.iloc[i:i+3].reset_index(drop=True) for i in range(0, len(dealer_data), 3)]
             dealer_part.extend(part)
             dealers.extend(ba["BA_Dealer_ID"])
+
+            # 不該存在的Dealer，存在檔案中
+            for dealer in dealer_id_in_data:
+                if dealer not in ba["BA_Dealer_ID"]:
+                    msg = f" {dealer} 不存在於BA負責範圍，請系統管理員修正。"
+                    WSysLog("3", "MergeDealerInfo", msg)
+                    df_index = dealer_data[dealer_data["Dealer ID"] == dealer].index
+                    for j in range(3):
+                        dealer_data = dealer_data.drop(index = [int(df_index.values[0]) + j])
+
             for dealer in ba["BA_Dealer_ID"]:
+                # 應該存在的DealerID不再檔案中
+                if dealer not in dealer_data["Dealer ID"].values:
+                    msg = f"{dealer} 資訊不存在於 {ba['BA_ID']} 的 {file_name} 檔案中，請系統管理員修正 DealerInfo 檔案。"
+                    WSysLog("2", "MergeDealerInfo", msg)
+
                 if dealer not in dealer_list:
                     dealer_list.append(dealer)
-                    result = WriteDealerJson(dealer_list)
+                    result = WriteDealerJson("DealerList", dealer_list)
                     if result:
                         msg = f"將 {dealer} 加入 DealerList 紀錄中。"
                         WSysLog("1", "WriteDealerJson", msg)
@@ -290,54 +306,90 @@ def merge_dealerinfo(write_new_list):
                     col = search_column_name(file_header, col_name)
                     ws.merge_cells(f"{col}{row}:{col}{row + 2}")
         wb.save(general_data_path)
+
     
+    # 總表存在，做單欄位修正
     else:
         wb = load_workbook(general_data_path)
         ws = wb[sheet_name]
         dataframes, dealers, dealer_part, dealer_part_dct = [], [], [], {}
+        new_flag = False
 
         for ba_id in write_new_list:
             for ba in BA_list:
-                dealers.extend(ba["BA_Dealer_ID"])
-                for dealer in ba["BA_Dealer_ID"]:
-                    if dealer not in dealer_list:
-                        dealer_list.append(dealer)
-                        result = WriteDealerJson(dealer_list)
-
-                        if result:
-                            msg = f"將 {dealer} 加入 DealerList 紀錄中。"
-                            WSysLog("1", "WriteDealerJson", msg)
-
                 if ba["BA_ID"] == ba_id:
                     BA_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
                     break
+            dealers.extend(ba["BA_Dealer_ID"])
             file_path = os.path.join(Config.BAFolderPath, BA_folder_name, file_name)
             dealer_data = pd.read_excel(file_path, dtype = str)
-            dealer_data = dealer_data.applymap(lambda x: None if pd.isna(x) else x)
+            dealer_id_in_data = dealer_data[dealer_data["Dealer ID"].notna()]
+
+            # BA目錄底下的DealerInfo之dealerid值不存在於user.json中，系統自動略過
+            for dealer in dealer_id_in_data["Dealer ID"]:
+                if dealer not in ba["BA_Dealer_ID"]:
+                    msg = f" {dealer} 不存在於BA負責範圍，請系統管理員修正。"
+                    WSysLog("3", "MergeDealerInfo", msg)
+                    df_index = dealer_data[dealer_data["Dealer ID"] == dealer].index
+                    for j in range(3):
+                        dealer_data = dealer_data.drop(index = [int(df_index.values[0]) + j])
+            
+            # 經銷商ID存在於使用者json中，但不存在於Dealer.json，將資訊加入至Dealer.json
+            for dealer in ba["BA_Dealer_ID"]:
+                if dealer not in dealer_data["Dealer ID"].values:
+                    msg = f"{dealer} 經銷商資訊不存在於 {ba['BA_ID']} 的 {file_name} 檔案中，請系統管理員修正 DealerInfo 檔案。"
+                    WSysLog("2", "MergeDealerInfo", msg)
+
+                if dealer not in dealer_list:
+                    dealer_list.append(dealer)
+                    result = WriteDealerJson("DealerList", dealer_list)
+
+                    if result:
+                        msg = f"將 {dealer} 加入 DealerList 紀錄中。"
+                        WSysLog("1", "WriteDealerJson", msg)
+
+            
+            dealer_data = dealer_data.apply(lambda col: col.map(lambda x: None if pd.isna(x) else x))
             part = [dealer_data.iloc[i:i+3].reset_index(drop=True) for i in range(0, len(dealer_data), 3)]
             dealer_part.extend(part)
             dealers.extend(ba["BA_Dealer_ID"])
 
+        # df資料轉變為字典型態
         for i in range(len(dealer_part)):
             dealer_part_dct[dealer_part[i]["Dealer ID"][0]] = dealer_part[i]
-        
+
         for dealer in dealer_part_dct:
+
+            # 檢查異動檔案中的經銷商ID是否符合 BA 負責的
+            if dealer not in ba["BA_Dealer_ID"]:
+                msg = f"檔案中的 {dealer} 資訊未存在於 BA 負責的經銷商 ID 中，請系統管理員維護 BA 負責之經銷商。"
+                WSysLog("2", "MergeDealerInfo", msg)
+
             dealer_part_dct[dealer].insert(0, "ID", None)
             dealer_part_dct[dealer].loc[0, "ID"] = f"Dealer{(dealer_list.index(dealer_part_dct[dealer]['Dealer ID'][0]) + 1)}"
-
             index = dealer_list.index(dealer)
             row = ((index - 2) * 3) + 2
             for col_name in dealer_part_dct[dealer].columns.values:
                 col = search_column_name(file_header, col_name)
                 for i in range(len(dealer_part_dct[dealer])):
                     if ws[f"{col}{row + i}"].value != dealer_part_dct[dealer][col_name][i]:
+                        new_flag = True
                         msg = f"更新總表 {col}{row + i} 資訊為： {dealer_part_dct[dealer][col_name][i]}。"
                         WSysLog("1", "MergeDealerInfo", msg)
                         ws[f"{col}{row + i}"] = dealer_part_dct[dealer][col_name][i]
-        # 樣式要調整 #
-        wb.save(general_data_path)
-        
+                        ws[f"{col}{row + i}"].alignment = Config.ExcelStyle
+                if col_name not in content_col:
+                    ws.merge_cells(f"{col}{row}:{col}{row + 2}")
 
+        wb.save(general_data_path)
+        if not new_flag:
+            msg = "Dealer 資料無異動。"
+            WSysLog("1", "MergeDealerInfo", msg)
+
+# 依據總表更新Dealer.json檔案 #
+def RenewDealerJson():
+    DealerConfig = Config.DealerConfig
+    print(DealerConfig["DealerList"])
 
 # 系統合併 KAList 檔案
 def merge_kalist(aa):
@@ -356,7 +408,7 @@ def CheckFileInfo():
             if file_time:
                 last_file_time = record_file_time[BA_id][file_name]
                 last_file_time = datetime.fromisoformat(last_file_time)
-
+                
                 if last_file_time != file_time:
                     if file_time > last_file_time:
                         msg = f"{BA_id} 的 {file_name} 檔案內容更新，系統需更新 {file_name} 總表。"
@@ -388,11 +440,11 @@ def CheckFileInfo():
     if master_new:
         merge_masterfile(master_new)
     if dealerinfo_new:
-        merge_dealerinfo(dealerinfo_new)
+        MergeDealerInfo(dealerinfo_new)
+        RenewDealerJson()
     if kalist_new:
         merge_kalist(kalist_new)
 
 if __name__ == "__main__":
-    # CheckFileInfo()
-    aa = ["BA01"]
-    merge_dealerinfo(aa)
+    CheckFileInfo()
+    # RenewDealerJson()
