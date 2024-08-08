@@ -481,7 +481,7 @@ def CheckFileHeader(dealer_id, file_name, file_type):
                 error_txt.write(msg)
             error_file_path = move_error_file(dealer_id, [file_name, f"{file}_header_error.txt"])
             mail_data = {"FileName": file_name}
-            mail_data_path = [os.path.join(error_file_path, f'{file}_header_error.txt')]
+            mail_data_path = [file_path, os.path.join(error_file_path, f'{file}_header_error.txt')]
             send_info = {"Mode":"FileContentError", "DealerID": dealer_id, "MailData": mail_data, "FilesPath": mail_data_path}
             SendMail(send_info)
             
@@ -632,7 +632,8 @@ def CheckFileContent(dealer_id, file_name, file_type):
                 f.write(f"{i+1}. {error_list[i]}\n")
         error_file_path = move_error_file(dealer_id, [file_name, f"{file}_content_error.txt"])
         mail_data = {"FileName": file_name}
-        mail_data_path = [os.path.join(error_file_path, f"{file}_content_error.txt")]
+        mail_data_path = [os.path.join(error_file_path, file_name), os.path.join(error_file_path, f"{file}_content_error.txt")]
+        print(mail_data_path)
         send_info = {"Mode":"FileContentError", "DealerID": dealer_id, "MailData": mail_data, "FilesPath": mail_data_path}
         SendMail(send_info)
         return False, error_num

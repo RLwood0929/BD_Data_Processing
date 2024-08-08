@@ -1,6 +1,5 @@
 {   
     "SaleFile":{
-        "FileKey":"S",
         "MustHave":[
             "Seller ID",
             "Buyer ID",
@@ -16,7 +15,6 @@
         ]
     },
     "InventoryFile":{
-        "FileKey":"I",
         "MustHave":[
             "Product ID",
             "Creation Date"

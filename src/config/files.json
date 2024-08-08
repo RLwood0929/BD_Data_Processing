@@ -1,30 +1,35 @@
 {
     "FileInfo": {
         "BA01": {
-            "MasterFile": "2024-08-07T09:39:51.742490",
-            "DealerInfo": "2024-08-08T10:34:46.079394",
+            "MasterFile": "2024-08-07T17:34:36",
+            "DealerInfo": "2024-08-09T04:26:15.394384",
             "KAList": null
         },
         "BA02": {
-            "MasterFile": "2024-08-07T09:39:51.795833",
-            "DealerInfo": "2024-08-08T10:31:51.003315",
+            "MasterFile": "2024-08-07T08:17:31.193461",
+            "DealerInfo": "2024-08-09T04:25:49.876528",
             "KAList": null
         },
         "BA03": {
-            "MasterFile": "2024-08-07T09:39:51.834020",
-            "DealerInfo": "2024-08-08T10:32:07.106539",
-            "KAList": null
+            "MasterFile": "2024-08-07T08:17:31.237296",
+            "DealerInfo": "2024-08-09T04:25:58.375022",
+            "KAList": "2024-08-08T14:51:41"
         },
         "BA04": {
-            "MasterFile": "2024-08-07T09:39:51.869083",
-            "DealerInfo": "2024-08-08T10:32:23.443542",
+            "MasterFile": "2024-08-07T08:17:31.274915",
+            "DealerInfo": "2024-08-09T04:26:07.353883",
             "KAList": null
         }
     },
     "System": {
-        "Config1": {
-            "FileName": "",
-            "FileWriteTime": ""
-        }
+        "check_rule.json": null,
+        "dealer_format.json": null,
+        "dealer.json": null,
+        "header_change.json": null,
+        "mail": null,
+        "mapping.json": null,
+        "sub_record.json": null,
+        "system.json": null,
+        "user.json": null
     }
 }

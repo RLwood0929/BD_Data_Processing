@@ -1,15 +1,66 @@
 {
-    "StartIndex": 0,
+    "StartIndex": null,
+    "SubFileList": [],
+    "SubFileTime": [],
     "Dealer1": {
         "SaleFile": null,
         "InventoryFile": null,
-        "Mail2": 4,
-        "Mail3": 1,
-        "Mail4": 1
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
     },
     "Dealer2": {
         "SaleFile": null,
-        "InventoryFile": true,
+        "InventoryFile": null,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
+    },
+    "Dealer3": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
+    },
+    "Dealer4": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
+    },
+    "Dealer5": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
+    },
+    "Dealer6": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
+    },
+    "Dealer7": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
+    },
+    "Dealer8": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": 0,
+        "Mail3": 0,
+        "Mail4": 0
+    },
+    "Dealer9": {
+        "SaleFile": null,
+        "InventoryFile": null,
         "Mail2": 0,
         "Mail3": 0,
         "Mail4": 0

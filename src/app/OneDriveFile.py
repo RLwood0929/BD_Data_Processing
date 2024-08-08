@@ -5,149 +5,15 @@
 Writer:Qian
 '''
 
-# 僅需下載特定目錄進入本地 #
-
-import os
-import shutil
-from Log import WSysLog
-from SystemConfig import Config
-
-GlobalConfig = Config()
-
-WinUser = GlobalConfig["App"]["WinUser"]
-FolderName = GlobalConfig["App"]["Name"] if GlobalConfig["App"]["Name"] \
-    else GlobalConfig["Default"]["Name"]
-RootDir = GlobalConfig["DirTree"]["DataPath"] if GlobalConfig["App"]["DataPath"] \
-    else GlobalConfig["Default"]["DataPath"]
-OneDrivePath = GlobalConfig["App"]["Path"]
-OneDrivePath = OneDrivePath.replace("{username}", WinUser)
-SourcePath = os.path.join(OneDrivePath, FolderName)
-TargetPath = os.path.join(RootDir, FolderName)
-
-# 確認本地 OneDrive 路徑是否存在
-def DrivePathCheck():
-    if os.path.exists(OneDrivePath):
-        check_message = "OneDrive 路徑存在"
-        WSysLog("1", "DrivePathCheck", check_message)
-        return True
-    else:
-        check_message = "OneDrive 路徑不存在，請檢查本地 OneDrive 目錄，並且登入嘉衡公司帳戶"
-        WSysLog("4", "DrivePathCheck", check_message)
-        return False
-    
-# 建構本地目錄
-def MakeLocalFolder():
-    try:
-        os.makedirs(TargetPath)
-        make_message = f"成功建立目錄{TargetPath}"
-        WSysLog("1", "MakeLocalFolder", make_message)
-        return True
-    except Exception as e:
-        make_message = f"發生錯誤: {e}"
-        WSysLog("3", "MakeLocalFolder", make_message)
-        return False
-
-# 確認本地目標路徑是否存在
-def TargetPathCheck():
-    if os.path.exists(TargetPath):
-        check_message = "本地目標路徑存在"
-        WSysLog("1", "TargetPathCheck", check_message)
-        return True
-    else:
-        msg = "本地路徑不存在，需創建，跳轉至創建函數 MakeLocalFolder"
-        WSysLog("1", "TargetPathCheck", msg)
-        result = MakeLocalFolder()
-        return result
-
-# 差異同步後進行拷貝
-def CopyFolders(source, destination, skip_lsit = []):
-    def recursive_sync(src, dst):
-        copy_flag = False
-        for root, dirs, files in os.walk(src):
-            # 從目錄清單中刪除要跳過的目錄
-            dirs[:] = [d for d in dirs if d not in skip_lsit]
-
-            # 子目錄拷貝
-            for name in dirs:
-                src_dir = os.path.join(root, name)
-                dst_dir = os.path.join(dst, os.path.relpath(src_dir, src))
-                try:
-                    if not os.path.exists(dst_dir):
-                        os.makedirs(dst_dir)
-                        msg = f"成功建立目錄 {dst_dir}"
-                        WSysLog("1", "CopyFolders_CopySubdirectory", msg)
-                        copy_flag = True
-                except OSError as e:
-                    msg = f"創建目錄 Error {dst_dir}: {e}"
-                    WSysLog("3", "CopyFolders_CopySubdirectory", msg)
-            
-            # 檔案拷貝
-            for name in files:
-                src_file = os.path.join(root, name)
-                dst_file = os.path.join(dst, os.path.relpath(src_file, src))
-                try:
-                    if not os.path.exists(dst_file) or os.stat(src_file).st_mtime > os.stat(dst_file).st_mtime:
-                        shutil.copy2(src_file, dst_file)
-                        msg = f"拷貝 {src_file} 至 {dst_file}"
-                        WSysLog("1","CopyFolders_CopyFiles", msg)
-                        copy_flag = True
-                except (IOError, shutil.Error) as e:
-                    msg = f"拷貝 Error {src_file} 至 {dst_file}: {e}"
-                    WSysLog("3","CopyFolders_CopyFiles", msg)
-                
-        for root, dirs, files in os.walk(dst):
-            for name in dirs:
-                src_dir = os.path.join(root, name)
-                rel_dir = os.path.relpath(src_dir, dst)
-                src_dir_full = os.path.join(src, rel_dir)
-                if not os.path.exists(src_dir_full):
-                    try:
-                        shutil.rmtree(src_dir)
-                        msg = f"刪除目錄 {src_dir}"
-                        WSysLog("1", "CopyFolders_RemoveExtraFolders", msg)
-                        copy_flag = True
-                    except Exception as e:
-                        msg = f"刪除 Error {src_dir}: {e}"
-                        WSysLog("3", "CopyFolders_RemoveExtraFolders", msg)
-            
-            for name in files:
-                src_file = os.path.join(root, name)
-                rel_file = os.path.relpath(src_file, dst)
-                src_file_full = os.path.join(src, rel_file)
-                if not os.path.exists(src_file_full):
-                    try:
-                        os.remove(src_file)
-                        msg = f"刪除檔案 {src_file}"
-                        WSysLog("1", "CopyFolders_RemoveExtraFiles", msg)
-                        copy_flag = True
-                    except Exception as e:
-                        msg = f"刪除{src_file} Error: {e}"
-                        WSysLog("3", "CopyFolders_RemoveExtraFiles", msg) 
-
-        if not copy_flag:
-            msg = "OneDrive 與 本地目錄 無差異"
-            WSysLog("1", "CopyFolders", msg)
-
-    recursive_sync(source, destination)
-
-# 從 OneDrive 下載檔案
-def DownloadFOD(skip_list):
-    if DrivePathCheck() & TargetPathCheck():
-        # 冷資料應略過
-        CopyFolders(SourcePath, TargetPath, skip_list)
-
-# 上傳檔案到 OneDrive
-def UploadTOD(skip_list):
-    if DrivePathCheck() & TargetPathCheck():
-        CopyFolders(TargetPath, SourcePath, skip_list)
-
-if __name__ == "__main__":
-    # 略過的目錄
-    SkipList = []
-    DownloadFOD(SkipList)
-
 """
-===================================================================================
+需下載目錄 - OneDrive
+00_System/Config
+00_System/Log
+01_BD/01_Masterfile
+01_BD/02_Report/底下檔案，子目錄不用
+01_BD/03_BA
+01_BD/04_DealerInfo
+02_Dealer/底下經銷商檔案，00_ChangeFile、00_Completed目錄不用
 """
 
 import os, shutil
@@ -184,105 +50,169 @@ def check_onedrive_path():
         WSysLog("3", "CheckOenDrivePath", msg)
         GetUserName()
 
-        # 歷遍系統C槽目錄，找尋OneDrive資料夾
-        for dirs, folders, _ in os.walk(Config.SystemRoot):
-            if Config.OneDeiveFolder in folders:
-                one_drive_path = os.path.join(dirs, Config.OneDeiveFolder)
-                break
-        if Config.OneDrivePath != one_drive_path:
-            msg = WriteOneDrivePath(one_drive_path)
-            WSysLog("1", "CheckOenDrivePath", msg)
+        try:
+            one_drive_path = None
+            # 歷遍系統C槽目錄，找尋OneDrive資料夾
+            for dirs, folders, _ in os.walk(Config.SystemRoot):
+                if Config.OneDeiveFolder in folders:
+                    one_drive_path = os.path.join(dirs, Config.OneDeiveFolder)
+                    break
+            if one_drive_path is None:
+                msg = f"未能找到 {Config.OneDeiveFolder} 資料夾。"
+                WSysLog("4", "CheckOneDrivePath", msg)
+                return False
+            if Config.OneDrivePath != one_drive_path:
+                msg = WriteOneDrivePath(one_drive_path)
+                WSysLog("1", "CheckOenDrivePath", msg)
+            return True
+        except FileNotFoundError as e:
+            msg = f"無法找到 OneDrive 資料夾。錯誤原因： {e}。"
+            WSysLog("3", "CheckOenDrivePath", msg)
+            return False
+        except Exception as e:
+            msg = f"搜尋 OneDrive 資料夾時發生意外錯誤。錯誤原因： {e}。"
+            WSysLog("4", "CheckOenDrivePath", msg)
+            return False
     else:
         msg = "確認OneDrive目錄存在。"
         WSysLog("1", "CheckOneDrivePath", msg)
+        return True
+
+# 取得 ba 資料夾名稱
+def get_ba_folder_name():
+    user = Config.UserConfig
+    ba_folders = []
+    for user_id in user:
+        if user[user_id]["Group"] == "BD_BA":
+            ba_id_part = user[user_id]["Description"].split(" ")
+            ba_id = ba_id_part[1]
+            ba_name = user[user_id]["Name"]
+            ba_folders.append(ba_id[:2] + "_" + ba_id[2:] + "_" + ba_name)
+    return ba_folders
 
 # 從OneDrive雲端抓取目錄結構至本地
-def sync_folder(source_dir, target_dir, skip_list = []):
-    sync_flag = False
-    
-    # 歷遍來源目錄
-    for root, dirs, files in os.walk(source_dir):
-        # 從目錄清單中刪除要跳過的目錄
-        dirs[:] = [d for d in dirs if d not in skip_list]
+# source_dir是雲端，target_dir是本地
+def DownloadOneDrive(source_dir, target_dir, skip_list = []):
+    folder_flag, file_flag = False, False
+    ba_folders = get_ba_folder_name()
+    download_folder = ["Config", "01_MasterFile", "02_Report", "04_DealerInfo"] + ba_folders + Config.DealerList
+    not_copy_folder = ["00_ChangeFile","00_ErrorReport"]
+    result = check_onedrive_path()
+    if result:
+        # 歷遍雲端目錄
+        for root, dirs, _ in os.walk(source_dir):
+            # 從目錄清單中刪除要跳過的目錄
+            dirs[:] = [d for d in dirs if d not in skip_list]
 
-        # 拷貝子目錄
-        for folder in dirs:
-            source_folder = os.path.join(root, folder)
-            target_folder = os.path.join(target_dir, os.path.relpath(source_folder, source_dir))
-            try:
-                if not os.path.exists(target_folder):
-                    os.makedirs(target_folder)
-                    msg = f"建立目錄 {target_folder}。"
-                    WSysLog("1", "SyncFolder_MakeFolder", msg)
-                    sync_flag = True
-            except OSError as e:
-                msg = f"創建目錄錯誤 {target_folder} : {e}。"
-                WSysLog("3", "SyncFolder_MakeFolder", msg)
+            # 本地同步雲端目錄
+            for folder in dirs:
+                source_folder = os.path.join(root, folder)
+                target_folder = os.path.join(target_dir, os.path.relpath(source_folder, source_dir))
+                
+                try:
+                    if not os.path.exists(target_folder):
+                        os.makedirs(target_folder)
+                        msg = f"本地建立目錄 {target_folder} 。"
+                        WSysLog("1", "DownloadOneDrive_SyncFolders", msg)
+                        folder_flag = True
+                except OSError as e:
+                    msg = f"創建目錄錯誤 {target_folder} : {e} 。"
+                    WSysLog("3", "DownloadOneDrive_SyncFolders", msg)
 
-        # 拷貝檔案
-    #     for file in files:
-    #         source_file = os.path.join(root, file)
-    #         target_file = os.path.join(target_dir, os.path.relpath(source_file, source_dir))
-    #         try:
-    #             if not os.path.exists(target_file) or os.stat(source_file).st_mtime > os.stat(target_file).st_mtime:
-    #                 shutil.copy2(source_file, target_file)
-    #                 msg = f"拷貝檔案 {source_file} 至 {target_file}。"
-    #                 WSysLog("1", "SyncFolder_CopyFile", msg)
-    #                 sync_flag = True
-    #         except (IOError, shutil.Error) as e:
-    #             msg = f"拷貝 {source_file} 至 {target_file} 錯誤，錯誤原因： {e}。"
-    #             WSysLog("3", "SyncFolder_CopyFile", msg)
+                part = source_folder.split("\\")
+                if (not_copy_folder[0] not in part) and (not_copy_folder[1] not in part):
+                    # 拷貝特定目錄底下的檔案
+                    if folder in download_folder:
+                        folder_path = os.path.join(root, folder)
+                        file_names = [file for file in os.listdir(folder_path)\
+                                    if os.path.isfile(os.path.join(folder_path, file))]
 
-    # # 歷遍目標目錄
-    # for root, dirs, files in os.walk(target_dir):
-    #     # 刪除差異子目錄
-    #     for folder in dirs:
-    #         target_folder = os.path.join(root, folder)
-    #         print(f"source_folder:{source_folder}")
-    #         source_folder_full = os.path.join(source_dir, os.path.join(source_folder, target_dir))
-    #         print(f"source_folder_full:{source_folder_full}")
-    #         if not os.path.exists(source_folder_full):
-    #             try:
-    #                 shutil.rmtree(target_folder)
-    #                 msg = f"刪除目錄 {target_folder}。"
-    #                 WSysLog("1", "SyncFolder_RemoveExtraFolder", msg)
-    #                 sync_flag = True
-    #             except Exception as e:
-    #                 msg = f"刪除 {target_folder} 目錄遇到錯誤，錯誤原因： {e}。"
-    #                 WSysLog("3", "SyncFolder_RemoveExtraFolder", msg)
+                        for file in file_names:
+                            source_file = os.path.join(folder_path, file)
+                            target_file = os.path.join(target_dir, os.path.relpath(source_file, source_dir))
+                            try:
+                                # 本地檔案不存在 或是 本地檔案日期小於雲端日期，拷貝至本地
+                                if not os.path.exists(target_file) or os.stat(source_file).st_mtime > os.stat(target_file).st_mtime:
+                                    shutil.copy2(source_file, target_file)
+                                    msg = f"拷貝檔案 {source_file} 至 {target_file}。"
+                                    WSysLog("1", "DownloadOneDrive_SyncFiles", msg)
+                                    file_flag = True
+
+                            except (IOError, shutil.Error) as e:
+                                msg = f"拷貝 {source_file} 至 {target_file} 錯誤，錯誤原因： {e}。"
+                                WSysLog("3", "DownloadOneDrive_SyncFiles", msg)
+
+        if not folder_flag:
+            msg = "OneDrive 與 本地 目錄結構無差異。"
+            WSysLog("1", "DownloadOneDrive", msg)
+        if not file_flag:
+            msg = "本地檔案已更新至最新。"
+            WSysLog("1", "DownloadOneDrive", msg)
         
-    #     # 刪除差異檔案
-    #     for file in files:
-    #         target_file = os.path.join(root, file)
-    #         rel_file = os.path.relpath(target_file, target_dir)
-    #         source_file_full = os.path.join(source_dir, rel_file)
-    #         if not os.path.exists(source_file_full):
-    #             try:
-    #                 os.remove(target_file)
-    #                 msg = f"刪除檔案 {target_file}。"
-    #                 WSysLog("1", "SyncFolder_RemoveExtraFile", msg)
-    #                 sync_flag = True
-    #             except Exception as e:
-    #                 msg = f"刪除 {target_file} 檔案時遇到錯誤，錯誤原因： {e}。"
-    #                 WSysLog("3", "SyncFolder_RemoveExtraFile", msg)
-    if not sync_flag:
-        msg = "OneDrive與本地目錄結構無差異。"
-        WSysLog("1", "SyncFolder", msg)
+        return True
+    else:
+        return False
 
-# 本地檔案同步上OneDrive
-def UploadOneDrive():
-    print()
+# 從本地上傳至 OneDrive 雲端
+# source_dir是本地，target_dir是雲端
+def UploadOneDrive(source_dir, target_dir):
+    result = check_onedrive_path()
+    if result:
+        folder_flag, file_flag = False, False
+        for root, dirs, files in os.walk(source_dir):
+            for folder in dirs:
+                source_folder = os.path.join(root, folder)
+                target_folder = os.path.join(target_dir, os.path.relpath(source_folder, source_dir))
+                try:
+                    if not os.path.exists(target_folder):
+                        os.makedirs(target_folder)
+                        msg = f"OneDrive 建立目錄 {target_folder} 。"
+                        WSysLog("1", "UploadOneDrive_SyncFolders", msg)
+                        folder_flag = True
+                except OSError as e:
+                    msg = f"創建目錄錯誤 {target_folder} : {e} 。"
+                    WSysLog("3", "UploadOneDrive_SyncFolders", msg)
+            
+            for file in files:
+                source_file = os.path.join(root, file)
+                target_file = os.path.join(target_dir,\
+                    os.path.relpath(source_file, source_dir))
+                try:
+                    if not os.path.exists(target_file) or os.stat(source_file).st_mtime > os.stat(target_file).st_mtime:
+                        shutil.copy2(source_file, target_file)
+                        msg = f"拷貝 {source_file} 至 {target_file} 。"
+                        WSysLog("1","UploadOneDrive_SyncFiles", msg)
+                        file_flag = True
+                except (IOError, shutil.Error) as e:
+                    msg = f"拷貝 {source_file} 至 {target_file} 錯誤，錯誤原因： {e}。"
+                    WSysLog("3", "UploadOneDrive_SyncFiles", msg)
+        
+        if not folder_flag:
+            msg = "本地目錄與OneDrive目錄已同步到最新。"
+            WSysLog("1", "UploadOneDrive", msg)
+        
+        if not file_flag:
+            msg = "雲端檔案已更新至最新。"
+            WSysLog("1", "UploadOneDrive", msg)
+        return True
+    else:
+        return False
 
-# OneDrive檔案同步至雲端
-def DownloadOneDrive():
-    print()
+# 清空本地端檔案
+def ClearLocal(source_dir):
+    for root, _, files in os.walk(source_dir):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if os.path.isfile(file_path):
+                print(file_path)
+                os.remove(file_path)
 
 if __name__ == "__main__":
+    skip = Config.NotCopyFolder
+    could = os.path.join(Config.OneDrivePath, Config.FolderName)
+    local = os.path.join(Config.RootDir, Config.FolderName)
     # GetUserName()
-    check_onedrive_path()
-    skip_folders = [
-        "文件資料(僅存雲端)"
-    ]
-    sync_folder(os.path.join(Config.OneDrivePath, Config.FolderName), f"{Config.RootDir}/00/", skip_folders)
-    # aa = os.path.join(SystemRoot, "654654")
-    # print(aa)
+    # check_onedrive_path()
+    DownloadOneDrive(could, local, skip)
+    # UploadOneDrive(local, could)
+    # ClearLocal(local)

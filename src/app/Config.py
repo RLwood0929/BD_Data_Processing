@@ -51,6 +51,9 @@ class AppConfig:
         # OneDrive檔案名稱
         self.OneDeiveFolder = self.GlobalConfig["OneDirveFolder"]
 
+        # OneDrive不拷貝目錄(包含資料夾都不拷貝)
+        self.NotCopyFolder = self.GlobalConfig["NotCopyFolderFromOneDrive"]
+
         # 許可的副檔名
         self.AllowFileExtensions = self.GlobalConfig["Default"]["AllowFileExtensions"]
 
@@ -78,17 +81,19 @@ class AppConfig:
         self.EFTHostName = self.GlobalConfig["EFT"]["HostName"]
         self.EFTDir = self.GlobalConfig["EFT"]["Dir"]
 
-        
+        # MasterFile 檔案模板設定
         self.MasterFileName= self.GlobalConfig["MasterFile"]["FileName"]
         self.MasterFileSheetName = self.GlobalConfig["MasterFile"]["SheetName"]
         self.MasterFileHeader = self.GlobalConfig["MasterFile"]["Header"]
         self.MasterFileColumnWidth = self.GlobalConfig["MasterFile"]["ColumnWidth"]
 
+        # KAList 檔案模板設定
         self.KAListFileName = self.GlobalConfig["KAList"]["FileName"]
         self.KAListFileSheetName = self.GlobalConfig["KAList"]["SheetName"]
         self.KAListFileHeader = self.GlobalConfig["KAList"]["Header"]
         self.KAListFileColumnWidth = self.GlobalConfig["KAList"]["ColumnWidth"]
 
+        # DealerInfo 檔案模板設定
         self.DealerInfoFileName = self.GlobalConfig["DealerInfo"]["FileName"]
         self.DealerInfoFileSheetName = self.GlobalConfig["DealerInfo"]["SheetName"]
         self.DealerInfoFileHeader = self.GlobalConfig["DealerInfo"]["Header"]
@@ -194,5 +199,6 @@ class AppConfig:
         self.TemplateFolderPath = self.GlobalConfig["MailTemplate"]
         
         # 取得MasterFile檔案
-        self.MasterFile = [file for file in os.listdir(self.MasterFolderPath) \
-                    if os.path.isfile(os.path.join(self.MasterFolderPath, file))] 
+        if os.path.exists(self.MasterFolderPath):
+            self.MasterFile = [file for file in os.listdir(self.MasterFolderPath) \
+                        if os.path.isfile(os.path.join(self.MasterFolderPath, file))] 

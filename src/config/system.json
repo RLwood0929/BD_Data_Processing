@@ -5,7 +5,7 @@
         "AutoRun": true,
         "Debug": true,
         "User": "",
-        "WinUser": "wood1",
+        "WinUser": "Qian",
         "MonthlyFileRange": null
     },
     "Default": {
@@ -23,8 +23,13 @@
         ],
         "OneDrivePath": "C:\\Users\\{username}\\OneDrive - 嘉衡科技有限公司"
     },
+    "FileJsonWriteTime":null,
     "SystemRoot": "C:\\",
     "OneDirveFolder": "OneDrive - 嘉衡科技有限公司",
+    "NotCopyFolderFromOneDrive":[
+            "文件資料(僅存雲端)",
+            "Log"
+        ],
     "LogConfig": {
         "Path": "./logs",
         "SystemLog": "System.log",
@@ -59,7 +64,7 @@
                         "BAFolder": "BA_Group"
                     }
                 },
-                "DealerFolder":"04_DealerInfo"
+                "DealerFolder": "04_DealerInfo"
             }
         },
         "Dealer": {
@@ -80,15 +85,6 @@
                 }
             }
         }
-    },
-    "DataFormat": {
-        "FilePath": "./docs/data_format/DataFormatFromBD.xlsx",
-        "MappingSales": "銷售檔案配對規則",
-        "MappingInventory": "庫存檔案配對規則",
-        "SalesFormatToDealer": "經銷商銷售檔案規定格式",
-        "InventoryFormatToDealer": "經銷商庫存檔案規定格式",
-        "SalesFormatToBD": "BD資料庫銷售檔案規定格式",
-        "InventoryFormatToBD": "BD資料庫庫存檔案規定格式"
     },
     "EFT": {
         "HostName": "eft.carefusion.com",
@@ -114,7 +110,7 @@
             "起",
             "迄"
         ],
-        "ColumnWidth":[
+        "ColumnWidth": [
             15,
             25,
             10,
@@ -135,7 +131,7 @@
             "迄",
             "Price TYPE"
         ],
-        "ColumnWidth":[
+        "ColumnWidth": [
             15,
             10,
             10,
@@ -161,10 +157,10 @@
             "Sale File Payment Cycle",
             "Sale File Extension",
             "Sale File OUP Type",
-            "Inventory File Paymeny Cycle",
+            "Inventory File Payment Cycle",
             "Inventory File Extension"
         ],
-        "ColumnWidth":[
+        "ColumnWidth": [
             10,
             15,
             20,
@@ -174,7 +170,7 @@
             20,
             40,
             15,
-            25,
+            35,
             15,
             15,
             30,

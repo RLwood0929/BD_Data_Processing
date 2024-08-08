@@ -161,7 +161,7 @@ def SubRecordJson(mode, data):
     if mode == "Start": # data = None
         dealer_config = DealerConf()
         dealer_list = dealer_config["DealerList"]
-        data = {"StartIndex" : None}
+        data = {"StartIndex" : None, "SubFileList" : [], "SubFileTime": []}
         for i in range(len(dealer_list)):
             index = i + 1
             data[f"Dealer{index}"] = {"SaleFile" : None, "InventoryFile" : None, "Mail2":0, "Mail3":0, "Mail4":0}
@@ -252,11 +252,14 @@ def WriteDealerJson(mode, data):
             json.dump(data, file, ensure_ascii = False, indent = 4)
         return True
 
+
 if __name__ == "__main__":
     # DealerJson()
     # HeaderChange()
     # mode = "WriteFileStatus"
     # data = {"Dealer1":{"SaleFile":True}}
-    # SubRecordJson(mode, data)
-    aa = Config()
-    print(aa)
+    mode = "Start"
+    data = None
+    SubRecordJson(mode, data)
+    # aa = Config()
+    # print(aa)
