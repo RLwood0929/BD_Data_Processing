@@ -209,8 +209,20 @@ def search_column_name(file_header, col_name):
 # SubRawData
 # 寫入繳交資料
 def write_upload_data(ws, data, file_header):
-    row = ws.max_row +1
-    data_id = row -1
+    file_upload_time = data[file_header[8]]
+    file_name = data[file_header[6]]
+    row = None
+    col = search_column_name(file_header, file_header[8])
+    for cell in ws[col]:
+        if cell.value == file_upload_time:
+            col = search_column_name(file_header, file_header[6])
+            if ws[f"{col}{cell.row}"].value == file_name:
+                row = cell.row
+                data_id = ws[f"A{cell.row}"].value
+                break
+    if not row:
+        row = ws.max_row +1
+        data_id = row -1
     for i in range(len(Config.DealerList)):
         if Config.DealerList[i] == data["經銷商ID"]:
             index = i + 1
@@ -585,7 +597,7 @@ def WriteChangeReportMail(df, file_header):
 # 讀取 SubRawData 資料
 def Statistics():
     # 取得資料範圍    
-    start_index = SubRecordJson("ReadIndex", None)
+    start_index = SubRecordJson("ReadSubStartIndex", None)
     _, end_index = WriteSubRawData("Read")
     end_index = end_index - 1
     # 取得資料
@@ -606,7 +618,9 @@ def Statistics():
     msg = "已將繳交紀錄資訊寫入至每月總結紀錄表。"
     WSysLog("1", "Statistics", msg)
     WriteChangeReportMail(df, sub_file_header)
-    print("00")
+    # 更新json中的rawdata起始值
+    msg = SubRecordJson("WriteSubStartIndex", end_index)
+    WSysLog("1", "Statistics", msg)
     
 if __name__ == "__main__":
     # data0 = {"UploadData":{

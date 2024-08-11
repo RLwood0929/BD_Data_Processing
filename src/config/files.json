@@ -20,16 +20,5 @@
             "DealerInfo": "2024-08-09T04:26:07.353883",
             "KAList": null
         }
-    },
-    "System": {
-        "check_rule.json": null,
-        "dealer_format.json": null,
-        "dealer.json": null,
-        "header_change.json": null,
-        "mail": null,
-        "mapping.json": null,
-        "sub_record.json": null,
-        "system.json": null,
-        "user.json": null
     }
 }

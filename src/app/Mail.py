@@ -125,16 +125,11 @@ def GetMailInfo(mode, dealer_id, mail_data):
             mail_content = template.format(DateTime = date_time)
 
         elif mail_index == 2:
-            # mail_data = {"FileName": file_name,"DateTime":date_time}
+            # mail_data = {"FileName": file_name, "FileNameEn","DateTime":date_time}
             file_name = mail_data["FileName"]
-            file_name_en = []
-            for name in file_name:
-                if name == "銷售檔案":
-                    file_name_en.append("Sale File")
-                elif name == "庫存檔案":
-                    file_name_en.append("Inventory File")
+            file_name_en = mail_data["FileNameEn"]
             date_time = mail_data["DateTime"]
-            mail_content = template.format(FileName = file_name, FileNameEn = "、".join(file_name_en), DateTime = date_time)
+            mail_content = template.format(FileName = file_name, FileNameEn = file_name_en, DateTime = date_time)
 
         elif mail_index == 3:
             # mail_data = {"FileName":file_name, "SubFile": sub_file}

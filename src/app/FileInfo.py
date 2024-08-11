@@ -8,7 +8,7 @@ Writer：Qian
 # masterfile、kalist合併檔案待寫
 
 # 標準庫
-import os
+import os, shutil
 from datetime import datetime
 
 # 第三方庫
@@ -19,8 +19,10 @@ from openpyxl import Workbook, load_workbook
 from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson
 from Log import WSysLog
 from Config import AppConfig
+from __init__ import ConfigJsonFile
 
 Config = AppConfig()
+ConfigInfo = ConfigJsonFile()
 
 # 產生對應的 Excel Column 名稱(一次多個)
 def get_excel_colmun_name(file_header):
@@ -597,9 +599,80 @@ def CheckFileInfo():
     if kalist_new:
         merge_kalist(kalist_new)
 
+# 檢查雲端的Config檔案，將其拷貝至系統運行目錄
+def ConfigFile():
+    # 取得雲端的config檔案
+    could_config_path = Config.ConfigFolderPath
+    could_configs = [file for file in os.listdir(could_config_path)\
+        if os.path.isfile(os.path.join(could_config_path, file))]
+    
+    # 取得本地的config檔案
+    local_config_path = ConfigInfo.CONFIG_FOLDER
+    local_configs = [file for file in os.listdir(local_config_path)\
+        if os.path.isfile(os.path.join(local_config_path, file))]
+    
+    diff = set(could_configs) == set(local_configs)
+    if diff:
+        for file_name in local_configs:
+            could_file_path = os.path.join(could_config_path, file_name)
+            local_file_path = os.path.join(local_config_path, file_name)
+            could_file_time = datetime.fromtimestamp(os.path.getmtime(could_file_path))
+            local_file_time = datetime.fromtimestamp(os.path.getmtime(local_file_path))
+            if could_file_time == local_file_time:
+                msg = f"系統確認 {file_name} 檔案雲端及本地版本一致。"
+                WSysLog("1", "ConfigFile", msg)
+            elif could_file_time > local_file_time:
+                msg = f"雲端 {file_name} 檔案需同步至本地。"
+                WSysLog("1", "ConfigFile", msg)
+                try:
+                    shutil.copy2(could_file_path, local_file_path)
+                    msg = f"系統從雲端目錄 {could_config_path} 拷貝 {file_name} 至本地目錄 {local_config_path} 。"
+                    WSysLog("1", "ConfigFile_SyncConfigs", msg)
+                except (IOError, shutil.Error) as e:
+                    msg = f"拷貝 {file_name} 發生未知錯誤，錯誤原因： {e} 。"
+                    WSysLog("3", "ConfigFile", msg)
+            else:
+                msg = f"本地 {file_name} 檔案版本大於雲端，系統將直接使用。"
+                WSysLog("1", "ConfigFile", msg)
+        return True
+    else:
+        msg = "雲地兩端 Config 目錄中檔案不相等，請系統管理員進行維護。"
+        WSysLog("3", "ConfigFile", msg)
+        diff = list(set(could_configs) - set(local_configs))
+        if diff:
+            msg = f"比對雲地兩端Config目錄，雲端 Config 目錄中有 {'、'.join(diff)} 檔案不存在於本地中。"
+            WSysLog("3", "ConfigFile", msg)
+        diff = list(set(local_configs) - set(could_configs))
+        if diff:
+            msg = f"比對雲地兩端Config目錄，本地 Config 目錄中有 {'、'.join(diff)} 檔案不存在於雲端中。"
+            WSysLog("3", "ConfigFile", msg)
+        return False
+
+# 將系統運行的config檔案上傳至雲端
+def ConfigFileToCould():
+    # 取得雲端的config檔案
+    could_config_path = Config.ConfigFolderPath
+    
+    # 取得本地的config檔案
+    local_config_path = ConfigInfo.CONFIG_FOLDER
+    local_configs = [file for file in os.listdir(local_config_path)\
+        if os.path.isfile(os.path.join(local_config_path, file))]
+    try:
+        for config_name in local_configs:
+            local_config = os.path.join(local_config_path, config_name)
+            could_config = os.path.join(could_config_path, config_name)
+            if not os.path.exists(could_config) or os.stat(local_config).st_mtime > os.stat(could_config).st_mtime:
+                shutil.copy2(local_config, could_config)
+                msg = f"拷貝Config檔案 {config_name} 至本地雲端目錄。"
+                WSysLog("1", "ConfigFileToCould", msg)
+    except (IOError, shutil.Error) as e:
+        msg = f"拷貝 {config_name} 至本地雲端目錄發生錯誤。錯誤原因： {e}。"
+        WSysLog("3", "ConfigFileToCould", msg)
+
 if __name__ == "__main__":
-    CheckFileInfo()
+    # CheckFileInfo()
     # aa = ["BA01","BA02","BA03","BA04"]
     # MergeDealerInfo(aa)
     # MergeDealerInfoWorkSheet(aa)
     # RenewDealerJson()
+    ConfigFile()

@@ -169,6 +169,8 @@ class AppConfig:
         self.FolderName = self.GlobalConfig["App"]["Name"] \
                     if self.GlobalConfig["App"]["Name"] \
                     else self.GlobalConfig["Default"]["Name"]
+        self.SystemFolder = self.GlobalConfig["DirTree"]["System"]["FolderName"]
+        self.ConfigFolder = self.GlobalConfig["DirTree"]["System"]["NextFolder"]["ConfigFolder"]
         self.BDFolder = self.GlobalConfig["DirTree"]["BD"]["FolderName"]
         self.MasterFileFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["MasterFileFolder"]
         self.ReportFolder = self.GlobalConfig["DirTree"]["BD"]["NextFolder"]["ReportFolder"]["FolderName"]
@@ -181,6 +183,7 @@ class AppConfig:
         self.CompleteFolder = self.GlobalConfig["DirTree"]["Dealer"]["NextFolder"]["DealerFile"]["NextFolder"]["CompletedFolder"]
 
         # 制定全域目錄參數
+        self.ConfigFolderPath = os.path.join(self.RootDir, self.FolderName, self.SystemFolder, self.ConfigFolder)
         self.BDFolderPath = os.path.join(self.RootDir, self.FolderName, self.BDFolder)
         self.MasterFolderPath = os.path.join(self.BDFolderPath, self.MasterFileFolder)
         self.ReportFolderPath = os.path.join(self.BDFolderPath, self.ReportFolder)

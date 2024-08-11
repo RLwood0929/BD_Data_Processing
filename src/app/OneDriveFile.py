@@ -93,10 +93,10 @@ def get_ba_folder_name():
 # 從OneDrive雲端抓取目錄結構至本地
 # source_dir是雲端，target_dir是本地
 def DownloadOneDrive(source_dir, target_dir, skip_list = []):
-    folder_flag, file_flag = False, False
+    folder_flag, file_flag, dealer_list = False, False, []
     ba_folders = get_ba_folder_name()
-    download_folder = ["Config", "01_MasterFile", "02_Report", "04_DealerInfo"] + ba_folders + Config.DealerList
-    not_copy_folder = ["00_ChangeFile","00_ErrorReport"]
+    download_folder = [Config.ConfigFolder, Config.MasterFileFolder, Config.ReportFolder, Config.DealerInfoFolder] + ba_folders + Config.DealerList
+    not_copy_folder = [Config.ChangeFolder, Config.ErrorReportFolder]
     result = check_onedrive_path()
     if result:
         # 歷遍雲端目錄
@@ -134,6 +134,9 @@ def DownloadOneDrive(source_dir, target_dir, skip_list = []):
                                 # 本地檔案不存在 或是 本地檔案日期小於雲端日期，拷貝至本地
                                 if not os.path.exists(target_file) or os.stat(source_file).st_mtime > os.stat(target_file).st_mtime:
                                     shutil.copy2(source_file, target_file)
+                                    if Config.DealerFolder in part:
+                                        folder_part = folder_path.split("\\")
+                                        dealer_list.append(folder_part[-1])
                                     msg = f"拷貝檔案 {source_file} 至 {target_file}。"
                                     WSysLog("1", "DownloadOneDrive_SyncFiles", msg)
                                     file_flag = True
@@ -149,9 +152,9 @@ def DownloadOneDrive(source_dir, target_dir, skip_list = []):
             msg = "本地檔案已更新至最新。"
             WSysLog("1", "DownloadOneDrive", msg)
         
-        return True
+        return True, list(set(dealer_list))
     else:
-        return False
+        return False, None
 
 # 從本地上傳至 OneDrive 雲端
 # source_dir是本地，target_dir是雲端
@@ -186,7 +189,25 @@ def UploadOneDrive(source_dir, target_dir):
                 except (IOError, shutil.Error) as e:
                     msg = f"拷貝 {source_file} 至 {target_file} 錯誤，錯誤原因： {e}。"
                     WSysLog("3", "UploadOneDrive_SyncFiles", msg)
-        
+        try:
+            for dealer_id in Config.DealerList:
+                could_dealer_folder_path = os.path.join(Config.OneDrivePath, Config.FolderName, Config.DealerFolder, dealer_id)
+                file_names = [file for file in os.listdir(could_dealer_folder_path)\
+                    if os.path.isfile(os.path.join(could_dealer_folder_path, file))]
+                for file_name in file_names:
+                    file_path = os.path.join(could_dealer_folder_path, file_name)
+                    os.remove(file_path)
+                    msg = f"系統已移除 {dealer_id} 雲端目錄的 {file_name} 檔案。"
+                    WSysLog("1", "UploadOneDrive_ClearCouldDealerFolder", msg)
+                msg = f"系統已清空 {dealer_id} 雲端上傳檔案之目錄。"
+                WSysLog("1", "UploadOneDrive_ClearCouldDealerFolder", msg)
+        except OSError as e:
+            msg = f"系統清空經銷商雲端上傳目錄發生OS錯誤。錯誤原因： {e}。"
+            WSysLog("3", "UploadOneDrive_ClearCouldDealerFolder", msg)
+        except Exception as e:
+            msg = f"系統清空經銷商雲端上傳目錄發生未知錯誤。錯誤原因： {e}。"
+            WSysLog("3", "UploadOneDrive_ClearCouldDealerFolder", msg)
+            
         if not folder_flag:
             msg = "本地目錄與OneDrive目錄已同步到最新。"
             WSysLog("1", "UploadOneDrive", msg)
@@ -200,12 +221,21 @@ def UploadOneDrive(source_dir, target_dir):
 
 # 清空本地端檔案
 def ClearLocal(source_dir):
-    for root, _, files in os.walk(source_dir):
-        for file in files:
-            file_path = os.path.join(root, file)
-            if os.path.isfile(file_path):
-                print(file_path)
-                os.remove(file_path)
+    try:
+        for root, _, files in os.walk(source_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                    if not os.path.exists(file_path):
+                        msg = f"系統已從本地 {root} 目錄移除 {file} 檔案。"
+                        WSysLog("1", "ClearLocal", msg)
+    except OSError as e:
+        msg = f"系統清空本地目錄發生錯誤。錯誤原因： {e}。"
+        WSysLog("3", "ClearLocal", msg)
+    except Exception as e:
+        msg = f"系統清空本地目錄發生未知錯誤。錯誤原因： {e}。"
+        WSysLog("3", "ClearLocal", msg)
 
 if __name__ == "__main__":
     skip = Config.NotCopyFolder

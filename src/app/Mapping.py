@@ -252,7 +252,7 @@ def ChangeSaleFile(dealer_id, file_name):
             break
 
     dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
-    dealer_country = Config.DealerConfig[f"Dealer{index}"]["Country"]
+    dealer_country = Config.DealerConfig[f"Dealer{index}"]["DealerCountry"]
     dealer_OUP_type = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["OUPType"]
     file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     input_data = read_data(file_path)
@@ -498,7 +498,6 @@ def Changing(check_right_list):
         dealer_path = os.path.join(Config.DealerFolderPath, dealer_id)
         file_names = [file for file in os.listdir(dealer_path)\
                       if os.path.isfile(os.path.join(dealer_path, file))]
-        
         error_files, error_paths = [], []
         for file_name in file_names:
             file_type, _ = decide_file_type(dealer_id, file_name)
@@ -548,7 +547,7 @@ def Changing(check_right_list):
             SendMail(send_info)
 
 # 合併 Inventory 檔案
-def MargeInventoryFile():
+def MergeInventoryFile():
     file_names = [file for file in os.listdir(Config.ChangeFolderPath) \
                       if os.path.isfile(os.path.join(Config.ChangeFolderPath, file))]
     
@@ -559,41 +558,42 @@ def MargeInventoryFile():
         if part[1] == "I":
             file_list.append(file_name)
             time_list.append(part[2])
+            
+    if file_list:
+        # 抓取檔名中的檔案時間
+        time_list = [datetime.strptime(time_str, "%Y%m%d") for time_str in time_list]
+        file_time = time_list[-1].strftime("%Y%m%d")
+        
+        # 合併檔案
+        dataframes = [pd.read_csv(os.path.join(Config.ChangeFolderPath, file)) for file in file_list]
+        combined_df = pd.concat(dataframes, ignore_index=True)
+        
+        # 輸出檔案
+        changed_file_name = Config.InventoryOutputFileName.replace("{CountryCode}", Config.InventoryOutputFileCountryCode)\
+            .replace("{LastTransactionDate}", file_time)
+        try:
+            combined_df.to_csv(os.path.join(Config.ChangeFolderPath, \
+                f"{changed_file_name}.{Config.InventoryOutputFileExtension}"), sep = "\t", index=False)
+            msg = f"{len(file_list)} 份檔案成功合併成 {changed_file_name}.{Config.InventoryOutputFileExtension}。"
+            WSysLog("1", "MargeInventoryFile", msg)
+            for dealer_id in Config.DealerList:
+                target_folder = os.path.join(Config.ChangeFolderPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
+                for file in file_list:
+                    part = re.split(r"[._]" ,file)
+                    if (part[1] == dealer_id) and (part[2] == "I"):
+                        file_source = os.path.join(Config.ChangeFolderPath, file)
+                        file_target = os.path.join(target_folder, file)
+                        shutil.move(file_source, file_target)
+                        if os.path.exists(file_target):
+                            msg = f"檔案搬移至 {target_folder} 成功"
+                            WSysLog("1", "MoveInventoryFile", msg)
+                        else:
+                            msg = f"檔案搬移至 {target_folder} 失敗"
+                            WSysLog("2", "MoveInventoryFile", msg)
 
-    # 抓取檔名中的檔案時間
-    time_list = [datetime.strptime(time_str, "%Y%m%d") for time_str in time_list]
-    file_time = time_list[-1].strftime("%Y%m%d")
-    
-    # 合併檔案
-    dataframes = [pd.read_csv(os.path.join(Config.ChangeFolderPath, file)) for file in file_list]
-    combined_df = pd.concat(dataframes, ignore_index=True)
-    
-    # 輸出檔案
-    changed_file_name = Config.InventoryOutputFileName.replace("{CountryCode}", Config.InventoryOutputFileCountryCode)\
-        .replace("{LastTransactionDate}", file_time)
-    try:
-        combined_df.to_csv(os.path.join(Config.ChangeFolderPath, \
-            f"{changed_file_name}.{Config.InventoryOutputFileExtension}"), sep = "\t", index=False)
-        msg = f"{len(file_list)} 份檔案成功合併成 {changed_file_name}.{Config.InventoryOutputFileExtension}。"
-        WSysLog("1", "MargeInventoryFile", msg)
-        for dealer_id in Config.DealerList:
-            target_folder = os.path.join(Config.ChangeFolderPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
-            for file in file_list:
-                part = re.split(r"[._]" ,file)
-                if (part[1] == dealer_id) and (part[2] == "I"):
-                    file_source = os.path.join(Config.ChangeFolderPath, file)
-                    file_target = os.path.join(target_folder, file)
-                    shutil.move(file_source, file_target)
-                    if os.path.exists(file_target):
-                        msg = f"檔案搬移至 {target_folder} 成功"
-                        WSysLog("1", "MoveInventoryFile", msg)
-                    else:
-                        msg = f"檔案搬移至 {target_folder} 失敗"
-                        WSysLog("2", "MoveInventoryFile", msg)
-
-    except Exception as e:
-        msg = f"合併檔案發生未知錯誤，{e}。"
-        WSysLog("3", "MargeInventoryFile", msg)
+        except Exception as e:
+            msg = f"合併檔案發生未知錯誤，{e}。"
+            WSysLog("3", "MargeInventoryFile", msg)
 
 # 檔案上傳EFT雲端完成後歸檔
 def FileArchiving():
@@ -641,5 +641,5 @@ if __name__ == "__main__":
     # FilePath = "111_I_20240726.csv"
     # ChangeInventoryFile(dealerID, FilePath)
     # check_product_id(dealerID, input_data)
-    # MargeInventoryFile()
+    # MergeInventoryFile()
     FileArchiving()

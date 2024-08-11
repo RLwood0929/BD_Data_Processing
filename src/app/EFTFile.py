@@ -8,8 +8,8 @@ Writer：Qian
 import os
 import ftplib
 from Log import WSysLog
-from .Mail import SendMail
-from .Config import AppConfig
+from Mail import SendMail
+from Config import AppConfig
 
 Config = AppConfig()
 
@@ -89,15 +89,16 @@ def upload_file(folder_path, file_names, retry_count = 0, max_retries = Config.M
         ftp_server.cwd(Config.EFTDir)
 
         # 測試模式
-        if Config.TestMode:
+        if not Config.TestMode:
             file_name = "README.md"
             file_path = "./README.md"
             with open(file_path, "rb") as file:
                 ftp_server.storbinary(f"STOR {file_name}", file)
-            
-            remote_path = os.path.join(Config.EFTDir, file_name)
-            remote_size = ftp_server.size(remote_path)
+
+            remote_size = ftp_server.size(file_name)
             local_size = os.path.getsize(file_path)
+
+            # 比對檔案大小，判斷檔案是否上傳成功
             if remote_size == local_size:
                 msg = f"成功上傳測試檔案至 EFT雲端：{Config.EFTDir}。"
                 WSysLog("1", "EFTUploadFile", msg)
@@ -115,8 +116,7 @@ def upload_file(folder_path, file_names, retry_count = 0, max_retries = Config.M
                     ftp_server.storbinary(f"STOR {file_name}", file)
                 
                 # 比對檔案大小，判斷檔案是否上傳成功
-                remote_path = os.path.join(Config.EFTDir, file_name)
-                remote_size = ftp_server.size(remote_path)
+                remote_size = ftp_server.size(file_name)
                 local_size = os.path.getsize(file_path)
                 if remote_size != local_size:
                     upload_flag = False
