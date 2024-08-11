@@ -5,6 +5,7 @@
 Writer：Qian
 '''
 
+# 調整DealerInfo，若目標目錄不存在檔案則從子表產生
 # masterfile、kalist合併檔案待寫
 
 # 標準庫
