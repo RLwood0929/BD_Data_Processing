@@ -16,7 +16,10 @@ Writer:Qian
 02_Dealer/底下經銷商檔案，00_ChangeFile、00_Completed目錄不用
 """
 
+# 標準庫
 import os, shutil
+
+# 自定義函數
 from Log import WSysLog
 from Config import AppConfig
 from SystemConfig import WriteWinUser, WriteOneDrivePath
@@ -159,6 +162,7 @@ def DownloadOneDrive(source_dir, target_dir, skip_list = []):
 # 從本地上傳至 OneDrive 雲端
 # source_dir是本地，target_dir是雲端
 def UploadOneDrive(source_dir, target_dir):
+    not_copy_folder = Config.BAFolder
     result = check_onedrive_path()
     if result:
         folder_flag, file_flag = False, False
@@ -175,20 +179,21 @@ def UploadOneDrive(source_dir, target_dir):
                 except OSError as e:
                     msg = f"創建目錄錯誤 {target_folder} : {e} 。"
                     WSysLog("3", "UploadOneDrive_SyncFolders", msg)
-            
-            for file in files:
-                source_file = os.path.join(root, file)
-                target_file = os.path.join(target_dir,\
-                    os.path.relpath(source_file, source_dir))
-                try:
-                    if not os.path.exists(target_file) or os.stat(source_file).st_mtime > os.stat(target_file).st_mtime:
-                        shutil.copy2(source_file, target_file)
-                        msg = f"拷貝 {source_file} 至 {target_file} 。"
-                        WSysLog("1","UploadOneDrive_SyncFiles", msg)
-                        file_flag = True
-                except (IOError, shutil.Error) as e:
-                    msg = f"拷貝 {source_file} 至 {target_file} 錯誤，錯誤原因： {e}。"
-                    WSysLog("3", "UploadOneDrive_SyncFiles", msg)
+            part = source_folder.split("\\")
+            if not_copy_folder not in part:
+                for file in files:
+                    source_file = os.path.join(root, file)
+                    target_file = os.path.join(target_dir,\
+                        os.path.relpath(source_file, source_dir))
+                    try:
+                        if not os.path.exists(target_file) or os.stat(source_file).st_mtime > os.stat(target_file).st_mtime:
+                            shutil.copy2(source_file, target_file)
+                            msg = f"拷貝 {source_file} 至 {target_file} 。"
+                            WSysLog("1","UploadOneDrive_SyncFiles", msg)
+                            file_flag = True
+                    except (IOError, shutil.Error) as e:
+                        msg = f"拷貝 {source_file} 至 {target_file} 錯誤，錯誤原因： {e}。"
+                        WSysLog("3", "UploadOneDrive_SyncFiles", msg)
         try:
             for dealer_id in Config.DealerList:
                 could_dealer_folder_path = os.path.join(Config.OneDrivePath, Config.FolderName, Config.DealerFolder, dealer_id)

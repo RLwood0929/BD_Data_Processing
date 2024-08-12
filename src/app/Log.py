@@ -10,8 +10,11 @@ level 3 對應 error      適用範圍:由於嚴重的問題，部分功能未�
 level 4 對應 critical   適用範圍:嚴重錯誤，程式不能繼續運行
 '''
 
+# 標準庫
 import os
 import logging
+
+# 自定義函數
 from Config import AppConfig
 
 Config = AppConfig()

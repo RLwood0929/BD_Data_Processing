@@ -6,13 +6,18 @@
 Writer:Qian
 '''
 
+# 標準庫
 import os, re
 import shutil
-import pandas as pd
-from Mail import SendMail
-from Config import AppConfig
 from itertools import groupby
 from operator import itemgetter
+
+# 第三方庫
+import pandas as pd
+
+# 自定義函數
+from Mail import SendMail
+from Config import AppConfig
 from SystemConfig import SubRecordJson
 from datetime import datetime, timedelta
 from Log import WSysLog, WRecLog, WCheLog

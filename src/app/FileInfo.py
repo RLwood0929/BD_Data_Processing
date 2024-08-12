@@ -5,7 +5,6 @@
 Writer：Qian
 '''
 
-# 調整DealerInfo，若目標目錄不存在檔案則從子表產生
 # masterfile、kalist合併檔案待寫
 
 # 標準庫
@@ -16,7 +15,7 @@ from datetime import datetime
 import pandas as pd
 from openpyxl import Workbook, load_workbook
 
-# 本地函數
+# 自定義函數
 from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson
 from Log import WSysLog
 from Config import AppConfig
@@ -541,6 +540,13 @@ def CheckFileInfo():
     os_file_time = CheckBAFolderFiles()
     json_data = check_ba()
     record_file_time = json_data["FileInfo"]
+    master_file_path = os.path.join(Config.MasterFolderPath, Config.MasterFileName)
+    dealer_file_path = os.path.join(Config.DealerInfoPath, Config.DealerInfoFileName)
+    if os.path.exists(master_file_path):
+        master_data = load_workbook(master_file_path)
+        master_sheets = master_data.sheetnames
+    else:
+        master_sheets = []
 
     # 取得作業系統檔案更新時與紀錄中比對，判定是否需要更新
     for BA_id, files_time in os_file_time.items():
@@ -592,12 +598,12 @@ def CheckFileInfo():
                 msg = f"系統初始化建立 {file_name} 檔案於 {BA_id} 中，請填寫完畢後，在執行一次系統。"
                 WSysLog("1", "CheckFileInfo", msg)
 
-    if master_new:
+    if master_new or (not os.path.exists(master_file_path)):
         merge_masterfile(master_new)
-    if dealerinfo_new:
+    if dealerinfo_new or (not os.path.exists(dealer_file_path)):
         MergeDealerInfo(dealerinfo_new)
         RenewDealerJson()
-    if kalist_new:
+    if kalist_new or (Config.KAListFileSheetName not in master_sheets):
         merge_kalist(kalist_new)
 
 # 檢查雲端的Config檔案，將其拷貝至系統運行目錄

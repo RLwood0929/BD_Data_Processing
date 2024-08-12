@@ -33,21 +33,26 @@ Writer：Qian
 25. 系統結束
 """
 
-import os, sys
-import time
+# 標準庫
+import os, sys, time
+
+# 第三方庫
 import schedule
-from Config import AppConfig
+
+# 自定義函數
 from Log import WSysLog
+from Config import AppConfig
+from EFTFile import EFTUploadFile
+from RecordTable import Statistics
 from SystemConfig import SubRecordJson
 from FileInfo import CheckFileInfo, ConfigFile, ConfigFileToCould
 from OneDriveFile import DownloadOneDrive, UploadOneDrive, ClearLocal
-from CheckFile import RecordDealerFiles, CheckFile, MoveCheckErrorFile, MoveCheckFile, ClearSubRecordJson
 from Mapping import Changing, MergeInventoryFile, FileArchiving
-from EFTFile import EFTUploadFile
-from RecordTable import Statistics
+from CheckFile import RecordDealerFiles, CheckFile, MoveCheckErrorFile, MoveCheckFile, ClearSubRecordJson
 
 Config = AppConfig()
 
+# 系統各函數運作流程串接
 def system_work_flow(half_flag = False):
     Could = os.path.join(Config.OneDrivePath, Config.FolderName)
     Local = os.path.join(Config.RootDir, Config.FolderName)
@@ -146,15 +151,18 @@ schedule.every().day.at("22:00").do(system_work_flow, half_flag = True)
 schedule.every().day.at("22:15").do(system_work_flow, half_flag = True)
 schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
 
+# 主程式
 def main():
-    # system_work_flow(True)
-    try:
-        print("System Auto Run Start.")
-        while True:    
-            schedule.run_pending()
-            time.sleep(10)
-    except KeyboardInterrupt:
-        print("Scheduler stopped by user.")
+    system_work_flow(True)
+    
+    # 排程運行程式
+    # try:
+    #     print("System Auto Run Start.")
+    #     while True:    
+    #         schedule.run_pending()
+    #         time.sleep(10)
+    # except KeyboardInterrupt:
+    #     print("Scheduler stopped by user.")
 
 if __name__ == "__main__":
     main()

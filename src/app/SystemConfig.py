@@ -5,7 +5,10 @@
 Writer：Qian
 '''
 
+# 標準庫
 import json
+
+# 自定義函數
 from __init__ import ConfigJsonFile
 
 ConfigInfo = ConfigJsonFile()

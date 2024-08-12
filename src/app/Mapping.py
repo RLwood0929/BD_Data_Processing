@@ -5,12 +5,16 @@
 Writer:Qian
 '''
 
-import os, re
-import shutil
+# 標準庫
+import os, re, shutil
+from datetime import datetime
+
+# 第三方庫
 import pandas as pd
+
+# 自定義函數
 from Mail import SendMail
 from Config import AppConfig
-from datetime import datetime
 from Log import WSysLog, WChaLog
 from CheckFile import decide_file_type
 from RecordTable import WriteSubRawData

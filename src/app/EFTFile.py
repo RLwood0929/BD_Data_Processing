@@ -5,8 +5,11 @@
 Writer：Qian
 '''
 
+# 標準庫
 import os
 import ftplib
+
+# 自定義函數
 from Log import WSysLog
 from Mail import SendMail
 from Config import AppConfig

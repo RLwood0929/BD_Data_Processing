@@ -40,15 +40,18 @@ mail_data = {"MasterFileName": file_name}
 
 """
 
+# 標準庫
 import os
 import smtplib
 import mimetypes
-from Log import WSysLog
-from Config import AppConfig
 from email.mime.text import MIMEText #內容使用
-from SystemConfig import SubRecordJson
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication #附件使用
+
+# 自定義函數
+from Log import WSysLog
+from Config import AppConfig
+from SystemConfig import SubRecordJson
 
 # IMAP使用ssl驗證，未加密port號143、加密port號993
 

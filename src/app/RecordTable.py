@@ -71,14 +71,19 @@ Writer：Qian
     }
 """
 
+# 標準庫
 import os, re
+
+# 第三方庫
 import pandas as pd
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
+
+# 自定義函數
 from Mail import SendMail
 from Config import AppConfig
 from Log import WSysLog, WRecLog
 from SystemConfig import SubRecordJson
-from openpyxl import Workbook, load_workbook
-from openpyxl.utils import get_column_letter
 
 Config = AppConfig()
 

@@ -1,7 +1,19 @@
+# -*- coding: utf-8 -*-
+
+"""
+檔案說明：存放共用的全域參數
+Writer：Qian
+"""
+
+# 標準庫
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+
+# 第三方庫
 from openpyxl.styles import Alignment
+
+# 自定義函數
 from SystemConfig import Config, DealerConf, CheckRule, DealerFormatConf,\
                          MappingRule, MailRule, User, File
 

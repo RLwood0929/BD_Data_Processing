@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+"""
+檔案說明：Config檔案參數
+Writer：Qian
+"""
+
+# 標準庫
 import os
 
 class ConfigJsonFile:
