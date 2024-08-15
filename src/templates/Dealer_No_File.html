@@ -5,6 +5,8 @@
         <h3 style="color:red;font-family: Arial, 'Microsoft JhengHei',sans-serif ;">
             <b><i>此信件為系統自動寄出，請勿回覆</i></b></h3>
         <p style="font-size: medium;font-family: Arial, 'Microsoft JhengHei',sans-serif ;">
+            第 {Num} 次通知<br>
+            <br>
             因貴公司<span style="color:red;">未繳交 {FileName}，</span><br><!--銷售檔案or庫存檔案-->
             應上傳時間：{DateTime} 前，特在此通知。<br><!--日期+時間-->
             <br>
@@ -22,7 +24,9 @@
         <h3 style="color:red;font-family: Arial, 'Microsoft JhengHei',sans-serif ;">
             <b><i>This email is automatically sent by the system. Please do not reply.</i></b></h3>
         <p style="font-size: medium;font-family: Arial, 'Microsoft JhengHei',sans-serif ;">
-            Your company<span style="color:red;"> has not submitted the {FileNameEn}.</span><br><!--銷售檔案or庫存檔案-->
+            {Num}th notification<br>
+            <br>
+            Your company<span style="color:red;"> has not submitted the {FileName}.</span><br><!--銷售檔案or庫存檔案-->
             The file should have been uploaded by:{DateTime}.<br><!--日期+時間-->
             <br>
             If it is a daily submission, please correct the content in the file for the next day.<br>

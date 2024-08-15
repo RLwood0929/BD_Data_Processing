@@ -1,68 +1,68 @@
 {
-    "SubStartIndex": 20,
+    "SubStartIndex": null,
     "NotSubStartIndex": null,
-    "ChangeDic": {},
+    "ChangeDic": null,
     "Dealer1": {
-        "SaleFile": false,
-        "InventoryFile": false,
-        "Mail2": 29,
-        "Mail3": 0,
-        "Mail4": 0
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer2": {
         "SaleFile": null,
         "InventoryFile": null,
-        "Mail2": 23,
-        "Mail3": 0,
-        "Mail4": 0
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer3": {
-        "SaleFile": false,
-        "InventoryFile": false,
-        "Mail2": 28,
-        "Mail3": 0,
-        "Mail4": 0
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer4": {
-        "SaleFile": true,
-        "InventoryFile": true,
-        "Mail2": 4,
-        "Mail3": 0,
-        "Mail4": 15
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer5": {
         "SaleFile": null,
         "InventoryFile": null,
-        "Mail2": 23,
-        "Mail3": 0,
-        "Mail4": 0
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer6": {
         "SaleFile": null,
         "InventoryFile": null,
-        "Mail2": 23,
-        "Mail3": 0,
-        "Mail4": 0
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer7": {
-        "SaleFile": false,
-        "InventoryFile": false,
-        "Mail2": 28,
-        "Mail3": 0,
-        "Mail4": 0
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer8": {
         "SaleFile": null,
         "InventoryFile": null,
-        "Mail2": 23,
-        "Mail3": 0,
-        "Mail4": 0
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     },
     "Dealer9": {
         "SaleFile": null,
         "InventoryFile": null,
-        "Mail2": 23,
-        "Mail3": 0,
-        "Mail4": 0
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     }
 }

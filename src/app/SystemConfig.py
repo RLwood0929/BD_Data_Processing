@@ -59,28 +59,28 @@ def SubRecordJson(mode, data):
         data = {"SubStartIndex" : None, "NotSubStartIndex" : None, "ChangeDic" : None}
         for i in range(len(dealer_list)):
             index = i + 1
-            data[f"Dealer{index}"] = {"SaleFile" : None, "InventoryFile" : None, "Mail2":None, "Mail3":None, "Mail4":None}
+            data[f"Dealer{index}"] = {"SaleFile" : None, "InventoryFile" : None, "Mail2":{}, "Mail3":{}, "Mail4":{}}
         with open(ConfigInfo.SubRecordPath, "w", encoding = "UTF-8") as file_json:
             json.dump(data, file_json, ensure_ascii = False, indent = 4)
         return "成功建立檔案繳交狀態json檔。"
-    
+
     elif mode == "ReadSubStartIndex": # data = None
         running_data = read_json(ConfigInfo.SubRecordPath)
         start_index = running_data["SubStartIndex"]
         return start_index
-    
+
     elif mode == "WriteSubStartIndex": # data = int
         running_data = read_json(ConfigInfo.SubRecordPath)
         running_data["SubStartIndex"] = data
         with open(ConfigInfo.SubRecordPath, "w", encoding = "UTF-8") as file_json:
             json.dump(running_data, file_json, ensure_ascii = False, indent = 4)
         return f"更新起始索引為： {data}."
-    
+
     elif mode == "ReadNotSubStartIndex": # data = None
         running_data = read_json(ConfigInfo.SubRecordPath)
         start_index = running_data["NotSubStartIndex"]
         return start_index
-    
+
     elif mode == "WriteNotSubStartIndex": # data = int
         running_data = read_json(ConfigInfo.SubRecordPath)
         running_data["NotSubStartIndex"] = data
@@ -94,6 +94,7 @@ def SubRecordJson(mode, data):
         mail2 = "Mail2"
         mail3 = "Mail3"
         mail4 = "Mail4"
+        
         with open(ConfigInfo.SubRecordPath, "r", encoding = "UTF-8") as file_json:
             running_data = json.load(file_json)
         for i in data:
@@ -102,22 +103,35 @@ def SubRecordJson(mode, data):
             elif inventory in data[i]:
                 running_data[i][inventory] = data[i][inventory]
             elif mail2 in data[i]:
-                running_data[i][mail2] = data[i][mail2]
+                file_name = [j for j in data[i][mail2]]
+                if file_name:
+                    running_data[i][mail2][file_name[0]] = data[i][mail2][file_name[0]]
+                else:
+                    running_data[i][mail2] = data[i][mail2]
             elif mail3 in data[i]:
-                running_data[i][mail3] = data[i][mail3]
+                file_name = [j for j in data[i][mail3]]
+                if file_name:
+                    running_data[i][mail3][file_name[0]] = data[i][mail3][file_name[0]]
+                else:
+                    running_data[i][mail3] = data[i][mail3]
             elif mail4 in data[i]:
-                running_data[i][mail4] = data[i][mail4]
+                file_name = [j for j in data[i][mail4]]
+                if file_name:
+                    running_data[i][mail4][file_name[0]] = data[i][mail4][file_name[0]]
+                else:
+                    running_data[i][mail4] = data[i][mail4]
+
         with open(ConfigInfo.SubRecordPath, "w", encoding = "UTF-8") as file_json:
             json.dump(running_data, file_json, ensure_ascii = False, indent = 4)
         return f"已更新檔案繳交參數。 Data = {data}."
-    
+
     elif mode == "WriteChangeDic": # data = {id:filename}
         running_data = read_json(ConfigInfo.SubRecordPath)
         running_data["ChangeDic"] = data
         with open(ConfigInfo.SubRecordPath, "w", encoding = "UTF-8") as file_json:
             json.dump(running_data, file_json, ensure_ascii = False, indent = 4)
         return f"已更新ChangeDic = {data}."
-    
+
     elif mode == "ReadChangeDic":
         with open(ConfigInfo.SubRecordPath, "r", encoding = "UTF-8") as file_json:
             running_data = json.load(file_json)
@@ -171,14 +185,13 @@ def WriteDealerJson(mode, data):
             json.dump(data, file, ensure_ascii = False, indent = 4)
         return True
 
-
 if __name__ == "__main__":
     # DealerJson()
     # HeaderChange()
     # mode = "WriteFileStatus"
     # data = {"Dealer1":{"SaleFile":True}}
-    mode = "Start"
-    data = None
-    SubRecordJson(mode, data)
+    Mode = "Start"
+    Data = None
+    SubRecordJson(Mode, Data)
     # aa = Config()
     # print(aa)
