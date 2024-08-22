@@ -592,8 +592,8 @@ def CheckFileContent(dealer_id, file_name, file_type):
         error_list.extend([f"{'、'.join(cell_result[i])} 內容為空" for i in cell_result])
 
     # 2選1選填欄位值確認不為空
-    header1 = two_choose_one[0]
-    header2 = two_choose_one[1]
+    header1 = two_choose_one[1]
+    header2 = two_choose_one[0]
     cell_value = []
     # Original Quantity欄位
     for i in file_data.index[file_data[header1].isna()].tolist():

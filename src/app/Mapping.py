@@ -204,6 +204,7 @@ def search_dp(input_data, dealer_id):
                 output.append(dp)
         return output, error_row
     
+# 使用 product id 在 MasterFile 中找到對應的 std 價
 def search_cost(input_data, dealer_id):
     result, master_data, _ = read_master_file()
     output, error_row = [], {}

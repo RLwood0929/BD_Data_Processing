@@ -53,8 +53,6 @@ from Log import WSysLog
 from Config import AppConfig
 from SystemConfig import SubRecordJson
 
-# IMAP使用ssl驗證，未加密port號143、加密port號993
-
 Config = AppConfig()
 
 # 依據mode event回傳對應的 index
