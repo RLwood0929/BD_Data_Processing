@@ -81,14 +81,15 @@ def wright_dealer_info_in_file(file_path, sheet_name, file_header, ba_dealer_id)
     try:
         wb = load_workbook(file_path)
         ws = wb[sheet_name]
-        position_list = ["聯絡人1","聯絡人2","聯絡人3"]
+        position_list = ["聯絡人1","聯絡人2","聯絡人3","聯絡人4"]
         content_col = ["Position", "Name", "Mail", "Ex"]
-        for row in range(2, (len(ba_dealer_id))*3+1, 3):
-            index = int((row - 2) / 3)
+        content_range = 4
+        for row in range(2, (len(ba_dealer_id))*content_range+1, content_range):
+            index = int((row - 2) / content_range)
             col =  search_column_name(file_header, "Dealer ID")
             ws[f"{col}{row}"] = ba_dealer_id[index]
             
-            for j in range(3):
+            for j in range(content_range):
                 col = search_column_name(file_header, "Position")
                 ws[f"{col}{row + j}"] = position_list[j]
                 for col_name in content_col:
@@ -302,8 +303,8 @@ def MergeDealerInfo(write_new_list):
             dealer_data = pd.read_excel(file_path, sheet_name = sheet_name, dtype = str)
             dealer_id_in_data = dealer_data[dealer_data["Dealer ID"].notna()]
             dealer_id_in_data = dealer_id_in_data["Dealer ID"].values
-            part = [dealer_data.iloc[i:i+3].reset_index(drop=True)\
-                     for i in range(0, len(dealer_data), 3)]
+            part = [dealer_data.iloc[i:i+4].reset_index(drop=True)\
+                     for i in range(0, len(dealer_data), 4)]
             dealer_part.extend(part)
             dealers.extend(ba["BA_Dealer_ID"])
 
@@ -314,7 +315,7 @@ def MergeDealerInfo(write_new_list):
                     WSysLog("3", "MergeDealerInfo", msg)
 
                     df_index = dealer_data[dealer_data["Dealer ID"] == dealer].index
-                    for j in range(3):
+                    for j in range(4):
                         dealer_data = dealer_data.drop(index = [int(df_index.values[0]) + j])
 
             for dealer in ba["BA_Dealer_ID"]:
@@ -353,11 +354,11 @@ def MergeDealerInfo(write_new_list):
                 ws[f"{col}{row + 2}"] = conbined_df[col_name][row]
                 ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
 
-        for row in range(2, len(conbined_df) + 1, 3):
+        for row in range(2, len(conbined_df) + 1, 4):
             for col_name in conbined_df.columns.values:
                 if col_name not in content_col:
                     col = search_column_name(file_header, col_name)
-                    ws.merge_cells(f"{col}{row}:{col}{row + 2}")
+                    ws.merge_cells(f"{col}{row}:{col}{row + 3}")
         wb.save(general_data_path)
 
     # 總表存在，做單欄位修正
@@ -384,7 +385,7 @@ def MergeDealerInfo(write_new_list):
                     msg = f" {dealer} 不存在於BA負責範圍，請系統管理員修正。"
                     WSysLog("3", "MergeDealerInfo", msg)
                     df_index = dealer_data[dealer_data["Dealer ID"] == dealer].index
-                    for j in range(3):
+                    for j in range(4):
                         dealer_data = dealer_data.drop(index = [int(df_index.values[0]) + j])
 
             # 經銷商ID存在於使用者json中，但不存在於Dealer.json，將資訊加入至Dealer.json
@@ -405,8 +406,8 @@ def MergeDealerInfo(write_new_list):
 
             dealer_data = dealer_data.apply(lambda col:\
                 col.map(lambda x: None if pd.isna(x) else x))
-            part = [dealer_data.iloc[i:i+3].reset_index(drop=True)\
-                for i in range(0, len(dealer_data), 3)]
+            part = [dealer_data.iloc[i:i+4].reset_index(drop=True)\
+                for i in range(0, len(dealer_data), 4)]
             dealer_part.extend(part)
 
         # df資料轉變為字典型態
@@ -421,7 +422,7 @@ def MergeDealerInfo(write_new_list):
             dealer_part_dct[dealer].loc[0, "ID"] =\
                 f"Dealer{(dealer_list.index(dealer_part_dct[dealer]['Dealer ID'][0]) + 1)}"
             index = dealer_list.index(dealer)
-            row = (index * 3) + 2
+            row = (index * 4) + 2
             for col_name in dealer_part_dct[dealer].columns.values:
                 col = search_column_name(file_header, col_name)
                 for i in range(len(dealer_part_dct[dealer])):
@@ -432,7 +433,7 @@ def MergeDealerInfo(write_new_list):
                         ws[f"{col}{row + i}"] = dealer_part_dct[dealer][col_name][i]
                         ws[f"{col}{row + i}"].alignment = Config.ExcelStyle
                 if col_name not in content_col:
-                    ws.merge_cells(f"{col}{row}:{col}{row + 2}")
+                    ws.merge_cells(f"{col}{row}:{col}{row + 3}")
 
         wb.save(general_data_path)
         if not new_flag:
@@ -457,8 +458,8 @@ def RenewDealerJson():
     dealer_data = pd.read_excel(file_path, sheet_name = sheet_name, dtype = str)
     dealer_data = dealer_data.apply(lambda col:\
         col.map(lambda x: None if pd.isna(x) else x))
-    dealer_data_part = [dealer_data.iloc[i:i+3].reset_index(drop=True)\
-        for i in range(0, len(dealer_data), 3)]
+    dealer_data_part = [dealer_data.iloc[i:i+4].reset_index(drop=True)\
+        for i in range(0, len(dealer_data), 4)]
     dealer_part_dct = {part["ID"][0]:part for part in dealer_data_part}
 
     ka_list = []
@@ -486,7 +487,7 @@ def RenewDealerJson():
 
         # 取出總表中的經銷商聯絡資訊
         dealer_connect = {}
-        for row in range(3):
+        for row in range(4):
             for col_name in dealer_connect_header:
                 dealer_connect[f"Contact{row + 1}{col_name}"] =\
                     dealer_part_dct[dealer].loc[row, col_name]

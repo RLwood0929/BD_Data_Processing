@@ -51,7 +51,7 @@
       },
       "Column9":{
         "ColumnName":"Quantity",
-        "SourceName":"Original Quantity",
+        "SourceName":"Quantity",
         "ChangeRule":"MoveOrSearchUom",
         "Value":null
       },

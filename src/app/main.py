@@ -34,7 +34,8 @@ Writer：Qian
 """
 
 # 標準庫
-import os, sys, time
+import os
+import sys
 
 # 第三方庫
 import schedule
@@ -74,6 +75,7 @@ def system_work_flow(half_flag = False):
         print("--Running CheckFileInfo--")
         CheckFileInfo()
         print("--End CheckFileInfo--")
+        return
         print("--Running RecordDealerFiles--")
         HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles("AutoRun", DealerList)
         print("Result:")
@@ -87,7 +89,7 @@ def system_work_flow(half_flag = False):
         print("Result:")
         print(f"\tChangeDic:{ChangeDic}")
         if ChangeDic:
-            old_data = SubRecordJson("ReadChangeDic")
+            old_data = SubRecordJson("ReadChangeDic", None)
             ChangeDic.update(old_data)
             msg = SubRecordJson("WriteChangeDic", ChangeDic)
             WSysLog("1", "SubRecordJson", msg)
@@ -144,7 +146,7 @@ def system_work_flow(half_flag = False):
         if Config.TestMode:
             sys.exit()
     except Exception as e:
-        msg = f"系統自動運作時發生錯誤。錯誤原因： {e}。"
+        msg = f"系統自動運作時發生錯誤。錯誤原因： {e}"
         print(msg)
 
 schedule.every().day.at("22:00").do(system_work_flow, half_flag = True)
@@ -154,15 +156,6 @@ schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
 # 主程式
 def main():
     system_work_flow(True)
-    
-    # 排程運行程式
-    # try:
-    #     print("System Auto Run Start.")
-    #     while True:    
-    #         schedule.run_pending()
-    #         time.sleep(10)
-    # except KeyboardInterrupt:
-    #     print("Scheduler stopped by user.")
 
 if __name__ == "__main__":
     main()

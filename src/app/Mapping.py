@@ -305,6 +305,7 @@ def ChangeSaleFile(dealer_id, file_name):
         
         # Quantity特殊處理
         elif rule == "MoveOrSearchUom":
+            target_col = "Original Quantity"
             output, error_row = move_or_search_uom(input_data, source_col, target_col, dealer_id)
             
             for row, msg in error_row.items():

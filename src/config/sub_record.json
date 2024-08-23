@@ -64,5 +64,19 @@
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
+    },
+    "Dealer10": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
+    },
+    "Dealer11": {
+        "SaleFile": null,
+        "InventoryFile": null,
+        "Mail2": {},
+        "Mail3": {},
+        "Mail4": {}
     }
 }

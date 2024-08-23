@@ -5,7 +5,7 @@
         "AutoRun": true,
         "Debug": true,
         "User": "",
-        "WinUser": "Qian",
+        "WinUser": "wood1",
         "MonthlyFileRange": null
     },
     "Default": {
@@ -23,13 +23,13 @@
         ],
         "OneDrivePath": "C:\\Users\\{username}\\OneDrive - 嘉衡科技有限公司"
     },
-    "FileJsonWriteTime":null,
+    "FileJsonWriteTime": null,
     "SystemRoot": "C:\\",
     "OneDirveFolder": "OneDrive - 嘉衡科技有限公司",
-    "NotCopyFolderFromOneDrive":[
-            "文件資料(僅存雲端)",
-            "Log"
-        ],
+    "NotCopyFolderFromOneDrive": [
+        "文件資料(僅存雲端)",
+        "Log"
+    ],
     "LogConfig": {
         "Path": "./logs",
         "SystemLog": "System.log",
