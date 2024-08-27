@@ -564,13 +564,14 @@ def MergeKalist(write_new_list):
             create_flag = True
             wb.save(general_data_path)
 
+    wb = load_workbook(general_data_path)
+    ws = wb[sheet_name]
+
     # 在全新工作表中寫入合併後的資料
     if create_flag:
+        dfs = []
         msg = f"系統在 {file_name} 總表檔案中，產生 {sheet_name} 工作表內容。"
         WSysLog("1", "MergeKAList", msg)
-        wb = load_workbook(general_data_path)
-        ws = wb[sheet_name]
-        dfs = []
 
         for ba in ba_list:
             ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
@@ -595,47 +596,85 @@ def MergeKalist(write_new_list):
         # 內容合併
         ka_data = pd.concat(dfs, ignore_index = True)
 
-        # 表頭填寫
-        file_header = ka_data.columns.values
-        fixed_columns = get_excel_colmun_name(file_header)
-        for col, data in zip(fixed_columns, file_header):
-            ws[f"{col}1"] = data
-        column_width = [15] + column_width
-        excel_style(ws, column_width, fixed_columns)
-
-        # 內容填寫
-        for row in range(len(ka_data)):
-            for col_name in ka_data.columns.values:
-                col = search_column_name(file_header, col_name)
-                ws[f"{col}{row + 2}"] = ka_data[col_name][row]
-                ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
-        wb.save(general_data_path)
-
     # MasterFile總表中有kalist工作表
     else:
         ka_data = pd.read_excel(general_data_path, sheet_name = sheet_name, dtype = str)
         ka_data_header = ka_data.columns.values
-        wb = load_workbook(general_data_path)
-        ws = wb[sheet_name]
         
         for ba_id in write_new_list:
             for ba in ba_list:
-
                 if ba["BA_ID"] == ba_id:
                     ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
                     ka_file_path = os.path.join(ba_folder, ba_folder_name, ka_file_name)
                     sheets = pd.ExcelFile(ka_file_path).sheet_names
 
+                    # 執行每個工作表
                     for sheet in sheets:
                         part = sheet.split("_")
                         dealer_id = part[0]
                         ka_data_part = ka_data[ka_data[ka_data_header[0]] == dealer_id]
-                        data = pd.read_excel(ka_file_path, sheet_name = sheet, names = Config.KAListFileHeader)
+                        data = pd.read_excel(ka_file_path, sheet_name = sheet, names = Config.KAListFileHeader, dtype = str)
                         data_header = data.columns.values
-
+                        
+                        # 歷遍客戶ID
                         for buyer_id in data[data_header[0]]:
-                            buyer_data = ka_data_part[ka_data_part[ka_data_header[1]] == buyer_id]
-                            ##        
+                            # 從總表中篩選出對應的客戶id
+                            ka_buyer_data = ka_data_part[ka_data_part[ka_data_header[1]] == buyer_id]
+                            # 從子表中篩選出對應的客戶id
+                            buyer_data = data[data[data_header[0]] == buyer_id]
+                            buyer_data = buyer_data.reset_index(drop=True)
+
+                            if not ka_buyer_data.empty:
+                                for row in range(len(buyer_data)):
+                                    # 篩選出符合起迄區間的資料
+                                    map_data = ka_buyer_data[(ka_buyer_data[ka_data_header[2]] == buyer_data[data_header[1]][row])\
+                                                            & (ka_buyer_data[ka_data_header[3]] == buyer_data[data_header[2]][row])]
+                                    
+                                    if len(map_data) == 1:
+                                        if not map_data.empty:
+                                            if map_data[ka_data_header[4]].values[0] != buyer_data[data_header[3]][row]:
+                                                value = buyer_data[data_header[3]][row]
+                                                ka_row = map_data.index.values[0]
+                                                ka_data.loc[ka_row, ka_data_header[4]] = value
+                                                msg = f"修正總表 {ka_row + 2} 的值為： {value}。"
+                                                WSysLog("1", "MergeKalist", msg)
+
+                                    elif map_data.empty:
+                                        msg = "經銷商之客戶ID未搜尋到對應的起迄區間。"
+                                        WSysLog("1", "MergeKalist", msg)
+                                        new_row = buyer_data.iloc[row].to_dict()
+                                        max_row = len(ka_data)
+                                        ka_data.loc[max_row] = new_row
+                                        msg = f"新增資料至 {max_row + 2}row。"
+                                        WSysLog("1", "MergeKalist", msg)
+
+                                    else:
+                                        msg = "經銷商之客戶ID在同一起迄區間擁有多個值。"
+                                        WSysLog("3", "MergeKalist", msg)
+
+                            else:
+                                for row in range(len(buyer_data)):
+                                    new_row = buyer_data.iloc[row].to_dict()
+                                    max_row = len(ka_data)
+                                    ka_data.loc[max_row] = new_row
+                                    msg = f"新增 {buyer_id} 資料至 {max_row + 2}row。"
+                                    WSysLog("1", "MergeKalist", msg)
+
+    # 表頭填寫
+    file_header = ka_data.columns.values
+    fixed_columns = get_excel_colmun_name(file_header)
+    for col, data in zip(fixed_columns, file_header):
+        ws[f"{col}1"] = data
+    column_width = [15] + column_width
+    excel_style(ws, column_width, fixed_columns)
+
+    # 內容填寫
+    for row in range(len(ka_data)):
+        for col_name in ka_data.columns.values:
+            col = search_column_name(file_header, col_name)
+            ws[f"{col}{row + 2}"] = ka_data[col_name][row]
+            ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
+    wb.save(general_data_path)
 
 # 檢查檔案資訊主程式
 def CheckFileInfo():
