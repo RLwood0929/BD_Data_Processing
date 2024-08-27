@@ -347,7 +347,7 @@ def MergeDealerInfo(write_new_list):
             ws[f"{col}1"] = data
         excel_style(ws, column_width, fixed_columns)
 
-        # # 將資料寫入工作表
+        # 將資料寫入工作表
         for row in range(len(conbined_df)):
             for col_name in conbined_df.columns.values:
                 col = search_column_name(file_header, col_name)
@@ -442,7 +442,7 @@ def MergeDealerInfo(write_new_list):
 
     MergeDealerInfoWorkSheet(write_new_list)
 
-# 依據總表更新Dealer.json檔案 #
+# 依據總表更新Dealer.json檔案
 def RenewDealerJson():
     dealer_config = Config.DealerConfig
     file_path = os.path.join(Config.DealerInfoPath, Config.DealerInfoFileName)
@@ -532,8 +532,110 @@ def RenewDealerJson():
             WSysLog("1", "RenewDealerJson", msg)
 
 # 系統合併 KAList 檔案
-def merge_kalist(aa):
-    print("merge_kalist")
+def MergeKalist(write_new_list):
+    create_flag = False
+    ba_list = get_BA()
+    ba_folder = Config.BAFolderPath
+    folder_path = Config.MasterFolderPath
+    ka_file_name = Config.KAListFileName
+    column_width = Config.KAListFileColumnWidth
+    file_name = Config.MasterFileName
+    sheet_name = Config.KAListFileSheetName
+    general_data_path = os.path.join(folder_path, file_name)
+    
+    # 無 Master File 總表
+    if not os.path.exists(general_data_path):
+        msg = f"{folder_path} 目錄底下無 {file_name} 總表檔案，系統將重新產生。"
+        WSysLog("2", "MergeKAList", msg)
+        wb = Workbook()
+        wb.remove(wb.active)
+        wb.create_sheet(title = sheet_name)
+        create_flag = True
+        wb.save(general_data_path)
+
+    # 有 Master File 總表，無工作表
+    else:
+        wb = load_workbook(general_data_path)
+        # MasterFile總表中無kalist工作表
+        if sheet_name not in wb.sheetnames:
+            msg = f"{file_name} 總表檔案中 {sheet_name} 不存在，系統將重新產生。"
+            WSysLog("2", "MergeKAList", msg)
+            wb.create_sheet(title = sheet_name)
+            create_flag = True
+            wb.save(general_data_path)
+
+    # 在全新工作表中寫入合併後的資料
+    if create_flag:
+        msg = f"系統在 {file_name} 總表檔案中，產生 {sheet_name} 工作表內容。"
+        WSysLog("1", "MergeKAList", msg)
+        wb = load_workbook(general_data_path)
+        ws = wb[sheet_name]
+        dfs = []
+
+        for ba in ba_list:
+            ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+            ka_file_path = os.path.join(ba_folder, ba_folder_name, ka_file_name)
+
+            if os.path.exists(ka_file_path):
+                file = pd.ExcelFile(ka_file_path)
+                sheets = file.sheet_names
+
+                for sheet in sheets:
+                    part = sheet.split("_")
+                    dealer_id = part[0]
+
+                    df = pd.read_excel(ka_file_path, sheet_name = sheet, names = Config.KAListFileHeader)
+                    df.insert(loc = 0, column = "經銷商ID", value = dealer_id)
+                    df[Config.KAListFileHeader[1]] = pd.to_datetime(df[Config.KAListFileHeader[1]])
+                    df[Config.KAListFileHeader[2]] = pd.to_datetime(df[Config.KAListFileHeader[2]])
+                    df[Config.KAListFileHeader[1]] = df[Config.KAListFileHeader[1]].dt.date
+                    df[Config.KAListFileHeader[2]] = df[Config.KAListFileHeader[2]].dt.date
+                    dfs.append(df)
+
+        # 內容合併
+        ka_data = pd.concat(dfs, ignore_index = True)
+
+        # 表頭填寫
+        file_header = ka_data.columns.values
+        fixed_columns = get_excel_colmun_name(file_header)
+        for col, data in zip(fixed_columns, file_header):
+            ws[f"{col}1"] = data
+        column_width = [15] + column_width
+        excel_style(ws, column_width, fixed_columns)
+
+        # 內容填寫
+        for row in range(len(ka_data)):
+            for col_name in ka_data.columns.values:
+                col = search_column_name(file_header, col_name)
+                ws[f"{col}{row + 2}"] = ka_data[col_name][row]
+                ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
+        wb.save(general_data_path)
+
+    # MasterFile總表中有kalist工作表
+    else:
+        ka_data = pd.read_excel(general_data_path, sheet_name = sheet_name, dtype = str)
+        ka_data_header = ka_data.columns.values
+        wb = load_workbook(general_data_path)
+        ws = wb[sheet_name]
+        
+        for ba_id in write_new_list:
+            for ba in ba_list:
+
+                if ba["BA_ID"] == ba_id:
+                    ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+                    ka_file_path = os.path.join(ba_folder, ba_folder_name, ka_file_name)
+                    sheets = pd.ExcelFile(ka_file_path).sheet_names
+
+                    for sheet in sheets:
+                        part = sheet.split("_")
+                        dealer_id = part[0]
+                        ka_data_part = ka_data[ka_data[ka_data_header[0]] == dealer_id]
+                        data = pd.read_excel(ka_file_path, sheet_name = sheet, names = Config.KAListFileHeader)
+                        data_header = data.columns.values
+
+                        for buyer_id in data[data_header[0]]:
+                            buyer_data = ka_data_part[ka_data_part[ka_data_header[1]] == buyer_id]
+                            ##        
 
 # 檢查檔案資訊主程式
 def CheckFileInfo():
@@ -565,7 +667,6 @@ def CheckFileInfo():
                             json_data["FileInfo"] = record_file_time
                             msg = WriteFileJson(json_data)
                             WSysLog("1", "CheckFileInfo", msg)
-
                             if file_name == "MasterFile":
                                 master_new.append(BA_id)
                             elif file_name == "DealerInfo":
@@ -605,7 +706,7 @@ def CheckFileInfo():
         MergeDealerInfo(dealerinfo_new)
         RenewDealerJson()
     if kalist_new or (Config.KAListFileSheetName not in master_sheets):
-        merge_kalist(kalist_new)
+        MergeKalist(kalist_new)
 
 # 檢查雲端的Config檔案，將其拷貝至系統運行目錄
 def ConfigFile():
@@ -678,9 +779,11 @@ def ConfigFileToCould():
         WSysLog("3", "ConfigFileToCould", msg)
 
 if __name__ == "__main__":
+    # CheckBAFolderFiles()
     # CheckFileInfo()
     # aa = ["BA01","BA02","BA03","BA04"]
     # MergeDealerInfo(aa)
     # MergeDealerInfoWorkSheet(aa)
     # RenewDealerJson()
-    ConfigFile()
+    # ConfigFile()
+    MergeKalist(["BA03"])
