@@ -5,7 +5,7 @@
 Writer：Qian
 '''
 
-# masterfile、kalist合併檔案待寫
+# masterfile、kalist檔案檢查、維護區塊待寫
 
 # 標準庫
 import os, shutil
@@ -232,9 +232,162 @@ def check_ba():
         WSysLog("1", "CheckBA", msg)
         return json_data
 
+# 檢查 ba 目錄底下 masterfile 檔案 ##
+def check_master_file(check_list):
+    print()
+
 # 系統合併 masterfile 檔案
-def merge_masterfile(aa):
-    print("merge_masterfile")
+def MergeMasterFile(write_new_list):
+    create_flag = False
+    ba_list = get_BA()
+    ba_folder = Config.BAFolderPath
+    folder_path = Config.MasterFolderPath
+    file_name = Config.MasterFileName
+    file_header = Config.MasterFileHeader
+    sheet_name = Config.MasterFileSheetName
+    column_width = Config.MasterFileColumnWidth
+    general_data_path = os.path.join(folder_path, file_name)
+
+    # 無 Master File 總表
+    if not os.path.exists(general_data_path):
+        msg = f"{folder_path} 目錄底下不存在 {file_name} 總表檔案，系統將重新產生。"
+        WSysLog("2", "MergeKAList", msg)
+        wb = Workbook()
+        wb.remove(wb.active)
+        wb.create_sheet(title = sheet_name)
+        create_flag = True
+        wb.save(general_data_path)
+
+    # 有 Master File 總表，無工作表
+    else:
+        wb = load_workbook(general_data_path)
+        # MasterFile 總表中無 MasterFile 工作表
+        if sheet_name not in wb.sheetnames:
+            msg = f"{file_name} 總表檔案中 {sheet_name} 工作表不存在，系統將重新產生。"
+            WSysLog("2", "MergeKAList", msg)
+            wb.create_sheet(title = sheet_name)
+            create_flag = True
+            wb.save(general_data_path)
+
+    wb = load_workbook(general_data_path)
+    ws = wb[sheet_name]
+
+    # 在全新工作表中寫入合併後的資料
+    if create_flag:
+        check_master_file("all")
+        dfs = []
+        msg = f"系統在 {file_name} 總表檔案中，產生 {sheet_name} 工作表內容。"
+        WSysLog("1", "MergeKAList", msg)
+
+        for ba in ba_list:
+            ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+            file_path = os.path.join(ba_folder, ba_folder_name, file_name)
+
+            # 檢查ba目錄底下各自的 MasterFile 檔案
+            if os.path.exists(file_path):
+                file = pd.ExcelFile(file_path)
+
+                # 檢查檔案中是否存在 MasterFile 工作表 
+                if sheet_name in file.sheet_names:
+                    df = pd.read_excel(file_path, sheet_name = sheet_name, names = file_header)
+                    if df.empty:
+                        continue
+                    dfs.append(df)
+
+                else:
+                    msg = "MasterFile 工作表不存在於檔案中。"
+                    WSysLog("3", "MegerMasterFile", msg)
+                    raise NameError(msg)
+
+            else:
+                msg = f"該 ba {ba['BA_Name']} 目錄底下無 MasterFile 檔案。"
+                WSysLog("3", "MegerMasterFile", msg)
+                raise FileNotFoundError(msg)
+
+        # 內容合併
+        master_data = pd.concat(dfs, ignore_index = True)
+
+    # 更新現有工作表內容
+    else:
+        check_master_file(write_new_list)
+        master_data = pd.read_excel(general_data_path, sheet_name = sheet_name, dtype = str)
+        file_header = master_data.columns.values
+        dealer_ids = sorted(list(set(master_data[file_header[0]].values)))
+        part_data = {dealer_id: master_data[master_data[file_header[0]] ==\
+                    dealer_id].reset_index(drop=True) for dealer_id in dealer_ids}
+        
+        for ba_id in write_new_list:
+            print(ba_id)
+            for ba in ba_list:
+                dealer_list_in_file = None
+                if ba_id == ba["BA_ID"]:
+                    ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+                    master_file_path = os.path.join(ba_folder, ba_folder_name, file_name)
+                    file_data = pd.read_excel(master_file_path, sheet_name = sheet_name, dtype = str)
+                    dealer_list_in_file = sorted(list(set(file_data[file_header[0]].values)))
+                    part_data_in_ba_file = {dealer_id: file_data[file_data[file_header[0]] ==\
+                                            dealer_id].reset_index(drop = True) for \
+                                            dealer_id in dealer_list_in_file}
+                if dealer_list_in_file:
+                    for dealer_id in dealer_list_in_file:
+                        # 若經銷商id值不在總表中，直接新增
+                        if dealer_id not in dealer_ids:
+                            part_data[dealer_id] = part_data_in_ba_file[dealer_id]
+                        # 若經銷商id值在總表中，逐筆比對貨號之區間值
+                        else:
+                            general_data = part_data[dealer_id]
+                            ba_data = part_data_in_ba_file[dealer_id]
+                            for _, row in ba_data.iterrows():
+                                
+                                # 比對產品ID及起迄區間
+                                part_general = general_data[(general_data[file_header[1]] == row.iloc[1]) &\
+                                                            (general_data[file_header[-2]] == row.iloc[-2]) &\
+                                                            (general_data[file_header[-1]] == row.iloc[-1])]
+
+                                # 區間值符合一項
+                                if len(part_general) == 1:
+                                    data_key = file_header[2:-2]
+                                    for key in data_key:
+                                        if str(part_general[key].values[0]) != str(row[key]):
+                                            index = part_general.index.values[0]
+                                            part_data[dealer_id].loc[index, key] = row[key]
+                                            msg = f"更新 MasterFile 總表 {dealer_id} {row.iloc[1]} {key} 的值為： {row[key]}。"
+                                            WSysLog("1", "MergeKalist", msg)
+
+                                # 區間值未符合
+                                elif part_general.empty:
+                                    msg = f"{dealer_id} 之產品ID： {row.iloc[1]} 為搜尋到對應的起迄值。"
+                                    WSysLog("1", "MergeMasterFile", msg)
+                                    new_row = row.to_dict()
+                                    max_row = len(part_data[dealer_id])
+                                    part_data[dealer_id][max_row] = new_row
+                                    msg = f"新增資料： {new_row} 至 {max_row + 2}row。"
+                                    WSysLog("1", "MergeMasterFile", msg)
+
+                                # 符合區間值過多
+                                else:
+                                    msg = f"{dealer_id} 之產品ID： {row.iloc[1]} 在同一起迄區間擁有多個值。"
+                                    WSysLog("3", "MergeMasterFile", msg)
+
+        # 合併表格
+        master_data = pd.concat(part_data, ignore_index = True)
+
+    # 表頭填寫
+    file_header = master_data.columns.values
+    fixed_columns = get_excel_colmun_name(file_header)
+    for col, data in zip(fixed_columns, file_header):
+        ws[f"{col}1"] = data
+    excel_style(ws, column_width, fixed_columns)
+
+    # 內容填寫
+    for row in range(len(master_data)):
+        for col_name in file_header:
+            col = search_column_name(file_header, col_name)
+            ws[f"{col}{row + 2}"] = master_data[col_name][row]
+            ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
+    wb.save(general_data_path)
+    msg = "MasterFile 檔案中 MasterFile 工作表維護完成。"
+    WSysLog("1", "MergeMasterFile", msg)
 
 # 將各BA目錄下小表中的經銷商表頭拷貝至總表
 def MergeDealerInfoWorkSheet(write_new_list):
@@ -531,6 +684,10 @@ def RenewDealerJson():
             msg = f"更新 dealer.json 中的 KAList：{ka_list}。"
             WSysLog("1", "RenewDealerJson", msg)
 
+# 檢查 ba 目錄底下的 ka 檔案 ##
+def check_ka_file(check_list):
+    print()
+
 # 系統合併 KAList 檔案
 def MergeKalist(write_new_list):
     create_flag = False
@@ -569,6 +726,7 @@ def MergeKalist(write_new_list):
 
     # 在全新工作表中寫入合併後的資料
     if create_flag:
+        check_ka_file("all")
         dfs = []
         msg = f"系統在 {file_name} 總表檔案中，產生 {sheet_name} 工作表內容。"
         WSysLog("1", "MergeKAList", msg)
@@ -598,6 +756,7 @@ def MergeKalist(write_new_list):
 
     # MasterFile總表中有kalist工作表
     else:
+        check_ka_file(write_new_list)
         ka_data = pd.read_excel(general_data_path, sheet_name = sheet_name, dtype = str)
         ka_data_header = ka_data.columns.values
         
@@ -631,13 +790,12 @@ def MergeKalist(write_new_list):
                                                             & (ka_buyer_data[ka_data_header[3]] == buyer_data[data_header[2]][row])]
                                     
                                     if len(map_data) == 1:
-                                        if not map_data.empty:
-                                            if map_data[ka_data_header[4]].values[0] != buyer_data[data_header[3]][row]:
-                                                value = buyer_data[data_header[3]][row]
-                                                ka_row = map_data.index.values[0]
-                                                ka_data.loc[ka_row, ka_data_header[4]] = value
-                                                msg = f"修正總表 {ka_row + 2} 的值為： {value}。"
-                                                WSysLog("1", "MergeKalist", msg)
+                                        if map_data[ka_data_header[4]].values[0] != buyer_data[data_header[3]][row]:
+                                            value = buyer_data[data_header[3]][row]
+                                            ka_row = map_data.index.values[0]
+                                            ka_data.loc[ka_row, ka_data_header[4]] = value
+                                            msg = f"修正總表 {ka_row + 2} 的值為： {value}。"
+                                            WSysLog("1", "MergeKalist", msg)
 
                                     elif map_data.empty:
                                         msg = "經銷商之客戶ID未搜尋到對應的起迄區間。"
@@ -675,6 +833,8 @@ def MergeKalist(write_new_list):
             ws[f"{col}{row + 2}"] = ka_data[col_name][row]
             ws[f"{col}{row + 2}"].alignment = Config.ExcelStyle
     wb.save(general_data_path)
+    msg = "MasterFile 檔案中 KAList 工作表維護完成。"
+    WSysLog("1", "MegerKAList", msg)
 
 # 檢查檔案資訊主程式
 def CheckFileInfo():
@@ -740,7 +900,7 @@ def CheckFileInfo():
                 WSysLog("1", "CheckFileInfo", msg)
 
     if master_new or (not os.path.exists(master_file_path)):
-        merge_masterfile(master_new)
+        MergeMasterFile(master_new)
     if dealerinfo_new or (not os.path.exists(dealer_file_path)):
         MergeDealerInfo(dealerinfo_new)
         RenewDealerJson()
@@ -819,10 +979,11 @@ def ConfigFileToCould():
 
 if __name__ == "__main__":
     # CheckBAFolderFiles()
-    # CheckFileInfo()
+    CheckFileInfo()
     # aa = ["BA01","BA02","BA03","BA04"]
     # MergeDealerInfo(aa)
     # MergeDealerInfoWorkSheet(aa)
     # RenewDealerJson()
     # ConfigFile()
-    MergeKalist(["BA03"])
+    # MergeMasterFile(["BA03"])
+    # MergeKalist(["BA03"])
