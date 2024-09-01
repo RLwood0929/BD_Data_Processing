@@ -46,8 +46,12 @@ def decide_file_type(dealer_id, file_name):
             break
     
     # 抓取與經銷商協定的表頭
-    sale_file_header = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"]
-    inventory_file_header = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"]
+    sale_file_header = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"] \
+                        if Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"] \
+                        else Config.SF_Default_Header
+    inventory_file_header = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"] \
+                            if Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"] \
+                            else Config.IF_Default_Header
 
     folder_path = os.path.join(Config.DealerFolderPath, dealer_id)
     _, extension = os.path.splitext(file_name)
@@ -314,7 +318,12 @@ def RecordDealerFiles(mode = None, dealer_list = None):
             dealer_path = os.path.join(Config.DealerFolderPath, dealer_id)
             file_names = [file for file in os.listdir(dealer_path) \
                         if os.path.isfile(os.path.join(dealer_path, file))]
-            
+
+            # 經銷商狀態若非active，則跳過
+            dealer_status = Config.DealerConfig[f"Dealer{index}"]["Status"]
+            if dealer_status != "active":
+                continue
+
             for i in range(len(Config.DealerList)):
                 if Config.DealerList[i] == dealer_id:
                     index = i + 1
@@ -331,9 +340,10 @@ def RecordDealerFiles(mode = None, dealer_list = None):
             # 目錄無檔案的經銷商ID，加入List
             if not file_names:
                 not_submission.append(dealer_id)
-            
+
             for file_name in file_names:
                 file_path = os.path.join(dealer_path, file_name)
+                # 抓取檔案上傳時間
                 file_update_time = os.path.getmtime(file_path)
                 file_write_time = datetime.fromtimestamp(file_update_time)
                 file_update_time = datetime.fromtimestamp(file_update_time).date()

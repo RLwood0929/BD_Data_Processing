@@ -46,7 +46,7 @@ from Config import AppConfig
 from EFTFile import EFTUploadFile
 from RecordTable import Statistics
 from SystemConfig import SubRecordJson
-from FileInfo import CheckFileInfo, ConfigFile, ConfigFileToCould
+from FileInfo import CheckFileInfo, ConfigFile, ConfigFileToCould, WorkDay
 from OneDriveFile import DownloadOneDrive, UploadOneDrive, ClearLocal
 from Mapping import Changing, MergeInventoryFile, FileArchiving
 from CheckFile import RecordDealerFiles, CheckFile, MoveCheckErrorFile, MoveCheckFile, ClearSubRecordJson
@@ -75,7 +75,6 @@ def system_work_flow(half_flag = False):
         print("--Running CheckFileInfo--")
         CheckFileInfo()
         print("--End CheckFileInfo--")
-        return
         print("--Running RecordDealerFiles--")
         HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles("AutoRun", DealerList)
         print("Result:")
@@ -149,13 +148,17 @@ def system_work_flow(half_flag = False):
         msg = f"系統自動運作時發生錯誤。錯誤原因： {e}"
         print(msg)
 
-schedule.every().day.at("22:00").do(system_work_flow, half_flag = True)
-schedule.every().day.at("22:15").do(system_work_flow, half_flag = True)
-schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
+def project_time():
+    # 每天01分執行工作日判斷
+    schedule.every().day.at("00:01").do(WorkDay)
+
+    schedule.every().day.at("22:00").do(system_work_flow, half_flag = True)
+    schedule.every().day.at("22:15").do(system_work_flow, half_flag = True)
+    schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
 
 # 主程式
 def main():
-    system_work_flow(True)
+    project_time()
 
 if __name__ == "__main__":
     main()

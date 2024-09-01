@@ -46,6 +46,9 @@ class AppConfig:
         self.UserConfig = User()
         self.FileConfig = File()
 
+        # 工作日參數
+        self.WorkDay = self.GlobalConfig["Default"]["WorkDay"]
+
         # 測試模式
         self.TestMode = self.GlobalConfig["Default"]["TestMode"]
 

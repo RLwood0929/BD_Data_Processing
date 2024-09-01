@@ -162,6 +162,15 @@ def WriteOneDrivePath(file_path):
     msg = f"OneDrive目錄更新，目錄：{file_path}。"
     return msg
 
+# 更新工作日資訊至system.json
+def WrtieWorkDay(work_day):
+    data = Config()
+    data["Default"]["WorkDay"] = work_day
+    with open(ConfigInfo.ConfigPath, "w", encoding = "UTF-8") as file:
+        json.dump(data, file, ensure_ascii = False, indent = 4)
+    msg = f"更新WorkDay參數： {work_day}。"
+    return msg
+
 # 將檔案更新時間寫入 files.json
 def WriteFileJson(data):
     with open(ConfigInfo.FileConfigPath, "w", encoding = "UTF-8") as file:

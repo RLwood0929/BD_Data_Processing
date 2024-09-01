@@ -14,9 +14,10 @@ from datetime import datetime
 # 第三方庫
 import pandas as pd
 from openpyxl import Workbook, load_workbook
+from workalendar.asia import Taiwan
 
 # 自定義函數
-from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson
+from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson, WrtieWorkDay
 from Log import WSysLog
 from Config import AppConfig
 from __init__ import ConfigJsonFile
@@ -400,6 +401,7 @@ def MergeDealerInfoWorkSheet(write_new_list):
         for ba in ba_list:
             if ba["BA_ID"] == ba_id:
                 ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
+                dealers = ba["BA_Dealer_ID"]
                 break
 
         # 各 BA 目錄底下小表
@@ -407,11 +409,24 @@ def MergeDealerInfoWorkSheet(write_new_list):
         file_data = load_workbook(file_path)
         file_sheets = file_data.sheetnames
         file_sheets.remove(sheet_name)
-        
+
         # 總表
         target_path = os.path.join(folder_path, file_name)
         target_data = load_workbook(target_path)
-        
+        target_sheets = target_data.sheetnames
+
+        for dealer_id in dealers:
+            sSheetName = f"{dealer_id}_Sale"
+            iSheetName = f"{dealer_id}_Inventory"
+            if (sSheetName not in file_sheets) & (sSheetName in target_sheets):
+                target_data.remove(target_data[sSheetName])
+            msg = f"{sSheetName} 僅存在於總表中，系統將刪除。"
+            WSysLog("1", "MergeDealerInfoWordSheet", msg)
+            if (iSheetName not in file_sheets) & (iSheetName in target_sheets):
+                target_data.remove(target_data[iSheetName])
+            msg = f"{iSheetName} 僅存在於總表中，系統將刪除。"
+            WSysLog("1", "MergeDealerInfoWordSheet", msg)
+
         for sheet in file_sheets:
             file_ws = file_data[sheet]
             if sheet in target_data.sheetnames:
@@ -600,13 +615,14 @@ def RenewDealerJson():
     dealer_config = Config.DealerConfig
     file_path = os.path.join(Config.DealerInfoPath, Config.DealerInfoFileName)
     sheet_name = Config.DealerInfoFileSheetName
+
     # header 拆開處理
-    dealer_info_header = Config.DealerInfoFileHeader[1:7]
-    dealer_connect_header = Config.DealerInfoFileHeader[7:11]
-    dealer_ka_header = Config.DealerInfoFileHeader[11]
-    dealer_OUP_header = Config.DealerInfoFileHeader[14]
-    dealer_sale_file_header = Config.DealerInfoFileHeader[12:15]
-    dealer_inventory_file_header = Config.DealerInfoFileHeader[15:17]
+    dealer_info_header = Config.DealerInfoFileHeader[1:8]
+    dealer_connect_header = Config.DealerInfoFileHeader[8:12]
+    dealer_ka_header = Config.DealerInfoFileHeader[12]
+    dealer_OUP_header = Config.DealerInfoFileHeader[15]
+    dealer_sale_file_header = Config.DealerInfoFileHeader[13:16]
+    dealer_inventory_file_header = Config.DealerInfoFileHeader[16:18]
 
     dealer_data = pd.read_excel(file_path, sheet_name = sheet_name, dtype = str)
     dealer_data = dealer_data.apply(lambda col:\
@@ -619,9 +635,16 @@ def RenewDealerJson():
     for dealer in dealer_part_dct:
         dealer_json = {}
         dealer_id = dealer_part_dct[dealer][dealer_info_header[0]][0]
-        dealer_sale_format = pd.read_excel(file_path, sheet_name = f"{dealer_id}_Sale", dtype = str)
+        sale_file_sheet_name = f"{dealer_id}_Sale"
+        inventory_file_sheet_name = f"{dealer_id}_Inventory"
+        sheets = pd.ExcelFile(file_path).sheet_names
+        dealer_sale_format = pd.read_excel(file_path, \
+                                sheet_name = sale_file_sheet_name, dtype = str)\
+                                if sale_file_sheet_name in sheets else pd.DataFrame()
+
         dealer_inventory_format = pd.read_excel(file_path,\
-            sheet_name = f"{dealer_id}_Inventory", dtype = str)
+                                    sheet_name = inventory_file_sheet_name, dtype = str)\
+                                    if inventory_file_sheet_name in sheets else pd.DataFrame()
         # 取出總表中的 ka 值
         ka_data = dealer_part_dct[dealer].loc[0, dealer_ka_header]
         if ka_data == "T":
@@ -658,7 +681,7 @@ def RenewDealerJson():
             dealer_inventory_file[col_name.replace(" ", "").replace("InventoryFile", "")] =\
                 dealer_part_dct[dealer].loc[0, col_name]
         dealer_inventory_file["FileHeader"] = dealer_inventory_format.columns.values.tolist()
-
+        
         dealer_file = {"SaleFile":dealer_sale_file, "InventoryFile":dealer_inventory_file}
         dealer_json = {**dealer_info, **dealer_connect, **dealer_file}
 
@@ -977,13 +1000,22 @@ def ConfigFileToCould():
         msg = f"拷貝 {config_name} 至本地雲端目錄發生錯誤。錯誤原因： {e}。"
         WSysLog("3", "ConfigFileToCould", msg)
 
+# 判斷當天是否為工作日，寫入System.json檔案
+def WorkDay():
+    cal = Taiwan()
+    result = cal.is_working_day(Config.SystemTime)
+    msg = WrtieWorkDay(result)
+    WSysLog("1", "WorkDay", msg)
+
 if __name__ == "__main__":
     # CheckBAFolderFiles()
     CheckFileInfo()
     # aa = ["BA01","BA02","BA03","BA04"]
     # MergeDealerInfo(aa)
-    # MergeDealerInfoWorkSheet(aa)
+    # MergeDealerInfoWorkSheet(["BA01"])
     # RenewDealerJson()
     # ConfigFile()
     # MergeMasterFile(["BA03"])
     # MergeKalist(["BA03"])
+    # WorkDay()
+    # print(Config.WorkDay)

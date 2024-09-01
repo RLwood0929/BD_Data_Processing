@@ -16,6 +16,7 @@
         "User": "System",
         "MonthlyFileRange": 10,
         "MaxTryRange": 3,
+        "WorkDay": false,
         "AllowFileExtensions": [
             ".csv",
             ".xlsx",
@@ -144,6 +145,7 @@
         "Header": [
             "ID",
             "Dealer ID",
+            "Status",
             "Dealer Compiled",
             "Dealer Name",
             "Dealer Country",
@@ -162,6 +164,7 @@
         ],
         "ColumnWidth": [
             10,
+            15,
             15,
             20,
             15,
