@@ -87,7 +87,7 @@ def write_not_sub_record(notify = True):
         inventory_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
         dealer_id = Config.DealerConfig[f"Dealer{index}"]["DealerID"]
         
-        # 銷售日繳
+        # 銷售檔案日繳交
         if (sale_cycle == "D") and (record_data[f"Dealer{index}"]["SaleFile"] is None):
             file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
             write_data = {
@@ -98,6 +98,7 @@ def write_not_sub_record(notify = True):
                 "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
             }
+            # 信件資訊
             if notify:
                 date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
                 date_time_list.append(date_time)
@@ -118,6 +119,7 @@ def write_not_sub_record(notify = True):
                 "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
                 "檔案檢查結果":"未檢查"
             }
+            # 信件資訊
             if notify:
                 date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
                 date_time_list.append(date_time)
@@ -139,6 +141,7 @@ def write_not_sub_record(notify = True):
                     "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
                 }
+                # 信件資訊
                 if notify:
                     date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
                     date_time_list.append(date_time)
@@ -159,6 +162,7 @@ def write_not_sub_record(notify = True):
                     "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileRange)}",
                     "檔案檢查結果":"未檢查"
                 }
+                # 信件資訊
                 if notify:
                     date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
                     date_time_list.append(date_time)
@@ -167,6 +171,7 @@ def write_not_sub_record(notify = True):
                 input_data = {f"Dealer{index}":{f"InventoryFile":False}}
                 msg = SubRecordJson("WriteFileStatus", input_data)
                 WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
+
         if file_list:
             if len(date_time_list) == 1:
                 date_time = date_time_list[0]
@@ -371,6 +376,7 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                     if file_cycle == "D":
                         start_time = file_time
                         end_time = file_time + timedelta(days = 1)
+                    # 月繳
                     else:
                         start_time = Config.SystemTime.date().replace(day = 1)
                         end_time = Config.SystemTime.date().replace(day = Config.MonthlyFileRange)
@@ -382,7 +388,7 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                     else:
                         status = "時間錯誤"
                 
-                # 日繳檔案僅變更檔案狀態，無檢查紀錄
+                #日繳檔案進入待補繳記錄中檢查是否有需要變更的狀態值，僅變更檔案狀態，無檢查紀錄
                 resub_files = daily_file_resub(dealer_id, file_type, file_name)
                 if resub_files is not None:
                     for file in resub_files:
@@ -396,7 +402,7 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                         }
                         WriteNotSubmission(write_data)
 
-                #月繳補繳，檔名不符合的處理
+                # 月繳補繳，檔名不符合的處理
                 if (file_cycle == "M") and (status == "補繳交"):
                     result, not_sub_files = monthly_file_resub(dealer_id, file_type, file_name)
                     if not result:
@@ -434,13 +440,17 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                     else:
                         sub[file_name] = time_due
 
-        # 寫入未繳交紀錄
-        write_not_sub_record()
+        # 工作日才運作檔案未繳交紀錄
+        if Config.WorkDay:
+            # 寫入未繳交紀錄
+            write_not_sub_record()
 
         have_submission = list(set(Config.DealerList) - set(not_submission))
-        for dealer_id in not_submission:
-            msg = "檔案未繳交"
-            WRecLog("2", "RecordDealerFiles", dealer_id, None, msg)
+        
+        if Config.WorkDay:
+            for dealer_id in not_submission:
+                msg = "檔案未繳交"
+                WRecLog("2", "RecordDealerFiles", dealer_id, None, msg)
     
     return have_submission, sub_dic, sub, resub
 

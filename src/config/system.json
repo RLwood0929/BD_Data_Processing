@@ -16,7 +16,9 @@
         "User": "System",
         "MonthlyFileRange": 10,
         "MaxTryRange": 3,
-        "WorkDay": false,
+        "WorkDay": true,
+        "WorkDayCounter": 1,
+        "MonthlySubFlag": false,
         "AllowFileExtensions": [
             ".csv",
             ".xlsx",

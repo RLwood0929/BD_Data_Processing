@@ -8,7 +8,7 @@ Writer：Qian
 # masterfile、kalist檔案檢查、維護區塊待寫
 
 # 標準庫
-import os, shutil
+import os, shutil, time
 from datetime import datetime
 
 # 第三方庫
@@ -17,7 +17,7 @@ from openpyxl import Workbook, load_workbook
 from workalendar.asia import Taiwan
 
 # 自定義函數
-from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson, WrtieWorkDay
+from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson, WrtieWorkDay, WriteWorkDayCounter, WriteMonthlySubFlag
 from Log import WSysLog
 from Config import AppConfig
 from __init__ import ConfigJsonFile
@@ -1002,10 +1002,30 @@ def ConfigFileToCould():
 
 # 判斷當天是否為工作日，寫入System.json檔案
 def WorkDay():
+    # 建立台灣日曆
     cal = Taiwan()
     result = cal.is_working_day(Config.SystemTime)
     msg = WrtieWorkDay(result)
     WSysLog("1", "WorkDay", msg)
+
+    date = Config.SystemTime.date()
+    first_day_in_month = Config.SystemTime.date().replace(day = 1)
+
+    # 若為日曆日每月第一天則刷新工作日計數器
+    if date == first_day_in_month:
+        WriteWorkDayCounter(0)
+
+    # 若為工作日，計數器增加1
+    if result:
+        counter = Config.WorkDayCounter if Config.WorkDayCounter else 0
+        counter += 1
+        WriteWorkDayCounter(counter)
+    
+    # 計算第10日工作日
+    if Config.WorkDayCounter == (Config.MonthlyFileRange - 1):
+        WriteMonthlySubFlag(True)
+    else:
+        WriteMonthlySubFlag(False)
 
 if __name__ == "__main__":
     # CheckBAFolderFiles()

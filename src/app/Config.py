@@ -49,6 +49,12 @@ class AppConfig:
         # 工作日參數
         self.WorkDay = self.GlobalConfig["Default"]["WorkDay"]
 
+        # 工作日計數器
+        self.WorkDayCounter = self.GlobalConfig["Default"]["WorkDayCounter"]
+
+        # 月繳檔案範圍旗幟
+        self.MonthlySubFlag = self.GlobalConfig["Default"]["MonthlySubFlag"]
+
         # 測試模式
         self.TestMode = self.GlobalConfig["Default"]["TestMode"]
 
