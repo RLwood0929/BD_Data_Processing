@@ -1,11 +1,14 @@
 {
     "SubStartIndex": null,
     "NotSubStartIndex": null,
-    "ChangeDic": null,
+    "ChangeDic": {
+    },
     "Dealer1": {
-        "SaleFile": null,
-        "InventoryFile": null,
-        "Mail2": {},
+        "SaleFile": false,
+        "InventoryFile": false,
+        "Mail2": {
+            "銷售檔案、庫存檔案": 1
+        },
         "Mail3": {},
         "Mail4": {}
     },
@@ -17,16 +20,18 @@
         "Mail4": {}
     },
     "Dealer3": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": true,
+        "InventoryFile": true,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
     },
     "Dealer4": {
-        "SaleFile": null,
-        "InventoryFile": null,
-        "Mail2": {},
+        "SaleFile": false,
+        "InventoryFile": false,
+        "Mail2": {
+            "銷售檔案、庫存檔案": 1
+        },
         "Mail3": {},
         "Mail4": {}
     },
@@ -45,9 +50,11 @@
         "Mail4": {}
     },
     "Dealer7": {
-        "SaleFile": null,
-        "InventoryFile": null,
-        "Mail2": {},
+        "SaleFile": true,
+        "InventoryFile": false,
+        "Mail2": {
+            "庫存檔案": 1
+        },
         "Mail3": {},
         "Mail4": {}
     },
@@ -59,20 +66,6 @@
         "Mail4": {}
     },
     "Dealer9": {
-        "SaleFile": null,
-        "InventoryFile": null,
-        "Mail2": {},
-        "Mail3": {},
-        "Mail4": {}
-    },
-    "Dealer10": {
-        "SaleFile": null,
-        "InventoryFile": null,
-        "Mail2": {},
-        "Mail3": {},
-        "Mail4": {}
-    },
-    "Dealer11": {
         "SaleFile": null,
         "InventoryFile": null,
         "Mail2": {},

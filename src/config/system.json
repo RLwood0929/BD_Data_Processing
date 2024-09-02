@@ -1,11 +1,11 @@
 {
     "App": {
         "Name": "BD_DataProcessing",
-        "OneDrivePath": "",
+        "OneDrivePath": "C:\\Users\\Qian\\OneDrive - 嘉衡科技有限公司",
         "AutoRun": true,
         "Debug": true,
         "User": "",
-        "WinUser": "wood1",
+        "WinUser": "Qian",
         "MonthlyFileRange": null
     },
     "Default": {

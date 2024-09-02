@@ -36,6 +36,7 @@ Writer：Qian
 # 標準庫
 import os
 import sys
+import time
 
 # 第三方庫
 import schedule
@@ -46,9 +47,10 @@ from Config import AppConfig
 from EFTFile import EFTUploadFile
 from RecordTable import Statistics
 from SystemConfig import SubRecordJson
-from FileInfo import CheckFileInfo, ConfigFile, ConfigFileToCould, WorkDay
-from OneDriveFile import DownloadOneDrive, UploadOneDrive, ClearLocal
+from DealerFileChange import Preprocessing
 from Mapping import Changing, MergeInventoryFile, FileArchiving
+from OneDriveFile import DownloadOneDrive, UploadOneDrive, ClearLocal
+from FileInfo import CheckFileInfo, ConfigFile, ConfigFileToCould, WorkDay
 from CheckFile import RecordDealerFiles, CheckFile, MoveCheckErrorFile, MoveCheckFile, ClearSubRecordJson
 
 Config = AppConfig()
@@ -75,6 +77,10 @@ def system_work_flow(half_flag = False):
         print("--Running CheckFileInfo--")
         CheckFileInfo()
         print("--End CheckFileInfo--")
+        print("--Running Preprocessing--")
+        Preprocessing()
+        # return
+        print("--End Preprocessing--")
         print("--Running RecordDealerFiles--")
         HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles("AutoRun", DealerList)
         print("Result:")
@@ -88,8 +94,13 @@ def system_work_flow(half_flag = False):
         print("Result:")
         print(f"\tChangeDic:{ChangeDic}")
         if ChangeDic:
+            print("111")
             old_data = SubRecordJson("ReadChangeDic", None)
+            print(f"old_data:{old_data}")
+            if not old_data:
+                old_data = {}
             ChangeDic.update(old_data)
+            print("333")
             msg = SubRecordJson("WriteChangeDic", ChangeDic)
             WSysLog("1", "SubRecordJson", msg)
         print("--End CheckFile--")
@@ -108,7 +119,7 @@ def system_work_flow(half_flag = False):
             print("No File Need To Change.")
         else:
             print("--Running Changing--")
-            Changing(ChangeDic)
+            Changing(ChangeDic) # 排錯中 
             print("--End Changing--")
             print("--Running MargeInventory--")
             MergeInventoryFile()
@@ -136,10 +147,10 @@ def system_work_flow(half_flag = False):
         ConfigFileToCould()
         print("--End ConfigFileToCould--")
         print("--Running UploadOneDrive--")
-        UploadOneDrive(Local, Could)
+        # UploadOneDrive(Local, Could)
         print("--End UploadOneDrive--")
         print("--Running ClearLocal--")
-        ClearLocal(Local)
+        # ClearLocal(Local)
         print("--End ClearLocal--")
         print("=== System End ===")
         if Config.TestMode:
@@ -148,17 +159,21 @@ def system_work_flow(half_flag = False):
         msg = f"系統自動運作時發生錯誤。錯誤原因： {e}"
         print(msg)
 
-def project_time():
-    # 每天01分執行工作日判斷
-    schedule.every().day.at("00:01").do(WorkDay)
+schedule.every().day.at("00:01").do(WorkDay)
 
-    schedule.every().day.at("22:00").do(system_work_flow, half_flag = True)
-    schedule.every().day.at("22:15").do(system_work_flow, half_flag = True)
-    schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
+schedule.every().day.at("22:02").do(system_work_flow, half_flag = True)
+schedule.every().day.at("22:15").do(system_work_flow, half_flag = True)
+schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
 
 # 主程式
 def main():
-    project_time()
+    system_work_flow(half_flag = False)
+    # try:
+    #     while True:
+    #         schedule.run_pending()
+    #         time.sleep(1)
+    # except KeyboardInterrupt:
+    #     print("User End.")
 
 if __name__ == "__main__":
     main()

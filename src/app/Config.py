@@ -222,7 +222,3 @@ class AppConfig:
         self.LogPath = self.GlobalConfig["LogConfig"]["Path"]
         self.TemplateFolderPath = self.GlobalConfig["MailTemplate"]
         
-        # 取得MasterFile檔案
-        if os.path.exists(self.MasterFolderPath):
-            self.MasterFile = [file for file in os.listdir(self.MasterFolderPath) \
-                        if os.path.isfile(os.path.join(self.MasterFolderPath, file))] 

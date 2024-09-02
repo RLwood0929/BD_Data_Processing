@@ -49,11 +49,15 @@ def change_time_format(input_data, input_col, date_format):
 
 # 讀取MasterFile
 def read_master_file():
-    if len(Config.MasterFile) != 1:
+    files = []
+    if os.path.exists(Config.MasterFolderPath):
+        files = [file for file in os.listdir(Config.MasterFolderPath) \
+                if os.path.isfile(os.path.join(Config.MasterFolderPath, file))]
+    if len(files) != 1:
         msg = f"{Config.MasterFolderPath} 目標路徑下存在多份MasterFile，系統無法辨別使用何MasterFile。"
         return False, None, None
     
-    master_file_path = os.path.join(Config.MasterFolderPath, Config.MasterFile[0])
+    master_file_path = os.path.join(Config.MasterFolderPath, files[0])
     master_data = pd.read_excel(master_file_path,sheet_name = "MasterFile", dtype = str)
     ka_data = pd.read_excel(master_file_path,sheet_name = "KAList", dtype = str)
     msg = "成功讀取 MasterFile 資料。"
@@ -66,7 +70,7 @@ def check_product_id(dealer_id, input_data):
         if Config.DealerList[i] == dealer_id:
             index = i + 1
             break
-    
+
     dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
     result, master_data, _ = read_master_file()
     error_data = pd.DataFrame(columns = input_data.columns)
@@ -412,7 +416,7 @@ def ChangeInventoryFile(dealer_id, file_name):
         if Config.DealerList[i] == dealer_id:
             index = i + 1
             break
-    
+
     dealer_name = Config.DealerConfig[f"Dealer{index}"]["DealerName"]
     file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
     input_data = read_data(file_path)
@@ -420,6 +424,7 @@ def ChangeInventoryFile(dealer_id, file_name):
     input_data["Creation Date"] = pd.to_datetime(input_data["Creation Date"], format = "%Y/%m/%d")
     output_data = pd.DataFrame(columns = file_header)
     error_data, error_index = check_product_id(dealer_id, input_data)
+
     if len(error_data) > 0:
         change_status = "NO"
     msg = f"檔案中有 {len(error_data)} 筆資料在 master file 貨號中找不到。"
@@ -501,13 +506,16 @@ def ChangeInventoryFile(dealer_id, file_name):
 # 轉換主程式
 def Changing(check_right_list):
     for dealer_id in Config.DealerList:
+
         dealer_path = os.path.join(Config.DealerFolderPath, dealer_id)
         file_names = [file for file in os.listdir(dealer_path)\
                       if os.path.isfile(os.path.join(dealer_path, file))]
         error_files, error_paths = [], []
-        for file_name in file_names:
-            file_type, _ = decide_file_type(dealer_id, file_name)
 
+        for file_name in file_names:
+            print(file_name)
+            file_type, _ = decide_file_type(dealer_id, file_name)
+            print(f"file_type:{file_type}")
             if file_type == "Sale":
                 change_result = ChangeSaleFile(dealer_id, file_name)
                 status = change_result["Status"]
@@ -523,6 +531,7 @@ def Changing(check_right_list):
 
             else:
                 change_result = ChangeInventoryFile(dealer_id, file_name)
+                print(f"change_result:{change_result}")
                 status = change_result["Status"]
                 output_file_name = change_result["OutputFileName"]
                 error_num = change_result["ErrorNum"]

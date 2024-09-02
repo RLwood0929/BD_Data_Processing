@@ -44,7 +44,6 @@ def decide_file_type(dealer_id, file_name):
         if dealer_id == Config.DealerList[i]:
             index = i + 1
             break
-    
     # 抓取與經銷商協定的表頭
     sale_file_header = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"] \
                         if Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"] \
@@ -52,7 +51,6 @@ def decide_file_type(dealer_id, file_name):
     inventory_file_header = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"] \
                             if Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"] \
                             else Config.IF_Default_Header
-
     folder_path = os.path.join(Config.DealerFolderPath, dealer_id)
     _, extension = os.path.splitext(file_name)
     sale_file_header = set(sale_file_header)
@@ -70,6 +68,11 @@ def decide_file_type(dealer_id, file_name):
                 return "Inventory", max_row
             else:
                 return None, None
+        else:
+            os.remove(file_path)
+            msg = f"檔案 {file_name} 表頭不符合規範，系統已刪除該檔案。"
+            WRecLog("2", "DecideFileType", dealer_id, file_name, msg)
+            return None, None
     else:
         os.remove(file_path)
         msg = f"檔案 {file_name} 副檔名不符合，系統已刪除該檔案。"
@@ -324,15 +327,15 @@ def RecordDealerFiles(mode = None, dealer_list = None):
             file_names = [file for file in os.listdir(dealer_path) \
                         if os.path.isfile(os.path.join(dealer_path, file))]
 
-            # 經銷商狀態若非active，則跳過
-            dealer_status = Config.DealerConfig[f"Dealer{index}"]["Status"]
-            if dealer_status != "active":
-                continue
-
             for i in range(len(Config.DealerList)):
                 if Config.DealerList[i] == dealer_id:
                     index = i + 1
                     break
+
+            # 經銷商狀態若非active，則跳過
+            dealer_status = Config.DealerConfig[f"Dealer{index}"]["Status"]
+            if dealer_status != "active":
+                continue
 
             # 取得經銷商檔案繳交週期
             sale_cycle = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
@@ -355,7 +358,7 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                 file_type, data_max_row = decide_file_type(dealer_id, file_name)
 
                 # 依據檔案類型切換參數
-                if file_type is not None:
+                if file_type:
                     msg = f"{file_type} 檔案準時繳交，繳交時間 {file_update_time}"
                     WRecLog("1", "RecordDealerfiles", dealer_id, file_name, msg)
                     if file_type == "Sale":
@@ -387,6 +390,8 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                         status = "補繳交"
                     else:
                         status = "時間錯誤"
+                else:
+                    continue
                 
                 #日繳檔案進入待補繳記錄中檢查是否有需要變更的狀態值，僅變更檔案狀態，無檢查紀錄
                 resub_files = daily_file_resub(dealer_id, file_type, file_name)
@@ -444,9 +449,8 @@ def RecordDealerFiles(mode = None, dealer_list = None):
         if Config.WorkDay:
             # 寫入未繳交紀錄
             write_not_sub_record()
-
         have_submission = list(set(Config.DealerList) - set(not_submission))
-        
+
         if Config.WorkDay:
             for dealer_id in not_submission:
                 msg = "檔案未繳交"
