@@ -62,6 +62,7 @@ def system_work_flow(half_flag = False):
     SkipFolder = Config.NotCopyFolder
     try:
         print("=== System Start ===")
+
         print("--Running DownloadOneDrive--")
         result, DealerList = DownloadOneDrive(Could, Local, SkipFolder)
         print("Result:")
@@ -69,92 +70,117 @@ def system_work_flow(half_flag = False):
         if not result:
             raise SystemError("DownloadOneDrive區塊發生錯誤，請查閱log紀錄。")
         print("--End DownloadOneDrive--")
+
+        # DealerList = ["1002357130"]
+
         print("--Running ConfigFile--")
         result = ConfigFile()
         if not result:
             raise FileNotFoundError("ConfigFile區塊發生錯誤，請查閱log紀錄。")
         print("--End ConfigFile--")
+
         print("--Running CheckFileInfo--")
         CheckFileInfo()
         print("--End CheckFileInfo--")
+
         print("--Running Preprocessing--")
         Preprocessing()
-        # return
         print("--End Preprocessing--")
+        # return
         print("--Running RecordDealerFiles--")
+
         HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles("AutoRun", DealerList)
         print("Result:")
         print(f"\tHaveSubmission:{HaveSubmission}")
         print(f"\tSubDic:{SubDic}")
         print(f"\tSub:{Sub}")
         print(f"\tRsSub:{ReSub}")
+
         print("--End RecordDealerFiles--")
+
         print("--Running CheckFile--")
         ChangeDic =  CheckFile(HaveSubmission, SubDic, Sub, ReSub)
         print("Result:")
+
         print(f"\tChangeDic:{ChangeDic}")
         if ChangeDic:
-            print("111")
             old_data = SubRecordJson("ReadChangeDic", None)
             print(f"old_data:{old_data}")
             if not old_data:
                 old_data = {}
             ChangeDic.update(old_data)
-            print("333")
             msg = SubRecordJson("WriteChangeDic", ChangeDic)
             WSysLog("1", "SubRecordJson", msg)
         print("--End CheckFile--")
+
         if half_flag:
             print("=== System Break ===")
             return
+        
         print("--Running MoveCheckErrorFile--")
         MoveCheckErrorFile()
         print("--End MoveCheckErrorFile--")
+
         print("--Running SubRecordJson--")
         ChangeDic = SubRecordJson("ReadChangeDic", None)
         print("Result:")
         print(f"\tChangeDic:{ChangeDic}")
         print("--End SubRecordJson--")
+
         if ChangeDic is None:
             print("No File Need To Change.")
+
         else:
             print("--Running Changing--")
             Changing(ChangeDic) # 排錯中 
             print("--End Changing--")
+
             print("--Running MargeInventory--")
             MergeInventoryFile()
             print("--End MargeInventory--")
+
             if Config.TestMode:
                 print("--Running EFTUploadFile--")
-                EFTUploadFile()
+                # EFTUploadFile()
                 print("--End EFTUploadFile--")
+
             print("--Running FileArchiving--")
             FileArchiving()
             print("--End FileArchiving--")
+
         print("--Running MoveCheckFile--")
         MoveCheckFile()
         print("--End MoveCheckFile--")
+
         print("--Running Statistics--")
         Statistics()
         print("--End Statistics--")
+
         print("--Running SendNotSubMail--") 
         # 
         print("--End SendNotSubMail--")
+
         print("--Running ClearSubRecordJson--")
         ClearSubRecordJson()
         print("--End ClearSubRecordJson--")
+
         print("--Running ConfigFileToCould--")
         ConfigFileToCould()
         print("--End ConfigFileToCould--")
+
         print("--Running UploadOneDrive--")
         # UploadOneDrive(Local, Could)
         print("--End UploadOneDrive--")
+
         print("--Running ClearLocal--")
         # ClearLocal(Local)
         print("--End ClearLocal--")
+
         print("=== System End ===")
+
         if Config.TestMode:
             sys.exit()
+
     except Exception as e:
         msg = f"系統自動運作時發生錯誤。錯誤原因： {e}"
         print(msg)

@@ -12,7 +12,7 @@
         "Name": "BD_DataProcessing",
         "AutoRun": true,
         "Debug": false,
-        "TestMode": true,
+        "TestMode": false,
         "User": "System",
         "MonthlyFileRange": 10,
         "MaxTryRange": 3,

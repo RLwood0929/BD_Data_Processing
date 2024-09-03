@@ -12,7 +12,7 @@ Writer：Qian
     執行檔案切割
 """
 
-import os
+import os, shutil
 import pandas as pd
 from datetime import datetime
 
@@ -72,6 +72,19 @@ def change_file_name(dealer_id, folder_path, file_key_word):
                 except Exception as e:
                     msg = f"發生未知錯誤: {e}"
                     WSysLog("3", "ChangeFileName", msg)
+            elif part[1] == "INVOICE":
+                folder_name = Config.SystemTime.strftime("%Y%m")
+                target_path = os.path.join(folder_path, Config.CompleteFolder, folder_name)
+                if not os.path.exists(target_path):
+                    os.makedirs(target_path)
+                    msg = f"已在 {Config.CompleteFolder} 目錄下建立資料夾，資料夾名稱 {folder_name}"
+                    WSysLog("1", "ChangeFileName", msg)
+
+                old_file_path = os.path.join(folder_path, file)
+                new_file_path = os.path.join(target_path, file)
+                shutil.move(old_file_path, new_file_path)
+                msg = f"系統移動 {file_name} 至 {Config.CompleteFolder}/{Config.SystemTime.strftime('%Y%m')} 目錄底下。"
+                WSysLog("1", "ChangeFileName", msg)
         else:
             # 非約定檔名的處理
             msg = f"{file} 檔案為非約定檔名，系統將刪除該檔案。"
@@ -92,25 +105,40 @@ def split_file_data(folder_path):
             file_name, extension = os.path.splitext(file)
             if extension.lower() == Config.AllowFileExtensions[0]:
                 data = pd.read_csv(file_path, dtype = str)
-                print(data)
+
             elif extension.lower() in Config.AllowFileExtensions[1:]:
                 data = pd.read_excel(file_path, dtype = str)
-                print(data)
+
             else:
                 msg = f"{extension} 副檔名不再許可範圍。"
                 WSysLog("1", "SplitFileData", msg)
                 continue
+
             data["Transaction Date"] = pd.to_datetime(data["Transaction Date"], errors = "coerce")
-            print(data["Transaction Date"])
-            new_data = data[(data["Transaction Date"].dt.year == Config.Year) & (data["Transaction Date"].dt.month == Config.Month)]
+            part = file_name.split("_")
+            data_time = part[2]
+            if len(data_time) == 8:
+                data_time = datetime.strptime(data_time, "%Y%m%d")
+                year_index = data_time.year
+                month_index = data_time.month
+            elif len(data_time) == 12:
+                data_time = datetime.strptime(data_time, "%Y%m%d%H%M")
+                year_index = data_time.year
+                month_index = data_time.month
+            else:
+                year_index = Config.Year
+                month_index = Config.Month
+                msg = "檔名時間格式不對，系統無法處理，將依據系統年月篩選檔案內容。"
+                WSysLog("2", "SplitFileData", msg)
+            new_data = data[(data["Transaction Date"].dt.year == year_index) & (data["Transaction Date"].dt.month == month_index)]
             if extension.lower() == Config.AllowFileExtensions[0]:
-                new_data["Transaction Date"] = new_data["Transaction Date"].dt.strftime('%Y/%m/%d')
-                print(new_data)
+                new_data.loc[:, "Transaction Date"] = new_data["Transaction Date"].dt.strftime('%Y/%m/%d')
                 new_data.to_csv(file_path, index = False, encoding = "UTF-8")
+
             elif extension.lower() in Config.AllowFileExtensions[1:]:
-                new_data["Transaction Date"] = new_data["Transaction Date"].dt.strftime('%Y/%m/%d')
-                print(new_data)
+                new_data.loc[:, "Transaction Date"] = new_data["Transaction Date"].dt.strftime('%Y/%m/%d')
                 new_data.to_excel(file_path, index = False, encoding = "UTF-8")
+
             msg = f"{file_name} 檔案已過濾出當月資料。"
             WSysLog("1", "SplitFileData", msg)
     else:

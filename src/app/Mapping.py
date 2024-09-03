@@ -433,7 +433,8 @@ def ChangeInventoryFile(dealer_id, file_name):
     for i in error_index:
         input_data = input_data.drop(i)
     input_data = input_data.reset_index(drop = True)
-    
+    # print(f"input_data:{input_data}")
+
     for rule_index in range(1, len(change_rules) + 1):
         source_col = change_rules[f"Column{rule_index}"]["SourceName"]
         target_col = change_rules[f"Column{rule_index}"]["ColumnName"]
@@ -512,10 +513,11 @@ def Changing(check_right_list):
                       if os.path.isfile(os.path.join(dealer_path, file))]
         error_files, error_paths = [], []
 
+        print(f"file_names:{file_names}")
         for file_name in file_names:
-            print(file_name)
+            print(f"file_name:{file_name}")
             file_type, _ = decide_file_type(dealer_id, file_name)
-            print(f"file_type:{file_type}")
+
             if file_type == "Sale":
                 change_result = ChangeSaleFile(dealer_id, file_name)
                 status = change_result["Status"]
@@ -531,7 +533,6 @@ def Changing(check_right_list):
 
             else:
                 change_result = ChangeInventoryFile(dealer_id, file_name)
-                print(f"change_result:{change_result}")
                 status = change_result["Status"]
                 output_file_name = change_result["OutputFileName"]
                 error_num = change_result["ErrorNum"]
@@ -559,6 +560,7 @@ def Changing(check_right_list):
         if error_files:
             mail_data = {"ErrorReportFileName" : "、".join(error_files)}
             send_info = {"Mode" : "ErrorReport", "DealerID" : dealer_id, "MailData" : mail_data, "FilesPath" : error_paths}
+            print(send_info)
             SendMail(send_info)
 
 # 合併 Inventory 檔案

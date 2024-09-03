@@ -38,7 +38,7 @@
     "User5":{
         "ID":"005",
         "Name":"Charlene",
-        "Mail":"Charlene.Liu@bd.com",
+        "Mail":"",
         "Permissions":"Viewer",
         "Group":"BD",
         "ResponsibleDealerID":null,

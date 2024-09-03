@@ -134,7 +134,7 @@ def GetMailInfo(mode, dealer_id, mail_data):
                 file_name_in_record = file_name
             else:
                 mail_count = 0
-            print(f"mail_count:{mail_count}")
+            # print(f"mail_count:{mail_count}")
             mail_content = template.format(Num = mail_count, FileName = file_name, DateTime = date_time)
 
         elif mail_index == 3:
@@ -183,7 +183,7 @@ def GetMailInfo(mode, dealer_id, mail_data):
                                         ChangeErrorNum = change_error_num,\
                                         ReportName = report_name)
 
-        elif mail_index == 6:
+        elif mail_index == 6: ##
             # mail_data = {"ErrorReportFileName" : error_report_file_name}
             error_report_file_name = mail_data["ErrorReportFileName"]
             mail_content = template.format(ErrorReportFileName = error_report_file_name)
@@ -215,7 +215,6 @@ def GetMailInfo(mode, dealer_id, mail_data):
         if "Dealer" in recipient:
             recipient_list.append(dealer_mail)
             write_data = {f"Dealer{dealer_index}":{f"Mail{mail_index}": {file_name_in_record : mail_count}}}
-            print(f"write_data:{write_data}")
             SubRecordJson("WriteFileStatus", write_data)
             if mail_count >= 3:
                 recipient.extend(repeatedly)
@@ -224,15 +223,30 @@ def GetMailInfo(mode, dealer_id, mail_data):
             index = i + 1
             user_group = Config.UserConfig[f"User{index}"]["Group"]
             user_mail =  Config.UserConfig[f"User{index}"]["Mail"]
+
             if user_group in recipient:
-                if (mail_count >= 3) and (user_group == "BD_BA"):
+                if mail_index in range(2,5):
+                    if (mail_count >= 3) and (user_group == "BD_BA"):
+                        ba_responsible = Config.UserConfig[f"User{index}"]["ResponsibleDealerID"]
+                        # print(f"ba_responsible:{ba_responsible}")
+
+                        if ba_responsible and (dealer_id in ba_responsible):
+                            ba_mail = Config.UserConfig[f"User{index}"]["Mail"]
+                            # print(f"ba_mail:{ba_mail}")
+                            recipient_list.append(ba_mail)
+
+                    else:
+                        recipient_list.append(user_mail)
+                        
+                else:
                     ba_responsible = Config.UserConfig[f"User{index}"]["ResponsibleDealerID"]
                     if ba_responsible and (dealer_id in ba_responsible):
-                        ba_mail = Config.UserConfig[f"User{index}"]["Mail"]
-                        recipient_list.append(ba_mail)
-                else:
-                    recipient_list.append(user_mail)
-        
+                        recipient_list.append(user_mail)
+
+            else:
+                continue
+        # print(f"recipient_list:{recipient_list}")
+
         # 取得副本收件者 Mail
         copy_recipient_list = []
         if copy_recipient:
@@ -243,6 +257,7 @@ def GetMailInfo(mode, dealer_id, mail_data):
                     user_mail =  Config.UserConfig[f"User{index}"]["Mail"]
                     if group == user_group:
                         copy_recipient_list.append(user_mail)
+        # print(f"copy_recipient_list:{copy_recipient_list}")
 
         mail_info = {"Mode" : mode, "Subject" : subject, "Recipients" : recipient_list,\
                     "CopyRecipients" : copy_recipient_list, "MailContent" : mail_content}
@@ -302,15 +317,21 @@ def WriteMail(subject, recipients, copy_recipients, mail_content, files_path):
         msg = f"主旨：{subject} 信件寄送失敗，錯誤原因{msg}。"
         WSysLog("2", "SendMail", msg)
 
-# 寄送信件主程式
+# 寄送信件主程式  ##
 def SendMail(send_info):
     mode = send_info["Mode"]
+    # print(f"mode:{mode}")
     dealer_id = send_info["DealerID"]
+    # print(f"dealer_id:{dealer_id}")
     mail_data = send_info["MailData"]
+    # print(f"mail_data:{mail_data}")
     files_path = send_info["FilesPath"]
+    # print(f"files_path:{files_path}")
     mail_info = GetMailInfo(mode, dealer_id, mail_data)
+    # print(f"mail_info:{mail_info}")
     subject = mail_info["Subject"]
-
+    # print(f"subject:{subject}")
+    
     # 測試模式
     if Config.TestMode:
         recipients = ["richardwu@coign.com.tw"]
@@ -320,7 +341,9 @@ def SendMail(send_info):
         copy_recipients = mail_info["CopyRecipients"]
     
     mail_content = mail_info["MailContent"]
-    WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
+    # print(f"mail_content:{mail_content}")
+    # WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
+
 
 # 清空經銷商的信件計數器
 def ClearMailCount(dealer_ids = None, mail_counters = None):
