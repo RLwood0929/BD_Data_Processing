@@ -139,6 +139,9 @@ def move_or_search_uom(input_data, source_col, target_col, dealer_id):
                 else:
                     uom = uom_list[-1]
                     output.append(int(uom) * int(input_data[target_col][row]))
+
+        msg = f"ErrorRow結果： {error_row} 。"
+        WSysLog("1", "MoveOrSearchUoM", msg)
         return output, error_row
 
 # 使用 product id 在 MasterFile 中找到對應的 DP 價
@@ -174,6 +177,8 @@ def search_dp(input_data, dealer_id):
                         ka_range = True
                         ptype = ka_data[ka_col[4]][i]
                         price_type.append(ptype)
+                        print("000")
+                        print(price_type)
                 
                 if not ka_range:
                     price_type = master_col[4]
@@ -191,7 +196,7 @@ def search_dp(input_data, dealer_id):
                 if start_date <= data_date <= end_date:
                     in_range_flag = True
                     dp = search_data[price_type][i]
-                    
+                    # print(price_type)
                     if pd.notna(dp):
                         dp_list.append(dp)
                     
@@ -206,6 +211,9 @@ def search_dp(input_data, dealer_id):
             else:
                 dp = dp_list[-1]
                 output.append(dp)
+
+        msg = f"ErrorRow結果： {error_row} 。"
+        WSysLog("1", "SearchDp", msg)
         return output, error_row
     
 # 使用 product id 在 MasterFile 中找到對應的 std 價
@@ -239,6 +247,9 @@ def search_cost(input_data, dealer_id):
             else:
                 cost = cost_list[-1]
                 output.append(cost)
+
+        msg = f"ErrorRow結果： {error_row} 。"
+        WSysLog("1", "SearchCost", msg)
         return output, error_row
 
 # 多欄位值合併
@@ -272,8 +283,8 @@ def ChangeSaleFile(dealer_id, file_name):
     error_data, error_index = check_product_id(dealer_id, input_data)
     if len(error_data) > 0:
         change_status = "NO"
-    msg = f"檔案中有 {len(error_data)} 筆資料在 master file 貨號中找不到。"
-    WChaLog("2","ChangeSaleFile", dealer_id, file_name, msg)
+        msg = f"檔案中有 {len(error_data)} 筆資料在 master file 貨號中找不到。"
+        WChaLog("2","ChangeSaleFile", dealer_id, file_name, msg)
 
     for i in error_index:
         input_data = input_data.drop(i)
@@ -300,7 +311,6 @@ def ChangeSaleFile(dealer_id, file_name):
         
         # 搬移資料
         elif rule == "Move":
-            
             output_data[target_col] = move_rule(input_data, source_col)
         
         # 變更時間格式
@@ -507,16 +517,16 @@ def ChangeInventoryFile(dealer_id, file_name):
 # 轉換主程式
 def Changing(check_right_list):
     for dealer_id in Config.DealerList:
-
+        print(f"dealer_id:{dealer_id}")
         dealer_path = os.path.join(Config.DealerFolderPath, dealer_id)
         file_names = [file for file in os.listdir(dealer_path)\
                       if os.path.isfile(os.path.join(dealer_path, file))]
         error_files, error_paths = [], []
 
-        print(f"file_names:{file_names}")
         for file_name in file_names:
             print(f"file_name:{file_name}")
             file_type, _ = decide_file_type(dealer_id, file_name)
+            print(f"file_type:{file_type}")
 
             if file_type == "Sale":
                 change_result = ChangeSaleFile(dealer_id, file_name)
@@ -560,7 +570,6 @@ def Changing(check_right_list):
         if error_files:
             mail_data = {"ErrorReportFileName" : "、".join(error_files)}
             send_info = {"Mode" : "ErrorReport", "DealerID" : dealer_id, "MailData" : mail_data, "FilesPath" : error_paths}
-            print(send_info)
             SendMail(send_info)
 
 # 合併 Inventory 檔案

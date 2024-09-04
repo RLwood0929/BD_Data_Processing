@@ -320,6 +320,7 @@ def RecordDealerFiles(mode = None, dealer_list = None):
         dealer_list = Config.DealerList
     else:
         not_submission = list(set(Config.DealerList) - set(dealer_list))
+
     if dealer_list:
         for dealer_id in dealer_list:
             # 抓取經銷商目錄底下檔案
@@ -354,12 +355,11 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                 # 抓取檔案上傳時間
                 file_update_time = os.path.getmtime(file_path)
                 file_write_time = datetime.fromtimestamp(file_update_time)
-                file_update_time = datetime.fromtimestamp(file_update_time).date()
                 file_type, data_max_row = decide_file_type(dealer_id, file_name)
 
                 # 依據檔案類型切換參數
                 if file_type:
-                    msg = f"{file_type} 檔案準時繳交，繳交時間 {file_update_time}"
+                    msg = f"{file_type} 檔案準時繳交，繳交時間 {file_write_time}"
                     WRecLog("1", "RecordDealerfiles", dealer_id, file_name, msg)
                     if file_type == "Sale":
                         file_cycle = sale_cycle
@@ -377,16 +377,18 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                     WRecLog("1", "RecordDealerFiles", dealer_id, file_name, msg)
 
                     if file_cycle == "D":
-                        start_time = file_time
-                        end_time = file_time + timedelta(days = 1)
+                        # print(f"file_time:{file_time}")
+                        # print(type(file_time))
+                        start_time = datetime.combine(file_time, datetime.min.time())
+                        end_time = datetime.combine(file_time, datetime.max.time()).replace(microsecond=0)
                     # 月繳
                     else:
                         start_time = Config.SystemTime.date().replace(day = 1)
                         end_time = Config.SystemTime.date().replace(day = Config.MonthlyFileRange)
                     time_due = f"{start_time} ~ {end_time}"
-                    if (start_time <= file_update_time) and (file_update_time <= end_time):
+                    if (start_time <= file_write_time) and (file_write_time <= end_time):
                         status = "有繳交"
-                    elif end_time < file_update_time:
+                    elif end_time < file_write_time:
                         status = "補繳交"
                     else:
                         status = "時間錯誤"
@@ -432,7 +434,7 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                     "繳交狀態":status,
                     "檔案名稱":file_name,
                     "應繳時間":time_due,
-                    "繳交時間":file_write_time.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                    "繳交時間":file_write_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "檔案內容總筆數":data_max_row
                 }}
 
@@ -486,8 +488,11 @@ def ClearSubRecordJson():
 def CheckFileHeader(dealer_id, file_name, file_type):
     flag = False
     format_header = Config.SF_Default_Header if file_type == "Sale" else Config.IF_Default_Header
+    # print(f"format_header:{format_header}")
     must_have_header = Config.SF_MustHave if file_type == "Sale" else Config.IF_MustHave
+    # print(f"must_have_header:{must_have_header}")
     two_choose_one = Config.SF_2Choose1 if file_type == "Sale" else Config.IF_2Choose1
+    # print(f"two_choose_one:{two_choose_one}")
     file_dir = os.path.join(Config.DealerFolderPath, dealer_id)
     file_path = os.path.join(file_dir, file_name)
     file_data, _ = read_data(file_path)
@@ -496,9 +501,10 @@ def CheckFileHeader(dealer_id, file_name, file_type):
         msg = "全部表頭都存在"
         WCheLog("1", "CheckFileHeader", dealer_id, file_name, msg)
         flag = True
+
     else:
-        if (must_have_header.issubset(file_header)) and\
-            (two_choose_one.issubset(file_header)):
+        if (set(must_have_header).issubset(set(file_header))) and\
+            (set(two_choose_one).issubset(set(file_header))):
             msg = "必要表頭都存在"
             WCheLog("1", "CheckFileHeader", dealer_id, file_name, msg)
             flag = True
@@ -670,12 +676,15 @@ def CheckFileContent(dealer_id, file_name, file_type):
 def CheckFile(have_submission, sub_dic, sub, resub):
     change_dic = {}
     for dealer_id in have_submission:
+
         folder_path = os.path.join(Config.DealerFolderPath, dealer_id)
         file_names = [file for file in os.listdir(folder_path) \
                       if os.path.isfile(os.path.join(folder_path, file))]
+
         for file_name in file_names:
             file_type, _ = decide_file_type(dealer_id, file_name)
             header_result = CheckFileHeader(dealer_id, file_name, file_type)
+
             if header_result:
                 header_msg = "表頭正確"
                 content_result, error_num = CheckFileContent(dealer_id, file_name, file_type)

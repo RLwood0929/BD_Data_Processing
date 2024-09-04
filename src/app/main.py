@@ -71,8 +71,6 @@ def system_work_flow(half_flag = False):
             raise SystemError("DownloadOneDrive區塊發生錯誤，請查閱log紀錄。")
         print("--End DownloadOneDrive--")
 
-        # DealerList = ["1002357130"]
-
         print("--Running ConfigFile--")
         result = ConfigFile()
         if not result:
@@ -86,7 +84,7 @@ def system_work_flow(half_flag = False):
         print("--Running Preprocessing--")
         Preprocessing()
         print("--End Preprocessing--")
-        # return
+
         print("--Running RecordDealerFiles--")
 
         HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles("AutoRun", DealerList)
@@ -97,7 +95,7 @@ def system_work_flow(half_flag = False):
         print(f"\tRsSub:{ReSub}")
 
         print("--End RecordDealerFiles--")
-
+    
         print("--Running CheckFile--")
         ChangeDic =  CheckFile(HaveSubmission, SubDic, Sub, ReSub)
         print("Result:")
@@ -113,6 +111,8 @@ def system_work_flow(half_flag = False):
             WSysLog("1", "SubRecordJson", msg)
         print("--End CheckFile--")
 
+        # return
+
         if half_flag:
             print("=== System Break ===")
             return
@@ -126,28 +126,28 @@ def system_work_flow(half_flag = False):
         print("Result:")
         print(f"\tChangeDic:{ChangeDic}")
         print("--End SubRecordJson--")
-
+        # OK
         if ChangeDic is None:
             print("No File Need To Change.")
 
         else:
             print("--Running Changing--")
-            Changing(ChangeDic) # 排錯中 
+            Changing(ChangeDic)
             print("--End Changing--")
 
             print("--Running MargeInventory--")
             MergeInventoryFile()
             print("--End MargeInventory--")
-
-            if Config.TestMode:
-                print("--Running EFTUploadFile--")
-                # EFTUploadFile()
-                print("--End EFTUploadFile--")
+            return
+            # if Config.TestMode:
+            print("--Running EFTUploadFile--")
+            # EFTUploadFile()
+            print("--End EFTUploadFile--")
 
             print("--Running FileArchiving--")
             FileArchiving()
             print("--End FileArchiving--")
-
+        return
         print("--Running MoveCheckFile--")
         MoveCheckFile()
         print("--End MoveCheckFile--")

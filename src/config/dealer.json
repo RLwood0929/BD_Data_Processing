@@ -149,7 +149,43 @@
             "PaymentCycle": "D",
             "Extension": "csv",
             "OUPType": false,
-            "FileHeader": []
+            "FileHeader": [
+                "Record ID",
+                "Collection Date",
+                "Delivery Date",
+                "Transaction ID",
+                "TI ID",
+                "Seller ID",
+                "Original Seller Name",
+                "Buyer ID",
+                "Original Buyer Name",
+                "Distributor ID",
+                "Product ID",
+                "Original Product Name",
+                "Warehouse ID",
+                "Batch",
+                "Original UoM",
+                "Original Quantity",
+                "UoM",
+                "Quantity",
+                "Currency",
+                "Original Unit Price",
+                "Unit Price",
+                "Original Amount",
+                "Invoice Number",
+                "Transaction Date",
+                "Transaction Type",
+                "Ref Record ID",
+                "Creation Date",
+                "Last Modified Date",
+                "Remark",
+                "Invoice No",
+                "Sale No",
+                "Invalid",
+                "Invoice Buyer ID",
+                "Invoice Buyer Name",
+                "Invoice Date"
+            ]
         },
         "InventoryFile": {
             "PaymentCycle": "D",
@@ -255,13 +291,13 @@
         "Contact4Ex": null,
         "SaleFile": {
             "PaymentCycle": "D",
-            "Extension": "xls",
+            "Extension": "xlsx",
             "OUPType": true,
             "FileHeader": []
         },
         "InventoryFile": {
             "PaymentCycle": "D",
-            "Extension": "xls",
+            "Extension": "xlsx",
             "FileHeader": []
         }
     },

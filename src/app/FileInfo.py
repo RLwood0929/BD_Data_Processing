@@ -770,8 +770,8 @@ def MergeKalist(write_new_list):
                     df.insert(loc = 0, column = "經銷商ID", value = dealer_id)
                     df[Config.KAListFileHeader[1]] = pd.to_datetime(df[Config.KAListFileHeader[1]])
                     df[Config.KAListFileHeader[2]] = pd.to_datetime(df[Config.KAListFileHeader[2]])
-                    df[Config.KAListFileHeader[1]] = df[Config.KAListFileHeader[1]].dt.date
-                    df[Config.KAListFileHeader[2]] = df[Config.KAListFileHeader[2]].dt.date
+                    df[Config.KAListFileHeader[1]] = df[Config.KAListFileHeader[1]].dt.strftime("%Y%m%d")
+                    df[Config.KAListFileHeader[2]] = df[Config.KAListFileHeader[2]].dt.strftime("%Y%m%d")
                     dfs.append(df)
 
         # 內容合併
@@ -796,6 +796,10 @@ def MergeKalist(write_new_list):
                         dealer_id = part[0]
                         ka_data_part = ka_data[ka_data[ka_data_header[0]] == dealer_id]
                         data = pd.read_excel(ka_file_path, sheet_name = sheet, names = Config.KAListFileHeader, dtype = str)
+                        data[Config.KAListFileHeader[1]] = pd.to_datetime(data[Config.KAListFileHeader[1]])
+                        data[Config.KAListFileHeader[2]] = pd.to_datetime(data[Config.KAListFileHeader[2]])
+                        data[Config.KAListFileHeader[1]] = data[Config.KAListFileHeader[1]].dt.strftime("%Y%m%d")
+                        data[Config.KAListFileHeader[2]] = data[Config.KAListFileHeader[2]].dt.strftime("%Y%m%d")
                         data_header = data.columns.values
                         
                         # 歷遍客戶ID

@@ -320,9 +320,9 @@ def WriteMail(subject, recipients, copy_recipients, mail_content, files_path):
 # 寄送信件主程式  ##
 def SendMail(send_info):
     mode = send_info["Mode"]
-    # print(f"mode:{mode}")
+    print(f"mode:{mode}")
     dealer_id = send_info["DealerID"]
-    # print(f"dealer_id:{dealer_id}")
+    print(f"dealer_id:{dealer_id}")
     mail_data = send_info["MailData"]
     # print(f"mail_data:{mail_data}")
     files_path = send_info["FilesPath"]
@@ -341,7 +341,10 @@ def SendMail(send_info):
         copy_recipients = mail_info["CopyRecipients"]
     
     mail_content = mail_info["MailContent"]
-    # print(f"mail_content:{mail_content}")
+    print(f"subject:{subject}")
+    print(f"recipients:{recipients}")
+    print(f"copy_recipients:{copy_recipients}")
+    print(f"mail_content:{mail_content}")
     # WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
 
 
