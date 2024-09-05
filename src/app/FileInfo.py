@@ -17,7 +17,7 @@ from openpyxl import Workbook, load_workbook
 from workalendar.asia import Taiwan
 
 # 自定義函數
-from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson, WrtieWorkDay, WriteWorkDayCounter, WriteMonthlySubFlag
+from SystemConfig import WriteFileJson, WriteDealerJson, SubRecordJson, WrtieWorkDay, WriteMonthFileDeadline
 from Log import WSysLog
 from Config import AppConfig
 from __init__ import ConfigJsonFile
@@ -1015,25 +1015,23 @@ def WorkDay():
     date = Config.SystemTime.date()
     first_day_in_month = Config.SystemTime.date().replace(day = 1)
 
-    # 若為日曆日每月第一天則刷新工作日計數器
-    if date == first_day_in_month:
-        WriteWorkDayCounter(0)
-
-    # 若為工作日，計數器增加1
-    if result:
-        counter = Config.WorkDayCounter if Config.WorkDayCounter else 0
-        counter += 1
-        WriteWorkDayCounter(counter)
-    
-    # 計算第10日工作日
-    if Config.WorkDayCounter == (Config.MonthlyFileRange - 1):
-        WriteMonthlySubFlag(True)
-    else:
-        WriteMonthlySubFlag(False)
+    # 刷新月繳截止日
+    if date == first_day_in_month:        
+        work_day_counter = 0
+        # 設定每月天數範圍為31天
+        for d in range(1, 32):
+            date_for_count = date.replace(day = d)
+            work_day_result = cal.is_working_day(date_for_count)
+            if work_day_result:
+                work_day_counter += 1
+            if work_day_counter == 10:
+                break
+        msg = WriteMonthFileDeadline(d)
+        WSysLog("1", "WorkDay", msg)
 
 if __name__ == "__main__":
     # CheckBAFolderFiles()
-    CheckFileInfo()
+    # CheckFileInfo()
     # aa = ["BA01","BA02","BA03","BA04"]
     # MergeDealerInfo(aa)
     # MergeDealerInfoWorkSheet(["BA01"])
@@ -1041,5 +1039,5 @@ if __name__ == "__main__":
     # ConfigFile()
     # MergeMasterFile(["BA03"])
     # MergeKalist(["BA03"])
-    # WorkDay()
+    WorkDay()
     # print(Config.WorkDay)

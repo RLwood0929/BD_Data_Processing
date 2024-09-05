@@ -46,25 +46,17 @@ class AppConfig:
         self.UserConfig = User()
         self.FileConfig = File()
 
-        # 工作日參數
-        self.WorkDay = self.GlobalConfig["Default"]["WorkDay"]
-
-        # 工作日計數器
-        self.WorkDayCounter = self.GlobalConfig["Default"]["WorkDayCounter"]
-
-        # 月繳檔案範圍旗幟
-        self.MonthlySubFlag = self.GlobalConfig["Default"]["MonthlySubFlag"]
-
         # 測試模式
         self.TestMode = self.GlobalConfig["Default"]["TestMode"]
 
         # 錯誤嘗試次數
         self.MaxTryRange = self.GlobalConfig["Default"]["MaxTryRange"]
 
+        # 工作日參數
+        self.WorkDay = self.GlobalConfig["Default"]["WorkDay"]
+
         # 月繳檔案繳交區間
-        self.MonthlyFileRange = self.GlobalConfig["App"]["MonthlyFileRange"] \
-                            if self.GlobalConfig["App"]["MonthlyFileRange"]\
-                            else self.GlobalConfig["Default"]["MonthlyFileRange"]
+        self.MonthlyFileDeadline = self.GlobalConfig["Default"]["MonthlyFileDeadline"]
 
         # C槽
         self.SystemRoot = self.GlobalConfig["SystemRoot"]

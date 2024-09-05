@@ -135,8 +135,9 @@ def change_roc_year(folder_path):
                     for row in range(len(data)):
                         value = str(data.loc[row, column_key])
                         value_part = value.split("/")
-                        value_part[0] = str(int(value_part[0]) + 1911)
-                        value = "/".join(value_part)
+                        if (int(value_part[0]) != Config.Year) & ((int(value_part[0]) + 1911) == Config.Year):
+                            value_part[0] = str(int(value_part[0]) + 1911)
+                            value = "/".join(value_part)
                         data.loc[row, column_key] = value
                 else:
                     msg = f"{column_key} 欄位表頭不存在於資料中。"

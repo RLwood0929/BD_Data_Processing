@@ -5,8 +5,7 @@
         "AutoRun": true,
         "Debug": true,
         "User": "",
-        "WinUser": "Qian",
-        "MonthlyFileRange": null
+        "WinUser": "Qian"
     },
     "Default": {
         "Name": "BD_DataProcessing",
@@ -14,11 +13,9 @@
         "Debug": false,
         "TestMode": false,
         "User": "System",
-        "MonthlyFileRange": 10,
         "MaxTryRange": 3,
         "WorkDay": true,
-        "WorkDayCounter": 1,
-        "MonthlySubFlag": false,
+        "MonthlyFileDeadline": 13,
         "AllowFileExtensions": [
             ".csv",
             ".xlsx",

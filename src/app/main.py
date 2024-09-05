@@ -95,7 +95,7 @@ def system_work_flow(half_flag = False):
         print(f"\tRsSub:{ReSub}")
 
         print("--End RecordDealerFiles--")
-    
+        return
         print("--Running CheckFile--")
         ChangeDic =  CheckFile(HaveSubmission, SubDic, Sub, ReSub)
         print("Result:")
@@ -138,7 +138,7 @@ def system_work_flow(half_flag = False):
             print("--Running MargeInventory--")
             MergeInventoryFile()
             print("--End MargeInventory--")
-            return
+            # return
             # if Config.TestMode:
             print("--Running EFTUploadFile--")
             # EFTUploadFile()
@@ -147,7 +147,7 @@ def system_work_flow(half_flag = False):
             print("--Running FileArchiving--")
             FileArchiving()
             print("--End FileArchiving--")
-        return
+        # return
         print("--Running MoveCheckFile--")
         MoveCheckFile()
         print("--End MoveCheckFile--")

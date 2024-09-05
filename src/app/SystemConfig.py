@@ -171,20 +171,13 @@ def WrtieWorkDay(work_day):
     msg = f"更新WorkDay參數： {work_day}。"
     return msg
 
-def WriteWorkDayCounter(num):
+# 更新每月第10個工作天數值至system.json
+def WriteMonthFileDeadline(day):
     data = Config()
-    data["Default"]["WorkDayCounter"] = num
+    data["Default"]["MonthlyFileDeadline"] = day
     with open(ConfigInfo.ConfigPath, "w", encoding = "UTF-8") as file:
         json.dump(data, file, ensure_ascii = False, indent = 4)
-    msg = f"更新WorkDayCounter參數： {num}。"
-    return msg
-
-def WriteMonthlySubFlag(status):
-    data = Config()
-    data["Default"]["MonthlySubFlag"] = status
-    with open(ConfigInfo.ConfigPath, "w", encoding = "UTF-8") as file:
-        json.dump(data, file, ensure_ascii = False, indent = 4)
-    msg = f"更新MonthlySubFlag參數： {status}。"
+    msg = f"更新MonthlyFileDeadline參數： {day}。"
     return msg
 
 # 將檔案更新時間寫入 files.json

@@ -75,127 +75,35 @@ def decide_file_type(dealer_id, file_name):
             return None, None
     else:
         os.remove(file_path)
-        msg = f"檔案 {file_name} 副檔名不符合，系統已刪除該檔案。"
+        msg = f"檔案 {file_name} 副檔名不在許可範圍中，系統已刪除該檔案。"
         WRecLog("2", "DecideFileType", dealer_id, file_name, msg)
         return None, None
 
-# RecordDealerFiles
-# 寫入未繳交名單
-def write_not_sub_record(notify = True):
-    record_data = SubRecordJson("Read", None)
-    for i in range(len(Config.DealerList)):
-        index = i + 1
-        file_list, date_time_list = [], []
-        sale_cycle = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
-        inventory_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
-        dealer_id = Config.DealerConfig[f"Dealer{index}"]["DealerID"]
-        
-        # 銷售檔案日繳交
-        if (sale_cycle == "D") and (record_data[f"Dealer{index}"]["SaleFile"] is None):
-            file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
-            write_data = {
-                "經銷商ID":dealer_id,
-                "檔案類型":"Sale",
-                "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{Config.SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
-                "檔案狀態":"未繳交",
-                "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
-                "檔案檢查結果":"未檢查"
-            }
-            # 信件資訊
-            if notify:
-                date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
-                date_time_list.append(date_time)
-                file_list.append("銷售檔案")
-            WriteNotSubmission(write_data)
-            input_data = {f"Dealer{index}":{f"SaleFile":False}}
-            msg = SubRecordJson("WriteFileStatus", input_data)
-            WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
-
-        # 庫存日繳
-        if (inventory_cycle == "D") and (record_data[f"Dealer{index}"]["InventoryFile"] is None):
-            file_extencion = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
-            write_data = {
-                "經銷商ID":dealer_id,
-                "檔案類型":"Inventory",
-                "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{Config.SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
-                "檔案狀態":"未繳交",
-                "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
-                "檔案檢查結果":"未檢查"
-            }
-            # 信件資訊
-            if notify:
-                date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
-                date_time_list.append(date_time)
-                file_list.append("庫存檔案")
-            WriteNotSubmission(write_data)
-            input_data = {f"Dealer{index}":{f"InventoryFile":False}}
-            msg = SubRecordJson("WriteFileStatus", input_data)
-            WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
-        
-        # 銷售月繳
-        if (sale_cycle == "M") and (Config.SystemTime == (Config.SystemTime.replace(day = Config.MonthlyFileRange))):
-            if record_data[f"Dealer{index}"]["SaleFile"] is None:
-                file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
-                write_data = {
-                    "經銷商ID":dealer_id,
-                    "檔案類型":"Sale",
-                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{(Config.SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
-                    "檔案狀態":"未繳交",
-                    "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileRange)}",
-                    "檔案檢查結果":"未檢查"
-                }
-                # 信件資訊
-                if notify:
-                    date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
-                    date_time_list.append(date_time)
-                    file_list.append("銷售檔案")
-                WriteNotSubmission(write_data)
-                input_data = {f"Dealer{index}":{f"SaleFile":False}}
-                msg = SubRecordJson("WriteFileStatus", input_data)
-                WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
-        # 庫存月繳
-        if (inventory_cycle == "M") and (Config.SystemTime == (Config.SystemTime.replace(day = Config.MonthlyFileRange))):
-            if record_data[f"Dealer{index}"]["InventoryFile"] is None:
-                file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
-                write_data = {
-                    "經銷商ID":dealer_id,
-                    "檔案類型":"Inventory",
-                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{(Config.SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
-                    "檔案狀態":"未繳交",
-                    "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileRange)}",
-                    "檔案檢查結果":"未檢查"
-                }
-                # 信件資訊
-                if notify:
-                    date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileRange).strftime('%Y/%m/%d')} 22:00"
-                    date_time_list.append(date_time)
-                    file_list.append("庫存檔案")
-                WriteNotSubmission(write_data)
-                input_data = {f"Dealer{index}":{f"InventoryFile":False}}
-                msg = SubRecordJson("WriteFileStatus", input_data)
-                WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
-
-        if file_list:
-            if len(date_time_list) == 1:
-                date_time = date_time_list[0]
-            elif len(date_time_list) == 2:
-                if date_time_list[0] == date_time_list[1]:
-                    date_time = date_time_list[0]
-                else:
-                    date_time = f"{date_time_list[0]} (日繳檔案)； {date_time_list[1]} (月繳檔案)"
-            else:
-                date_time = "0000/00/00 00:00"
-                msg = f"系統無法判斷檔案正確的應繳時間，{date_time_list}。"
-                WSysLog("1", "SendFileNotSubMail", msg)
-            file_name_en = []
-            for name in file_list:
-                if name == "銷售檔案":
-                    file_name_en.append("Sale File")
-                else:
-                    file_name_en.append("Inventory File")
-            mail_data = {"FileName" :  "、".join(file_list), "FileNameEn" : " & ".join(file_name_en), "DateTime" : date_time}
-            send_info = {"Mode" : "FileNotSub", "DealerID" : dealer_id, "MailData" : mail_data, "FilesPath" : None}
-            SendMail(send_info)
+# 依據檔案名稱中的關鍵自判斷檔案類型
+def get_file_type(dealer_id, file):
+    folder_path = os.path.join(Config.DealerFolderPath, dealer_id)
+    file_path = os.path.join(folder_path, file)
+    file_name, extension = os.path.splitext(file)
+    if extension in Config.AllowFileExtensions:
+        _, max_row = read_data(file_path)
+        file_name_part = file_name.split("_")
+        if file_name_part[1] in ["S", "I"]:
+            if file_name_part[1] == "S":
+                return "Sale", max_row
+            elif file_name_part[1] == "I":
+                return "Inventory", max_row
+        else:
+            os.remove(file_path)    
+            msg = f"檔案 {file} 名稱不符合命名規範，系統已刪除該檔案。"
+            # 是否需要加入信件通知?
+            WRecLog("2", "GetFileType", dealer_id, file, msg)
+            return False, None 
+    else:
+        os.remove(file_path)
+        msg = f"檔案 {file} 副檔名不在許可範圍中，系統已刪除該檔案。"
+        # 是否需要加入信件通知?
+        WRecLog("2", "GetFileType", dealer_id, file, msg)
+        return False, None
 
 # 檢查檔案命名格式
 def check_file_name_format(dealer_id, file_name, file_extencion):
@@ -236,6 +144,7 @@ def check_file_name_format(dealer_id, file_name, file_extencion):
             file_path = os.path.join(Config.DealerFolderPath, dealer_id, file_name)
             os.remove(file_path)
             msg = f"已移除檔案 {file_name}。"
+            # 是否需要加入信件通知?
             WSysLog("1", "RecordDealerfiles", msg)
         except FileNotFoundError:
             msg = f"系統找不到該檔案 {file_name} ，無法移除。"
@@ -313,6 +222,130 @@ def monthly_file_resub(dealer_id, file_type, file_name):
     else:
         return False, not_sub_file
 
+# RecordDealerFiles
+# 寫入未繳交名單
+def write_not_sub_record(notify = True):
+    record_data = SubRecordJson("Read", None)
+    for i in range(len(Config.DealerList)):
+        index = i + 1
+        file_list, date_time_list = [], []
+        sale_cycle = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["PaymentCycle"]
+        inventory_cycle = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["PaymentCycle"]
+        dealer_id = Config.DealerConfig[f"Dealer{index}"]["DealerID"]
+        dealer_status = Config.DealerConfig[f"Dealer{index}"]["Status"]
+
+        if dealer_status != "active":
+            continue
+
+        # 銷售檔案日繳交
+        if (sale_cycle == "D") and (record_data[f"Dealer{index}"]["SaleFile"] is None):
+            file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+            write_data = {
+                "經銷商ID":dealer_id,
+                "檔案類型":"Sale",
+                "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{Config.SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
+                "檔案狀態":"未繳交",
+                "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
+                "檔案檢查結果":"未檢查"
+            }
+            # 信件資訊
+            if notify:
+                date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
+                date_time_list.append(date_time)
+                file_list.append("銷售檔案")
+            WriteNotSubmission(write_data)
+            input_data = {f"Dealer{index}":{f"SaleFile":False}}
+            msg = SubRecordJson("WriteFileStatus", input_data)
+            WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
+
+        # 庫存日繳
+        if (inventory_cycle == "D") and (record_data[f"Dealer{index}"]["InventoryFile"] is None):
+            file_extencion = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
+            write_data = {
+                "經銷商ID":dealer_id,
+                "檔案類型":"Inventory",
+                "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{Config.SystemTime.date().strftime('%Y%m%d')}.{file_extencion}",
+                "檔案狀態":"未繳交",
+                "應繳時間":f"{Config.SystemTime.date()} ~ {Config.SystemTime.date() + timedelta(days = 1)}",
+                "檔案檢查結果":"未檢查"
+            }
+            # 信件資訊
+            if notify:
+                date_time = f"{Config.SystemTime.date().strftime('%Y/%m/%d')} 22:00"
+                date_time_list.append(date_time)
+                file_list.append("庫存檔案")
+            WriteNotSubmission(write_data)
+            input_data = {f"Dealer{index}":{f"InventoryFile":False}}
+            msg = SubRecordJson("WriteFileStatus", input_data)
+            WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
+        
+        # 銷售月繳
+        if (sale_cycle == "M") and (Config.SystemTime == (Config.SystemTime.replace(day = Config.MonthlyFileDeadline))):
+            if record_data[f"Dealer{index}"]["SaleFile"] is None:
+                file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+                write_data = {
+                    "經銷商ID":dealer_id,
+                    "檔案類型":"Sale",
+                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_S_{(Config.SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
+                    "檔案狀態":"未繳交",
+                    "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileDeadline)}",
+                    "檔案檢查結果":"未檢查"
+                }
+                # 信件資訊
+                if notify:
+                    date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileDeadline).strftime('%Y/%m/%d')} 22:00"
+                    date_time_list.append(date_time)
+                    file_list.append("銷售檔案")
+                WriteNotSubmission(write_data)
+                input_data = {f"Dealer{index}":{f"SaleFile":False}}
+                msg = SubRecordJson("WriteFileStatus", input_data)
+                WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
+
+        # 庫存月繳
+        if (inventory_cycle == "M") and (Config.SystemTime == (Config.SystemTime.replace(day = Config.MonthlyFileDeadline))):
+            if record_data[f"Dealer{index}"]["InventoryFile"] is None:
+                file_extencion = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
+                write_data = {
+                    "經銷商ID":dealer_id,
+                    "檔案類型":"Inventory",
+                    "缺繳(待補繳)檔案名稱":f"{dealer_id}_I_{(Config.SystemTime.date().replace(day = 1) - timedelta(days = 1)).strftime('%Y%m%d')}.{file_extencion}",
+                    "檔案狀態":"未繳交",
+                    "應繳時間":f"{Config.SystemTime.date().replace(day = 1)} ~ {Config.SystemTime.date().replace(day = Config.MonthlyFileDeadline)}",
+                    "檔案檢查結果":"未檢查"
+                }
+                # 信件資訊
+                if notify:
+                    date_time = f"{Config.SystemTime.date().replace(day = Config.MonthlyFileDeadline).strftime('%Y/%m/%d')} 22:00"
+                    date_time_list.append(date_time)
+                    file_list.append("庫存檔案")
+                WriteNotSubmission(write_data)
+                input_data = {f"Dealer{index}":{f"InventoryFile":False}}
+                msg = SubRecordJson("WriteFileStatus", input_data)
+                WRecLog("1", "WriteNotSubRecord", dealer_id, None, msg)
+
+        # 信件發送
+        if file_list:
+            if len(date_time_list) == 1:
+                date_time = date_time_list[0]
+            elif len(date_time_list) == 2:
+                if date_time_list[0] == date_time_list[1]:
+                    date_time = date_time_list[0]
+                else:
+                    date_time = f"{date_time_list[0]} (日繳檔案)； {date_time_list[1]} (月繳檔案)"
+            else:
+                date_time = "0000/00/00 00:00"
+                msg = f"系統無法判斷檔案正確的應繳時間，{date_time_list}。"
+                WSysLog("1", "SendFileNotSubMail", msg)
+            file_name_en = []
+            for name in file_list:
+                if name == "銷售檔案":
+                    file_name_en.append("Sale File")
+                else:
+                    file_name_en.append("Inventory File")
+            mail_data = {"FileName" :  "、".join(file_list), "FileNameEn" : " & ".join(file_name_en), "DateTime" : date_time}
+            send_info = {"Mode" : "FileNotSub", "DealerID" : dealer_id, "MailData" : mail_data, "FilesPath" : None}
+            SendMail(send_info)
+
 # 紀錄檔案繳交主程式，回傳 有檔案名單，繳交dic，補繳交dic
 def RecordDealerFiles(mode = None, dealer_list = None):
     have_submission, not_submission, sub_dic, sub, resub = [], [], {}, {}, {}
@@ -346,16 +379,17 @@ def RecordDealerFiles(mode = None, dealer_list = None):
             sale_extension = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["Extension"]
             inventory_extension = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["Extension"]
             
-            # 目錄無檔案的經銷商ID，加入List
-            if not file_names:
-                not_submission.append(dealer_id)
+            if mode != "AutoRun":
+                # 目錄無檔案的經銷商ID，加入List
+                if not file_names:
+                    not_submission.append(dealer_id)
 
             for file_name in file_names:
                 file_path = os.path.join(dealer_path, file_name)
                 # 抓取檔案上傳時間
                 file_update_time = os.path.getmtime(file_path)
                 file_write_time = datetime.fromtimestamp(file_update_time)
-                file_type, data_max_row = decide_file_type(dealer_id, file_name)
+                file_type, data_max_row = get_file_type(dealer_id, file_name)
 
                 # 依據檔案類型切換參數
                 if file_type:
@@ -383,8 +417,9 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                         end_time = datetime.combine(file_time, datetime.max.time()).replace(microsecond=0)
                     # 月繳
                     else:
+                        file_write_time = datetime.fromtimestamp(file_update_time).date()
                         start_time = Config.SystemTime.date().replace(day = 1)
-                        end_time = Config.SystemTime.date().replace(day = Config.MonthlyFileRange)
+                        end_time = Config.SystemTime.date().replace(day = Config.MonthlyFileDeadline)
                     time_due = f"{start_time} ~ {end_time}"
                     if (start_time <= file_write_time) and (file_write_time <= end_time):
                         status = "有繳交"
@@ -450,12 +485,13 @@ def RecordDealerFiles(mode = None, dealer_list = None):
         # 工作日才運作檔案未繳交紀錄
         if Config.WorkDay:
             # 寫入未繳交紀錄
-            write_not_sub_record()
-        have_submission = list(set(Config.DealerList) - set(not_submission))
+            write_not_sub_record(True)
+        
+        have_submission = list(set(Config.DealerList) - set(not_submission)) if mode != "AutoRun" else dealer_list
 
-        if Config.WorkDay:
+        if mode != "AutoRun":
             for dealer_id in not_submission:
-                msg = "檔案未繳交"
+                msg = "目錄底下無檔案。"
                 WRecLog("2", "RecordDealerFiles", dealer_id, None, msg)
     
     return have_submission, sub_dic, sub, resub
