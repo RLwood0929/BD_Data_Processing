@@ -17,6 +17,7 @@
     "InventoryFile":{
         "MustHave":[
             "Product ID",
+            "Transaction Date",
             "Creation Date"
         ],
         "2Choose1":[

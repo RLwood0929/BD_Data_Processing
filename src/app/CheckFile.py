@@ -37,47 +37,6 @@ def read_data(file_path):
     elif file_extension in Config.AllowFileExtensions[1:]:
         df = pd.read_excel(file_path)
         return df, df.shape[0]
-    
-# 決定檔案類型
-def decide_file_type(dealer_id, file_name):
-    for i in range(len(Config.DealerList)):
-        if dealer_id == Config.DealerList[i]:
-            index = i + 1
-            break
-    # 抓取與經銷商協定的表頭
-    sale_file_header = Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"] \
-                        if Config.DealerConfig[f"Dealer{index}"]["SaleFile"]["FileHeader"] \
-                        else Config.SF_Default_Header
-    inventory_file_header = Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"] \
-                            if Config.DealerConfig[f"Dealer{index}"]["InventoryFile"]["FileHeader"] \
-                            else Config.IF_Default_Header
-    folder_path = os.path.join(Config.DealerFolderPath, dealer_id)
-    _, extension = os.path.splitext(file_name)
-    sale_file_header = set(sale_file_header)
-    inventory_file_header = set(inventory_file_header)
-    file_path = os.path.join(folder_path, file_name)
-    if extension in Config.AllowFileExtensions:
-        data, max_row = read_data(file_path)
-        file_header = set(data.columns.tolist())
-        sale_result =  sale_file_header == file_header
-        inventory_result = inventory_file_header == file_header
-        if sale_result != inventory_result:
-            if sale_result:
-                return "Sale", max_row
-            elif inventory_result:
-                return "Inventory", max_row
-            else:
-                return None, None
-        else:
-            os.remove(file_path)
-            msg = f"檔案 {file_name} 表頭不符合規範，系統已刪除該檔案。"
-            WRecLog("2", "DecideFileType", dealer_id, file_name, msg)
-            return None, None
-    else:
-        os.remove(file_path)
-        msg = f"檔案 {file_name} 副檔名不在許可範圍中，系統已刪除該檔案。"
-        WRecLog("2", "DecideFileType", dealer_id, file_name, msg)
-        return None, None
 
 # 依據檔案名稱中的關鍵自判斷檔案類型
 def get_file_type(dealer_id, file):
@@ -410,9 +369,8 @@ def RecordDealerFiles(mode = None, dealer_list = None):
                     msg = SubRecordJson("WriteFileStatus", input_data)
                     WRecLog("1", "RecordDealerFiles", dealer_id, file_name, msg)
 
+                    # 日繳
                     if file_cycle == "D":
-                        # print(f"file_time:{file_time}")
-                        # print(type(file_time))
                         start_time = datetime.combine(file_time, datetime.min.time())
                         end_time = datetime.combine(file_time, datetime.max.time()).replace(microsecond=0)
                     # 月繳
@@ -549,7 +507,11 @@ def CheckFileHeader(dealer_id, file_name, file_type):
             msg = f"必要表頭缺失，缺少表頭 {less_header}。"
             WCheLog("2", "CheckFileHeader", dealer_id, file_name, msg)
             file = os.path.splitext(file_name)[0]
-            txt_path = os.path.join(file_dir, Config.CompleteFolder, f"{Config.Year}{Config.Month}", f"{file}_header_error.txt")
+            folder_name = Config.SystemTime.strftime("%Y%m")
+            folder_path = os.path.join(file_dir, Config.CompleteFolder, folder_name)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+            txt_path = os.path.join(folder_path, f"{file}_header_error.txt")
             with open(txt_path, "w", encoding = "UTF-8") as error_txt:
                 error_txt.write(msg)
             mail_data = {"FileName": file_name}
@@ -650,8 +612,8 @@ def CheckFileContent(dealer_id, file_name, file_type):
         for j in must_have_values[i]:
             cell = change_to_excel_col_row(file_data, i ,j)
             cell_value.append(cell)
-            msg = f"{cell} 內容為空。"
-            WCheLog("2", "CheckFileContent", dealer_id, file_name ,msg)
+            # msg = f"{cell} 內容為空。"
+            # WCheLog("2", "CheckFileContent", dealer_id, file_name ,msg)
     error_num = len(cell_value)
     if cell_value:
         cell_result = merge_ranges(cell_value)
@@ -664,20 +626,20 @@ def CheckFileContent(dealer_id, file_name, file_type):
     # Original Quantity欄位
     for i in file_data.index[file_data[header1].isna()].tolist():
         cell = change_to_excel_col_row(file_data, header1, i)
-        msg = f"{cell} 內容為空"
-        WCheLog("1", "CheckFileContent", dealer_id, file_name ,msg)
+        # msg = f"{cell} 內容為空"
+        # WCheLog("1", "CheckFileContent", dealer_id, file_name ,msg)
 
         # Quantity欄位
         if pd.isna(file_data.at[i, header2]):
             cell2 = change_to_excel_col_row(file_data, header2, i)
-            msg = f"{cell} 及 {cell2} 內容皆為空"
+            # msg = f"{cell} 及 {cell2} 內容皆為空"
             cell_value.append(cell)
             cell_value.append(cell2)
-            WCheLog("2", "CheckFileContent", dealer_id, file_name ,msg)
+            # WCheLog("2", "CheckFileContent", dealer_id, file_name ,msg)
         else:
             cell2 = change_to_excel_col_row(file_data, header2, i)
-            msg = f"{cell2} 內容有值"
-            WCheLog("1", "CheckFileContent", dealer_id, file_name ,msg)
+            # msg = f"{cell2} 內容有值"
+            # WCheLog("1", "CheckFileContent", dealer_id, file_name ,msg)
 
     # 錯誤資訊統整
     error_num = error_num + len(cell_value)
@@ -698,10 +660,16 @@ def CheckFileContent(dealer_id, file_name, file_type):
         return True, error_num
     else:
         file = os.path.splitext(file_name)[0]
-        txt_file_path = os.path.join(file_dir, Config.CompleteFolder, f"{Config.Year}{Config.Month}", f"{file}_content_error.txt")
+        folder_name = Config.SystemTime.strftime("%Y%m")
+        folder_path = os.path.join(file_dir, Config.CompleteFolder, folder_name)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        txt_file_path = os.path.join(folder_path, f"{file}_content_error.txt")
         with open(txt_file_path, "w", encoding = "UTF-8") as f:
             for i in range(len(error_list)):
                 f.write(f"{i+1}. {error_list[i]}\n")
+                WCheLog("2", "CheckFileContent", dealer_id, file_name, error_list[i])
+
         mail_data = {"FileName": file_name}
         mail_data_path = [file_path, txt_file_path]
         send_info = {"Mode":"FileContentError", "DealerID": dealer_id, "MailData": mail_data, "FilesPath": mail_data_path}
@@ -718,7 +686,7 @@ def CheckFile(have_submission, sub_dic, sub, resub):
                       if os.path.isfile(os.path.join(folder_path, file))]
 
         for file_name in file_names:
-            file_type, _ = decide_file_type(dealer_id, file_name)
+            file_type, _ = get_file_type(dealer_id, file_name)
             header_result = CheckFileHeader(dealer_id, file_name, file_type)
 
             if header_result:
@@ -853,8 +821,109 @@ def MoveCheckFile():
                 msg = f"檔案搬移至 {target_path} 失敗"
                 WSysLog("2", "MoveErrorFile", msg)
 
+# 取得待補繳紀錄表全部內容
+def get_not_sub_data():
+    not_sub_files, not_sub_data = [], []
+    folder_path = Config.ReportFolderPath
+    files = [file for file in os.listdir(folder_path) \
+                    if os.path.isfile(os.path.join(folder_path, file))]
+
+    # 在目錄中取得各年的待補繳紀錄表
+    for file in files:
+        file_name, _ = os.path.splitext(file)
+        part = file_name.split("_")
+        if (len(part) == 2) & (part[1] == "待補繳紀錄表"):
+            not_sub_files.append(file)
+
+    # 排除當年檔案
+    not_sub_files.remove(Config.NotSubFileName)
+    dfs = []
+
+    # 讀取除當年檔案以外的檔案內容
+    for file in not_sub_files:
+        file_path = os.path.join(folder_path, file)
+        file_work_sheets = pd.ExcelFile(file_path).sheet_names
+        for sheet in file_work_sheets:
+            file_data = pd.read_excel(file_path, sheet_name = sheet, dtype = str)
+            dfs.append(file_data)
+    
+    # 讀取當年檔案中除當月工作表以外的檔案內容
+    file_path = os.path.join(folder_path, Config.NotSubFileName)
+    file_work_sheets = pd.ExcelFile(file_path).sheet_names
+
+    # 排除當月工作表
+    file_work_sheets.remove(Config.NotSubSheetName)
+
+    for sheet in file_work_sheets:
+        file_data = pd.read_excel(file_path, sheet_name = sheet, dtype = str)
+        dfs.append(file_data)
+
+    # 每月第一天將index參數歸零
+    date = Config.SystemTime.date()
+    first_day_in_month = Config.SystemTime.date().replace(day = 1)
+    if date == first_day_in_month:
+        msg = SubRecordJson("WriteNotSubStartIndex", 0)
+        WSysLog("1", "SendNotSubMail", msg)
+
+    # 取得檔案index
+    index = SubRecordJson("ReadNotSubStartIndex", None)
+    if index is None:
+        index = 0
+
+    # 讀取當月工作表除當天的內容
+    file_data = pd.read_excel(file_path, sheet_name = Config.NotSubSheetName, dtype = str)
+    file_data = file_data.iloc[0 : index]
+    dfs.append(file_data)
+
+    # 合併檔案內容
+    not_sub_data = pd.concat(dfs, ignore_index = True)
+    return not_sub_data
+
+# 發送待補繳紀錄表中的缺繳記錄 ##
+def SendNotSubMail():
+    file_data = get_not_sub_data()
+    file_column = file_data.columns.values
+    file_data = file_data[file_data[file_column[-1]] != "表頭正確;內容正確"]
+    dealer_list = list(set(file_data[file_column[1]].values))
+    for dealer_id in dealer_list:
+        for i in range(len(Config.DealerList)):
+            if Config.DealerList[i] == dealer_id:
+                index = i + 1
+                break
+
+        running_data = SubRecordJson("Read", None)
+        dealer_data = running_data[f"Dealer{index}"]
+        part_data = file_data[file_data[file_column[1]] == dealer_id]
+        not_sub_data = part_data[part_data[file_column[6]] == "未繳交"]
+        check_error_data = part_data[(part_data[file_column[6]] != "未繳交") &\
+                                     (part_data[file_column[-1]] != "表頭正確;內容正確")]
+        not_sub_file_names = not_sub_data[file_column[5]].values.tolist()
+        check_error_file_names = check_error_data[file_column[5]].values.tolist()
+
+        # 發送信件
+        if not_sub_file_names:
+            mail_count = dealer_data["Mail2"]
+            names = "、".join(not_sub_file_names)
+            if names in mail_count:
+                count = mail_count[names]
+                count += 1
+            else:
+                count = 1
+            # running_data
+        if check_error_file_names:
+            mail_count = dealer_data["Mail4"]
+            names = "、".join(check_error_file_names)
+            if names in mail_count:
+                count = mail_count[names]
+                count += 1
+            else:
+                count = 1
+            # running_data
+        
+
 if __name__ == "__main__":
-    HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(Config.TestMode)
-    ClearSubRecordJson()
-    ChangeDic = CheckFile(HaveSubmission, SubDic, Sub, ReSub)
-    print(ChangeDic)
+    # HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(Config.TestMode)
+    # ClearSubRecordJson()
+    # ChangeDic = CheckFile(HaveSubmission, SubDic, Sub, ReSub)
+    # print(ChangeDic)
+    SendNotSubMail()

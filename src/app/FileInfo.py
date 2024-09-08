@@ -1016,7 +1016,7 @@ def WorkDay():
     first_day_in_month = Config.SystemTime.date().replace(day = 1)
 
     # 刷新月繳截止日
-    if date == first_day_in_month:        
+    if date == first_day_in_month:
         work_day_counter = 0
         # 設定每月天數範圍為31天
         for d in range(1, 32):

@@ -51,7 +51,7 @@ def User():
 def File():
     return read_json(ConfigInfo.FileConfigPath)
 
-# 撰寫sub_record.json檔案
+# 撰寫 sub_record.json檔案
 def SubRecordJson(mode, data):
     if mode == "Start": # data = None
         dealer_config = DealerConf()

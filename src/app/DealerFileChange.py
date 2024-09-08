@@ -22,6 +22,7 @@ from Config import AppConfig
 Config = AppConfig()
 
 # 1002322861- 康宜
+# 1002317244- 騰達行
 def change_file_name(dealer_id, folder_path, file_key_word):
     file_names = [file for file in os.listdir(folder_path) \
         if os.path.isfile(os.path.join(folder_path, file))]
@@ -235,6 +236,5 @@ def Preprocessing():
             change_roc_year(path)
         split_file_data(path)
         
-
 if __name__ == "__main__":
     Preprocessing()

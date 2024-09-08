@@ -51,7 +51,7 @@ from DealerFileChange import Preprocessing
 from Mapping import Changing, MergeInventoryFile, FileArchiving
 from OneDriveFile import DownloadOneDrive, UploadOneDrive, ClearLocal
 from FileInfo import CheckFileInfo, ConfigFile, ConfigFileToCould, WorkDay
-from CheckFile import RecordDealerFiles, CheckFile, MoveCheckErrorFile, MoveCheckFile, ClearSubRecordJson
+from CheckFile import RecordDealerFiles, CheckFile, MoveCheckErrorFile, MoveCheckFile, ClearSubRecordJson, SendNotSubMail
 
 Config = AppConfig()
 
@@ -86,21 +86,19 @@ def system_work_flow(half_flag = False):
         print("--End Preprocessing--")
 
         print("--Running RecordDealerFiles--")
-
         HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles("AutoRun", DealerList)
         print("Result:")
         print(f"\tHaveSubmission:{HaveSubmission}")
         print(f"\tSubDic:{SubDic}")
         print(f"\tSub:{Sub}")
         print(f"\tRsSub:{ReSub}")
-
         print("--End RecordDealerFiles--")
-        return
+
         print("--Running CheckFile--")
         ChangeDic =  CheckFile(HaveSubmission, SubDic, Sub, ReSub)
         print("Result:")
-
         print(f"\tChangeDic:{ChangeDic}")
+
         if ChangeDic:
             old_data = SubRecordJson("ReadChangeDic", None)
             print(f"old_data:{old_data}")
@@ -110,8 +108,6 @@ def system_work_flow(half_flag = False):
             msg = SubRecordJson("WriteChangeDic", ChangeDic)
             WSysLog("1", "SubRecordJson", msg)
         print("--End CheckFile--")
-
-        # return
 
         if half_flag:
             print("=== System Break ===")
@@ -126,7 +122,7 @@ def system_work_flow(half_flag = False):
         print("Result:")
         print(f"\tChangeDic:{ChangeDic}")
         print("--End SubRecordJson--")
-        # OK
+
         if ChangeDic is None:
             print("No File Need To Change.")
 
@@ -138,8 +134,7 @@ def system_work_flow(half_flag = False):
             print("--Running MargeInventory--")
             MergeInventoryFile()
             print("--End MargeInventory--")
-            # return
-            # if Config.TestMode:
+
             print("--Running EFTUploadFile--")
             # EFTUploadFile()
             print("--End EFTUploadFile--")
@@ -147,7 +142,7 @@ def system_work_flow(half_flag = False):
             print("--Running FileArchiving--")
             FileArchiving()
             print("--End FileArchiving--")
-        # return
+
         print("--Running MoveCheckFile--")
         MoveCheckFile()
         print("--End MoveCheckFile--")
@@ -157,7 +152,7 @@ def system_work_flow(half_flag = False):
         print("--End Statistics--")
 
         print("--Running SendNotSubMail--") 
-        # 
+        # SendNotSubMail()
         print("--End SendNotSubMail--")
 
         print("--Running ClearSubRecordJson--")

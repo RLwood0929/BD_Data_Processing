@@ -228,11 +228,9 @@ def GetMailInfo(mode, dealer_id, mail_data):
                 if mail_index in range(2,5):
                     if (mail_count >= 3) and (user_group == "BD_BA"):
                         ba_responsible = Config.UserConfig[f"User{index}"]["ResponsibleDealerID"]
-                        # print(f"ba_responsible:{ba_responsible}")
 
                         if ba_responsible and (dealer_id in ba_responsible):
                             ba_mail = Config.UserConfig[f"User{index}"]["Mail"]
-                            # print(f"ba_mail:{ba_mail}")
                             recipient_list.append(ba_mail)
 
                     else:
@@ -245,7 +243,6 @@ def GetMailInfo(mode, dealer_id, mail_data):
 
             else:
                 continue
-        # print(f"recipient_list:{recipient_list}")
 
         # 取得副本收件者 Mail
         copy_recipient_list = []
@@ -257,7 +254,6 @@ def GetMailInfo(mode, dealer_id, mail_data):
                     user_mail =  Config.UserConfig[f"User{index}"]["Mail"]
                     if group == user_group:
                         copy_recipient_list.append(user_mail)
-        # print(f"copy_recipient_list:{copy_recipient_list}")
 
         mail_info = {"Mode" : mode, "Subject" : subject, "Recipients" : recipient_list,\
                     "CopyRecipients" : copy_recipient_list, "MailContent" : mail_content}
@@ -331,21 +327,21 @@ def SendMail(send_info):
     # print(f"mail_info:{mail_info}")
     subject = mail_info["Subject"]
     # print(f"subject:{subject}")
+    recipients = mail_info["Recipients"]
+    copy_recipients = mail_info["CopyRecipients"]
+    mail_content = mail_info["MailContent"]
     
+    # print(f"subject:{subject}")
+    # print(f"recipients:{recipients}")
+    # print(f"copy_recipients:{copy_recipients}")
+    # print(f"mail_content:{mail_content}")
+
     # 測試模式
     if Config.TestMode:
         recipients = ["richardwu@coign.com.tw"]
         copy_recipients = []
-    else:
-        recipients = mail_info["Recipients"]
-        copy_recipients = mail_info["CopyRecipients"]
-    
-    mail_content = mail_info["MailContent"]
-    print(f"subject:{subject}")
-    print(f"recipients:{recipients}")
-    print(f"copy_recipients:{copy_recipients}")
-    print(f"mail_content:{mail_content}")
-    # WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
+
+    WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
 
 
 # 清空經銷商的信件計數器

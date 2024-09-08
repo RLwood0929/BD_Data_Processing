@@ -1,7 +1,7 @@
 {
-    "SubStartIndex": 0,
+    "SubStartIndex": 38,
     "NotSubStartIndex": null,
-    "ChangeDic": {},
+    "ChangeDic": null,
     "Dealer1": {
         "SaleFile": null,
         "InventoryFile": null,
@@ -31,11 +31,13 @@
         "Mail4": {}
     },
     "Dealer5": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": true,
+        "InventoryFile": true,
         "Mail2": {},
         "Mail3": {},
-        "Mail4": {}
+        "Mail4": {
+            "1002330660_I_20240831.xlsx": 1
+        }
     },
     "Dealer6": {
         "SaleFile": null,

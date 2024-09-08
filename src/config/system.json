@@ -11,10 +11,10 @@
         "Name": "BD_DataProcessing",
         "AutoRun": true,
         "Debug": false,
-        "TestMode": false,
+        "TestMode": true,
         "User": "System",
         "MaxTryRange": 3,
-        "WorkDay": true,
+        "WorkDay": false,
         "MonthlyFileDeadline": 13,
         "AllowFileExtensions": [
             ".csv",
@@ -213,7 +213,7 @@
             15,
             10,
             40,
-            30,
+            45,
             30,
             20,
             10,
@@ -349,7 +349,7 @@
     },
     "ErrorReport": {
         "Sale": {
-            "FileName": "{DealerID}_Sale_Error_Report_{Date}.xlsx",
+            "FileName": "{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}_Sale_Error_Report.xlsx",
             "Header": [
                 "Dealer ID",
                 "Dealer Name",
@@ -386,7 +386,7 @@
             ]
         },
         "Inventory": {
-            "FileName": "{DealerID}_Inventory_Error_Report_{Date}.xlsx",
+            "FileName": "{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}_Inventory_Error_Report.xlsx",
             "Header": [
                 "Dealer ID",
                 "Dealer Name",
