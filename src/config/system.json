@@ -5,13 +5,13 @@
         "AutoRun": true,
         "Debug": true,
         "User": "",
-        "WinUser": "Qian"
+        "WinUser": "wood1"
     },
     "Default": {
         "Name": "BD_DataProcessing",
         "AutoRun": true,
         "Debug": false,
-        "TestMode": true,
+        "TestMode": false,
         "User": "System",
         "MaxTryRange": 3,
         "WorkDay": false,

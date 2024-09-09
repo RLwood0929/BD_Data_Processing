@@ -920,7 +920,6 @@ def SendNotSubMail():
                 count = 1
             # running_data
         
-
 if __name__ == "__main__":
     # HaveSubmission, SubDic, Sub, ReSub = RecordDealerFiles(Config.TestMode)
     # ClearSubRecordJson()

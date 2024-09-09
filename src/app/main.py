@@ -124,6 +124,7 @@ def system_work_flow(half_flag = False):
         print("--End SubRecordJson--")
 
         if ChangeDic is None:
+            WSysLog("1", "SystemRunning", "無檔案需要轉換，亦無檔案上傳。")
             print("No File Need To Change.")
 
         else:
@@ -136,7 +137,7 @@ def system_work_flow(half_flag = False):
             print("--End MargeInventory--")
 
             print("--Running EFTUploadFile--")
-            # EFTUploadFile()
+            EFTUploadFile()
             print("--End EFTUploadFile--")
 
             print("--Running FileArchiving--")
@@ -182,19 +183,20 @@ def system_work_flow(half_flag = False):
 
 schedule.every().day.at("00:01").do(WorkDay)
 
-schedule.every().day.at("22:02").do(system_work_flow, half_flag = True)
+schedule.every().day.at("22:00").do(system_work_flow, half_flag = True)
 schedule.every().day.at("22:15").do(system_work_flow, half_flag = True)
 schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
 
 # 主程式
 def main():
-    system_work_flow(half_flag = False)
-    # try:
-    #     while True:
-    #         schedule.run_pending()
-    #         time.sleep(1)
-    # except KeyboardInterrupt:
-    #     print("User End.")
+    # system_work_flow(half_flag = False)
+    try:
+        print("System Auto Running...")
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("User End.")
 
 if __name__ == "__main__":
     main()
