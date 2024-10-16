@@ -766,3 +766,192 @@ if __name__ == "__main__":
     # check_product_id(dealerID, input_data)
     # MergeInventoryFile()
     FileArchiving()
+
+# ===================================================================
+
+"""
+改寫Mapping檔案
+"""
+import pandas as pd, os
+from dateutil import parser
+
+from Log import WSysLog, WChaLog
+from Config import AppConfig
+
+Config = AppConfig()
+
+class dataChangeFuncion:
+    """
+    檔案轉換方式方法
+    move_rule   將輸入資料寫入新的col中
+    """
+    def __init__(self):
+        master_folder_path = "./datas"
+        master_file_name = "MasterFile.xlsx"
+        master_file_sheet_name = "MasterFile"
+        master_file_path = os.path.join(master_folder_path, master_file_name)
+        try:
+            self.master_file_data = pd.read_excel(master_file_path,
+                                                sheet_name = master_file_sheet_name,
+                                                dtype = str)
+            date_cols = ["起", "迄"]
+            for col in date_cols:
+                self.master_file_data[col] = pd.to_datetime(self.master_file_data[col],
+                                                            format = "%Y%m%d")
+            msg = "成功讀取 MasterFile 資料。"
+            WSysLog("1", "ReadMasterFile", msg)
+        except Exception as e:
+            msg = f"讀取 MasterFile時發生錯誤。錯誤原因：{str(e)}"
+            WSysLog("3", "ReadMasterFile", msg)
+            raise FileNotFoundError(msg) from e
+
+    # 將 master_file 內容輸出
+    def master_file_test(self):
+        print("Function master_file_test start.")
+        print(self.master_file_data)
+        print("Function master_file_test finish.")
+
+    # 統一時間欄位內容格式
+    def parse_and_format_date(self, date_str, output_format = "%Y/%m/%d"):
+        # print("Function parse_and_format_date start.")
+        try:
+            parsed_date = parser.parse(date_str)
+            return parsed_date.strftime(output_format)
+        except (ValueError, TypeError):
+            return date_str
+        # finally:
+            # print("Function parse_and_format_date finish.")
+
+    # 確認檔案 product_id 欄位值非中文
+    def checkProductIdValue(self, file_path):
+        print("Function check_product_id_value start.")
+        file_name = os.path.basename(file_path)
+        _, file_extension = os.path.splitext(file_name)
+        file_extension = file_extension.lower()
+
+        if file_extension in Config.AllowFileExtensions:
+            file_data = pd.read_csv(file_path, dtype = str)\
+                if file_extension == ".csv"\
+                    else pd.read_excel(file_path, dtype = str)
+
+            # print(file_data)
+
+            # 將時間欄位內容資料型態統一
+            date_cols = ["Transaction Date", "Creation Date"]
+            for col in date_cols:
+                file_data[col] = file_data[col].apply(lambda x: self.parse_and_format_date(str(x)))
+                file_data[col] = pd.to_datetime(file_data[col],
+                                                format = "%Y/%m/%d",
+                                                errors = "coerce")
+            file_data["Product ID"] = file_data["Product ID"].astype(str).str.strip()
+
+            # 過濾 Product ID 僅允許 a-z, A-Z, 0-9, - 符號
+            file_data = file_data[file_data["Product ID"].str.contains\
+                ("^[a-zA-Z0-9-]+$", regex=True, na=False)]
+
+            # 刷新index值
+            file_data = file_data.reset_index()
+            print("Function check_product_id_value end.")
+            return file_data
+
+        else:
+            print("Function check_product_id_value end.")
+            return False
+
+    # 比對檔案中的 product id 存在於 master file 中
+    def checkProdictIdInMasterFile(self, input_file_data, dealer_id):
+        print("Function check_prodict_id_in_master_file start.")
+        pid_not_in_master_file = []
+        # input_file_data -> dataFrame
+        # 取出輸入資料中的 "product id" 欄位資料，去掉重複值，排序
+        input_data_product_id = input_file_data.loc[:, "Product ID"].tolist()
+        input_data_product_id = sorted(list(set(input_data_product_id)))
+        # print(input_data_product_id)
+        # print(len(input_data_product_id))
+
+        # master_file_data -> dataFrame，此處輸入的masterfile是該經銷商的資料，非整份masterfile
+        # 取出輸入資料中的 "貨號" 欄位資料，去掉重複值，排序
+        master_file_data = self.master_file_data[\
+            self.master_file_data["經銷商號碼\nSold-to code"] == dealer_id]
+        master_file_product_id = master_file_data.loc[:, "貨號"].tolist()
+        master_file_product_id = sorted(list(set(master_file_product_id)))
+
+        # 使用迴圈檢查經銷商上傳檔案中的 product_id 是否存在於 master_file 資料中
+        for pid in input_data_product_id:
+            if pid not in master_file_product_id:
+                pid_not_in_master_file.append(pid)
+        # print(f"pid_not_in_master_file:{pid_not_in_master_file}")
+
+        input_data_in_master_file = input_file_data[\
+            ~input_file_data["Product ID"].isin(pid_not_in_master_file)]
+        # print("input_data_in_master_file")
+        # print(input_data_in_master_file)
+
+        input_data_not_in_master_file = input_file_data[\
+            input_file_data["Product ID"].isin(pid_not_in_master_file)]
+        # print("input_data_not_in_master_file")
+        # print(input_data_not_in_master_file)
+        print("Function check_prodict_id_in_master_file end.")
+        return input_data_in_master_file, input_data_not_in_master_file
+
+    # 將原先欄位的值移動到搬移到新的欄位
+    def moveRule(self, input_data, input_col):
+        print("Function move_rule start.")
+        return input_data[input_col]
+
+    # 欄位值固定為某些值
+    def fixedValue(self, value, row):
+        print("Function fixed_value start.")
+        return [value] * row
+
+    # 轉換欄位內容的時間格式
+    def changeTimeFormat(self, input_data, input_col, date_format):
+        print("Function change_time_format start.")
+        return input_data[input_col].dt.strftime(date_format)
+
+    def search_pid_in_master_file(self, dealer_id, product_id, data_date):
+        # 從 master_file 中取出對應 經銷商ID 的資料
+        master_file_data = self.master_file_data[\
+            self.master_file_data["經銷商號碼\nSold-to code"] == dealer_id]
+
+        search_pid_data = master_file_data[master_file_data["Product ID"] == product_id]
+
+        if search_pid_data:
+            for row in range(len(search_pid_data)):
+                start_date = search_pid_data.loc[row, "起"]
+                end_date = search_pid_data.loc[row, "迄"]
+                if start_date <= data_date <= end_date:
+                    print(search_pid_data[row, :])
+
+    def moveOrSearchUom(self, input_data, source_col, dealer_id): # , target_col
+        print("Function move_or_search_uom start.")
+
+        # print(f"master_file_col:{master_file_col}")
+
+        # 篩選來源col欄位中值為空白的row，並取得index
+        source_na_index_list = input_data[input_data[source_col].isna()].index.tolist()
+        for row in source_na_index_list:
+            print(row)
+            input_data_product_id = input_data.loc[row, "Product ID"]
+            input_data_date = input_data.loc[row, "Transaction Date"]
+            print(f"input_data_product_id:{input_data_product_id}")
+            print(f"input_data_date:{input_data_date}")
+
+
+def test(data):
+    change_function = dataChangeFuncion()
+    data = change_function.checkProductIdValue(data)
+    # print(data)
+    # change_function.check_prodict_id_in_master_file(data, "1002317244")
+    change_function.moveOrSearchUom(data, "Original Quantity", "1002317244")
+    # prodict_id = data["Product ID"]
+    # print(prodict_id)
+
+if __name__ == "__main__":
+    test_data_file_name = "Unimed_S_202410152008_YTD.xls"
+    test_data_path = "./datas"
+    test_data_file_path = os.path.join(test_data_path, test_data_file_name)
+    # print(test_data_file_path)
+    # data = pd.read_excel(test_data_file_path, dtype = str)
+    # print(data)
+    test(test_data_file_path)
