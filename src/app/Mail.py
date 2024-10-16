@@ -104,14 +104,14 @@ def GetMailInfo(mode, dealer_id, mail_data):
                 break
 
     result, mail_index = get_mail_index(mode)
-    record_data = SubRecordJson("Read", None)
+    # record_data = SubRecordJson("Read", None)
     if result:
         subject = Config.MailConfig[f"Mail{mail_index}"]["Subject"]
         recipient = Config.MailConfig[f"Mail{mail_index}"]["Recipient"]
         copy_recipient = Config.MailConfig[f"Mail{mail_index}"]["CopyRecipient"]
         templates = Config.MailConfig[f"Mail{mail_index}"]["Content"]
         template = load_template(templates)
-        repeatedly = Config.MailConfig[f"Mail{mail_index}"]["Repeatedly"]
+        # repeatedly = Config.MailConfig[f"Mail{mail_index}"]["Repeatedly"]
 
         # 取得信件內容，html中的變量給予值
         if mail_index == 1:
@@ -123,48 +123,52 @@ def GetMailInfo(mode, dealer_id, mail_data):
             # mail_data = {"FileName": file_name,"DateTime":date_time}
             file_name = mail_data["FileName"]
             date_time = mail_data["DateTime"]
-            if dealer_index:
-                mail_count_data = record_data[f"Dealer{dealer_index}"]["Mail2"]
-                if not mail_count_data:
-                    mail_count_data = {}
-                if file_name in mail_count_data:
-                    mail_count = mail_count_data[file_name] + 1
-                else:
-                    mail_count = 1
-                file_name_in_record = file_name
-            else:
-                mail_count = 0
+            # if dealer_index:
+            #     mail_count_data = record_data[f"Dealer{dealer_index}"]["Mail2"]
+            #     if not mail_count_data:
+            #         mail_count_data = {}
+            #     if file_name in mail_count_data:
+            #         mail_count = mail_count_data[file_name] + 1
+            #     else:
+            #         mail_count = 1
+            #     file_name_in_record = file_name
+            # else:
+            #     mail_count = 0
             # print(f"mail_count:{mail_count}")
-            mail_content = template.format(Num = mail_count, FileName = file_name, DateTime = date_time)
+            # mail_content = template.format(Num = mail_count, FileName = file_name, DateTime = date_time)
+            mail_content = template.format(FileName = file_name, DateTime = date_time)
+            # print(f"mail_content:{mail_content}")
 
         elif mail_index == 3:
             # mail_data = {"FileName":file_name, "SubFile": sub_file}
             file_name = mail_data["FileName"]
             sub_file = mail_data["SubFile"]
-            if dealer_index:
-                mail_count_data = record_data[f"Dealer{dealer_index}"]["Mail3"]
-                if sub_file in mail_count_data:
-                    mail_count = mail_count_data[sub_file] + 1
-                else:
-                    mail_count = 1
-                file_name_in_record = sub_file
-            else:
-                mail_count = 0
-            mail_content = template.format(Num = mail_count, FileName = file_name, SubFile = sub_file)
+            # if dealer_index:
+            #     mail_count_data = record_data[f"Dealer{dealer_index}"]["Mail3"]
+            #     if sub_file in mail_count_data:
+            #         mail_count = mail_count_data[sub_file] + 1
+            #     else:
+            #         mail_count = 1
+            #     file_name_in_record = sub_file
+            # else:
+            #     mail_count = 0
+            mail_content = template.format(FileName = file_name, SubFile = sub_file)
+            # mail_content = template.format(Num = mail_count, FileName = file_name, SubFile = sub_file)
 
         elif mail_index == 4:
             # mail_data = {"FileName": file_name}
             file_name = mail_data["FileName"]
-            if dealer_index:
-                mail_count_data = record_data[f"Dealer{dealer_index}"]["Mail4"]
-                if file_name in mail_count_data:
-                    mail_count = mail_count_data[file_name] + 1
-                else:
-                    mail_count = 1
-                file_name_in_record = file_name
-            else:
-                mail_count = 0
-            mail_content = template.format(Num = mail_count, FileName = file_name)
+            # if dealer_index:
+            #     mail_count_data = record_data[f"Dealer{dealer_index}"]["Mail4"]
+            #     if file_name in mail_count_data:
+            #         mail_count = mail_count_data[file_name] + 1
+            #     else:
+            #         mail_count = 1
+            #     file_name_in_record = file_name
+            # else:
+            #     mail_count = 0
+            mail_content = template.format(FileName = file_name)
+            # mail_content = template.format(Num = mail_count, FileName = file_name)
 
         elif mail_index == 5:
             # mail_data = { "FileNum" : file_num,\
@@ -214,10 +218,10 @@ def GetMailInfo(mode, dealer_id, mail_data):
         recipient_list = []
         if "Dealer" in recipient:
             recipient_list.append(dealer_mail)
-            write_data = {f"Dealer{dealer_index}":{f"Mail{mail_index}": {file_name_in_record : mail_count}}}
-            SubRecordJson("WriteFileStatus", write_data)
-            if mail_count >= 3:
-                recipient.extend(repeatedly)
+            # write_data = {f"Dealer{dealer_index}":{f"Mail{mail_index}": {file_name_in_record : mail_count}}}
+            # SubRecordJson("WriteFileStatus", write_data)
+            # if mail_count >= 3:
+            #     recipient.extend(repeatedly)
 
         for i in range(len(Config.UserConfig)):
             index = i + 1
@@ -225,18 +229,19 @@ def GetMailInfo(mode, dealer_id, mail_data):
             user_mail =  Config.UserConfig[f"User{index}"]["Mail"]
 
             if user_group in recipient:
-                if mail_index in range(2,5):
-                    if (mail_count >= 3) and (user_group == "BD_BA"):
-                        ba_responsible = Config.UserConfig[f"User{index}"]["ResponsibleDealerID"]
+                # if mail_index in range(2,5):
+                    # if (mail_count >= 3) and (user_group == "BD_BA"):
+                    #     ba_responsible = Config.UserConfig[f"User{index}"]["ResponsibleDealerID"]
 
-                        if ba_responsible and (dealer_id in ba_responsible):
-                            ba_mail = Config.UserConfig[f"User{index}"]["Mail"]
-                            recipient_list.append(ba_mail)
+                    #     if ba_responsible and (dealer_id in ba_responsible):
+                    #         ba_mail = Config.UserConfig[f"User{index}"]["Mail"]
+                    #         recipient_list.append(ba_mail)
 
-                    else:
-                        recipient_list.append(user_mail)
-                        
-                else:
+                    # else:
+                    #     recipient_list.append(user_mail)
+
+                # else:
+                if mail_index not in range(2, 5):
                     ba_responsible = Config.UserConfig[f"User{index}"]["ResponsibleDealerID"]
                     if ba_responsible and (dealer_id in ba_responsible):
                         recipient_list.append(user_mail)
@@ -330,17 +335,19 @@ def SendMail(send_info):
     recipients = mail_info["Recipients"]
     copy_recipients = mail_info["CopyRecipients"]
     mail_content = mail_info["MailContent"]
-    
-    # print(f"subject:{subject}")
-    # print(f"recipients:{recipients}")
-    # print(f"copy_recipients:{copy_recipients}")
+
+    print(f"subject:{subject}")
+    print(f"recipients:{recipients}")
+
     # print(f"mail_content:{mail_content}")
 
     # 測試模式
     if Config.TestMode:
-        recipients = ["richardwu@coign.com.tw"]
+        recipients = ["bdservice@coign.com.tw"]
         copy_recipients = []
+        # copy_recipients.append("bdservice@coign.com.tw")
 
+    print(f"copy_recipients:{copy_recipients}")
     WriteMail(subject, recipients, copy_recipients, mail_content, files_path)
 
 
@@ -350,7 +357,7 @@ def ClearMailCount(dealer_ids = None, mail_counters = None):
     if dealer_ids:
         for dealer_id in dealer_ids:
             index = Config.DealerList.index(dealer_id) + 1
-            
+
             # 清理單一或多個計數器
             if mail_counters:
                 for mail_counter in mail_counters:
@@ -387,8 +394,8 @@ def ClearMailCount(dealer_ids = None, mail_counters = None):
                     print(msg)
 
 if __name__ == "__main__":
-    # MailData = mail_data = {"FileName": "file_name00","DateTime":"2024/08/15"}
-    # FilesPath = []
-    # test_data = {"Mode" : "FileNotSub", "DealerID" : "AD279", "MailData" : MailData, "FilesPath" : FilesPath}
-    # SendMail(test_data)
-    ClearMailCount(["AD279"], ["Mail2"])
+    MailData = {"DataNum": 0000, "DateTime": 20240930 , "OneDriveLink": ""}
+    FilesPath = []
+    test_data = {"Mode" : "MasterFileMaintain", "DealerID" : "AD279", "MailData" : MailData, "FilesPath" : FilesPath}
+    SendMail(test_data)
+    # ClearMailCount(["AD279"], ["Mail2"])

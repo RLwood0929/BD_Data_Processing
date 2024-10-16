@@ -35,7 +35,7 @@ def read_data(file_path):
     file = os.path.basename(file_path)
     _, file_extension = os.path.splitext(file)
     file_extension = file_extension.lower()
-    
+
     if file_extension in Config.AllowFileExtensions:
         df = pd.read_csv(file_path, dtype = str) \
                 if file_extension == ".csv" \
@@ -92,19 +92,19 @@ def check_product_id(dealer_id, input_data):
     result, master_data, _ = read_master_file()
     error_data = pd.DataFrame(columns = input_data.columns)
     error_index = []
-    
+
     if result:
         master_col = master_data.columns.values
         search_data = master_data[master_data[master_col[0]] == dealer_id]
         masterfile_product = set(search_data[master_col[1]].values)
         data_product = {str(pid) for pid in (set(input_data["Product ID"].to_list()))}
         not_in_masterfile = list(data_product - masterfile_product)
-        
+
         for product_id in not_in_masterfile:
             error_row = input_data[input_data["Product ID"] == product_id]
             error_index.extend(error_row.index.values.tolist())
             error_index.sort()
-            
+
             for row in range(len(error_row)):
                 row_data = error_row.iloc[row].to_dict()
                 error_data.loc[len(error_data)] = row_data
@@ -113,21 +113,22 @@ def check_product_id(dealer_id, input_data):
         error_msg = "Masterfile 檔案中無此 Product ID。"
         error_data.insert(2,"Exchange Error Issue", error_msg)
         return error_data, error_index
-    
+
 # Quantity特殊處理
 def move_or_search_uom(input_data, source_col, target_col, dealer_id):
+    print("Function:move_or_search_uom")
     output, error_row = [], {}
     result, master_data, _ = read_master_file()
-    
+
     if result:
         master_col = master_data.columns.values
-        
+
         for row in range(len(input_data)):
             source_value = input_data[source_col][row]
-            
+
             if pd.notna(source_value):
                 output.append(str(source_value))
-            
+
             else:
                 # 從經銷商檔案中取得產品id及日期
                 product_id = str(input_data["Product ID"][row])
@@ -139,20 +140,20 @@ def move_or_search_uom(input_data, source_col, target_col, dealer_id):
                 search_data = search_data.reset_index(drop=True)
                 in_range_flag = False
                 uom_list = []
-                
+
                 for i in range(len(search_data)):
                     start_date = datetime.strptime(search_data[master_col[7]][i], "%Y%m%d")
                     end_date = datetime.strptime(search_data[master_col[8]][i], "%Y%m%d")
-                    
+
                     if start_date <= data_date <= end_date:
                         in_range_flag = True
                         uom = search_data[master_col[2]][i]
                         uom_list.append(uom)
-                
+
                 if not in_range_flag:
                     msg = f"此貨號未搜尋到起迄區間符合 {datetime.strftime(data_date, '%Y/%m/%d')} 之資料。"
                     error_row[row] = msg
-                
+
                 else:
                     uom = uom_list[-1]
                     output.append(int(uom) * int(input_data[target_col][row]))
@@ -163,18 +164,18 @@ def move_or_search_uom(input_data, source_col, target_col, dealer_id):
 
 # 使用 product id 在 MasterFile 中找到對應的 DP 價
 def search_dp(input_data, dealer_id):
+    print("Function: search_dp")
     result, master_data, ka_data = read_master_file()
     output, error_row, ptype_error = [], {}, {}
-    
+
     if result:
         master_col = master_data.columns.values
         ka_col = ka_data.columns.values
         price_type = master_col[4]
-        
+
         for row in range(len(input_data)):
             product_id = str(input_data["Product ID"][row])
             data_date = input_data["Transaction Date"][row]
-            
             search_data = master_data[(master_data[master_col[0]] == dealer_id) & \
                                         (master_data[master_col[1]] == product_id)]
             search_data = search_data.reset_index(drop=True)
@@ -186,7 +187,7 @@ def search_dp(input_data, dealer_id):
                                          (ka_data[ka_col[1]] == buyer)]
                 ka_range = False
                 price_type = []
-                
+
                 for i in range(len(search_ka_data)):
                     start_date = datetime.strptime(ka_data[ka_col[2]][i], "%Y%m%d")
                     end_date = datetime.strptime(ka_data[ka_col[3]][i], "%Y%m%d")
@@ -212,7 +213,7 @@ def search_dp(input_data, dealer_id):
 
             in_range_flag = False
             dp_list = []
-            
+
             for i in range(len(search_data)):
                 start_date = datetime.strptime(search_data[master_col[7]][i], "%Y%m%d")
                 end_date = datetime.strptime(search_data[master_col[8]][i], "%Y%m%d")
@@ -227,13 +228,13 @@ def search_dp(input_data, dealer_id):
                         ptype_error[row] = f"{price_type} 值為空。"
                         price_type = master_col[4]
                         dp = search_data[price_type][i]
-                    
+
                     dp_list.append(dp)
 
             if not in_range_flag:
                 msg = f"此貨號未搜尋到起迄區間符合 {datetime.strftime(data_date, '%Y/%m/%d')} 之資料。"
                 error_row[row] = msg
-            
+
             else:
                 dp = dp_list[-1]
                 output.append(dp)
@@ -241,9 +242,10 @@ def search_dp(input_data, dealer_id):
         msg = f"ErrorRow結果： {error_row} 。"
         WSysLog("1", "SearchDp", msg)
         return output, error_row, ptype_error
-    
+
 # 使用 product id 在 MasterFile 中找到對應的 std 價
 def search_cost(input_data, dealer_id):
+    print("Function: search_cost")
     result, master_data, _ = read_master_file()
     output, error_row = [], {}
     if result:
@@ -265,7 +267,7 @@ def search_cost(input_data, dealer_id):
                     in_range_flag = True
                     cost = search_data[master_col[3]][i]
                     cost_list.append(cost)
-            
+
             if not in_range_flag:
                 msg = f"此貨號未搜尋到起迄區間符合 {datetime.strftime(data_date, '%Y/%m/%d')} 之資料。"
                 error_row[row] = msg
@@ -286,12 +288,53 @@ def merge_columns(input_data, source_col, value):
             (row.values.astype(str)), axis=1)
     return output
 
+# 取得月份起始與結束值
+def getMonthStartAndEndDate(file_name):
+    file_name_part = re.split(r"[._]" ,file_name)
+    file_name_date = file_name_part[2]
+    end_date, date_format = 0, False
+    file_name_date_list = list(str(file_name_date))
+
+    # 檔名中的日期時間只接受8碼或12碼
+    if (len(file_name_date_list) == 8) or (len(file_name_date_list) == 12):
+        date_format = True
+
+    if not date_format:
+        raise ValueError("檔名中的時間日期內容不符合規範。")
+
+    else:
+        year_list = file_name_date_list[0:4]
+        year = int("".join(year_list))
+        month_list = file_name_date_list[4:6]
+        month = int("".join(month_list))
+
+        if month < 8:
+            if month == 2:
+                end_date = 28
+            if ((month - 1) % 2) == 0:
+                end_date = 31
+            else:
+                end_date = 30
+
+        else:
+            if (month % 2) == 0:
+                end_date = 31
+            else:
+                end_date = 30
+
+        start_date = str(year) + str(month) + "01"
+        end_date = str(year) + str(month) + str(end_date)
+        return start_date, end_date
+
 # 依據轉換規則轉換銷售檔案
 def ChangeSaleFile(dealer_id, file_name):
+    print("Function:ChangeSaleFile")
+    print(f"dealer_id:{dealer_id}")
+    print(f"file_name:{file_name}")
     change_status = "OK"
     file_header = Config.SaleOutputFileHeader
     change_rules = Config.SaleFileChangeRule
-    
+
     for i in range(len(Config.DealerList)):
         if Config.DealerList[i] == dealer_id:
             index = i + 1
@@ -312,7 +355,7 @@ def ChangeSaleFile(dealer_id, file_name):
     for i in error_index:
         input_data = input_data.drop(i)
     input_data = input_data.reset_index(drop = True)
-    
+
     for rule_index in range(1, len(change_rules) + 1):
         source_col = change_rules[f"Column{rule_index}"]["SourceName"]
         target_col = change_rules[f"Column{rule_index}"]["ColumnName"]
@@ -327,34 +370,36 @@ def ChangeSaleFile(dealer_id, file_name):
         if rule == "FixedValue":
             if target_col == "Area":
                 value = dealer_country
-            
+
             elif target_col == "Branch":
                 value = dealer_id
             output_data[target_col] = fixed_value(value, len(input_data))
-        
+
         # 搬移資料
         elif rule == "Move":
             output_data[target_col] = move_rule(input_data, source_col)
-        
+
         # 變更時間格式
         elif rule == "ChangeTimeFormat":
             output_data[target_col] = change_time_format(input_data, source_col, value)
-        
+
         # Quantity特殊處理
         elif rule == "MoveOrSearchUom":
             # target_col = "Original Quantity"
             output, error_row = move_or_search_uom(input_data, source_col, target_col, dealer_id)
-            
-            for row, msg in error_row.items():
+
+            for row, msg in reversed(list(error_row.items())):
                 change_status = "NO"
                 output_data = output_data.drop(row).reset_index(drop=True)
+                input_data = input_data.drop(row)
                 new_error = input_data.iloc[row].to_dict()
                 new_error["Dealer ID"] = dealer_id
                 new_error["Dealer Name"] = dealer_name
                 new_error["Exchange Error Issue"] = msg
                 error_data.loc[len(error_data)] = new_error
             output_data[target_col] = output
-        
+            input_data = input_data.reset_index(drop = True)
+
         # 搜索MasterFile的dp價
         elif rule == "SearchDP":
             output, error_row, ptype_error = search_dp(input_data, dealer_id)
@@ -366,48 +411,51 @@ def ChangeSaleFile(dealer_id, file_name):
                 new_error["Exchange Error Issue"] = msg
                 error_data.loc[len(error_data)] = new_error
 
-            for row, msg in error_row.items():
+            for row, msg in reversed(list(error_row.items())):
                 change_status = "NO"
                 output_data = output_data.drop(row).reset_index(drop=True)
+                input_data = input_data.drop(row)
                 new_error = input_data.iloc[row].to_dict()
                 new_error["Dealer ID"] = dealer_id
                 new_error["Dealer Name"] = dealer_name
                 new_error["Exchange Error Issue"] = msg
                 error_data.loc[len(error_data)] = new_error
             output_data[target_col] = output
+            input_data = input_data.reset_index(drop = True)
 
         elif rule == "SearchCost":
             output, error_row = search_cost(input_data, dealer_id)
-            
-            for row, msg in error_row.items():
+
+            for row, msg in reversed(list(error_row.items())):
                 change_status = "NO"
                 output_data = output_data.drop(row).reset_index(drop=True)
+                input_data = input_data.drop(row)
                 new_error = input_data.iloc[row].to_dict()
                 new_error["Dealer ID"] = dealer_id
                 new_error["Dealer Name"] = dealer_name
                 new_error["Exchange Error Issue"] = msg
                 error_data.loc[len(error_data)] = new_error
             output_data[target_col] = output
+            input_data = input_data.reset_index(drop = True)
 
         # 多欄位內容合併
         elif rule == "MergeColumns":
             output_data[target_col] = merge_columns(input_data, source_col, value)
-        
+
         elif not rule:
             continue
-        
+
         else:
             change_status = "NO"
             msg = f"{rule} 此轉換規則不再範圍中。"
             WSysLog("3", "ChangeSaleFile", msg)
 
     # 輸出傳換後的sale檔案
-    data_start_date = datetime.strftime(input_data["Transaction Date"][0], "%Y%m%d")
-    data_end_date = datetime.strftime(input_data["Transaction Date"][len(input_data)- 1], "%Y%m%d")
+    start_date, end_date = getMonthStartAndEndDate(file_name)
     changed_file_name = Config.SaleOutputFileName.replace("{DealerID}", str(dealer_id))\
-        .replace("{TransactionDataStartDate}", data_start_date)\
-        .replace("{TransactionDataEndDate}", data_end_date)
-    
+        .replace("{StartDate}", start_date)\
+        .replace("{EndDate}", end_date)
+
     try:
         output_data.to_csv(os.path.join(Config.ChangeFolderPath,\
             f"{changed_file_name}.{Config.SaleOutputFileExtension}"), index=False)
@@ -418,10 +466,10 @@ def ChangeSaleFile(dealer_id, file_name):
         error_file_name, error_report_path = None, None
         if not error_data.empty:
             error_file_name = Config.SaleErrorReportFileName.replace("{DealerID}", str(dealer_id))\
-                .replace("{TransactionDataStartDate}", data_start_date)\
-                .replace("{TransactionDataEndDate}", data_end_date)
+                .replace("{StartDate}", start_date)\
+                .replace("{EndDate}", end_date)
             error_report_folder_path = os.path.join(Config.ErrorReportPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
-            
+
             if not os.path.exists(error_report_folder_path):
                 os.makedirs(error_report_folder_path)
                 msg = f"成功建立目錄 {error_report_folder_path} 。"
@@ -434,7 +482,7 @@ def ChangeSaleFile(dealer_id, file_name):
         chang_result = {"Status" : change_status, "OutputFileName": f"{changed_file_name}.{Config.SaleOutputFileExtension}",\
                         "ErrorNum": len(error_data), "Num" : len(output_data), "ErrorReportFileName" : error_file_name, "ErrorReportPath" : error_report_path}
         return  chang_result
-    
+
     except Exception as e:
         change_status = "NO"
         msg = f"轉換檔案失敗，遇到未知錯誤，{e}。"
@@ -449,10 +497,13 @@ def last_transaction_date(input_data, row):
 
 # 依據規則轉換庫存檔案
 def ChangeInventoryFile(dealer_id, file_name):
+    print("Function: ChangeInventoryFile")
+    print(f"daeler_id:{dealer_id}")
+    print(f"file_name:{file_name}")
     change_status = "OK"
     file_header = Config.InventoryOutputFileHeader
     change_rules = Config.InventoryFileChangeRule
-    
+
     for i in range(len(Config.DealerList)):
         if Config.DealerList[i] == dealer_id:
             index = i + 1
@@ -481,54 +532,57 @@ def ChangeInventoryFile(dealer_id, file_name):
 
         # 欄位為固定值
         if rule == "FixedValue":
-            
+
             if source_col == "DealerID":
                 value = dealer_id
             output_data[target_col] = fixed_value(value, len(input_data))
-        
+
         # 搬移資料
         elif rule == "Move":
             output_data[target_col] = move_rule(input_data, source_col)
-        
+
         # Quantity特殊處理
         elif rule == "MoveOrSearchUom":
             output, error_row = move_or_search_uom(input_data, source_col, target_col, dealer_id)
-            
+
             for row, msg in error_row.items():
                 change_status = "NO"
                 output_data = output_data.drop(row).reset_index(drop=True)
+                input_data = input_data.drop(row)
                 new_error = input_data.iloc[row].to_dict()
                 new_error["Dealer ID"] = dealer_id
                 new_error["Dealer Name"] = dealer_name
                 new_error["Exchange Error Issue"] = msg
                 error_data.loc[len(error_data)] = new_error
             output_data[target_col] = output
-        
+            input_data = input_data.reset_index(drop = True)
+
         # Date Period欄位為 Transaction Date 最後一天
         elif rule == "LastTransactionDate":
             output_data[target_col] = last_transaction_date(input_data, len(input_data))
-    data_start_date = datetime.strftime(input_data["Transaction Date"][0], "%Y%m%d")
-    data_end_date = datetime.strftime(input_data["Transaction Date"][len(input_data)- 1], "%Y%m%d")
-    changed_file_name = f"{dealer_id}_I_{datetime.strftime(input_data['Transaction Date'][len(input_data) - 1], '%Y%m%d')}.csv"
+
+    start_date, end_date = getMonthStartAndEndDate(file_name)
+    data_end_date = datetime.strftime(input_data["Transaction Date"][len(input_data) - 1], "%Y%m%d")
+    changed_file_name = f"{dealer_id}_I_{data_end_date}.csv"
 
     try:
         output_data.to_csv(os.path.join(Config.ChangeFolderPath, changed_file_name), index=False)
         msg = f"檔案轉換完成，輸出檔名 {changed_file_name}。"
         WChaLog("1", "ChangeInventoryFile", dealer_id, file_name, msg)
-        
+
         # error report
         error_file_name, error_report_path = None, None
         if not error_data.empty:
             error_file_name = Config.InventoryErrorReportFileName.replace("{DealerID}", str(dealer_id))\
-                .replace("{TransactionDataStartDate}", data_start_date)\
-                .replace("{TransactionDataEndDate}", data_end_date)
+                .replace("{StartDate}", start_date)\
+                .replace("{EndDate}", end_date)
             error_report_folder_path = os.path.join(Config.ErrorReportPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
 
             if not os.path.exists(error_report_folder_path):
                 os.makedirs(error_report_folder_path)
                 msg = f"成功建立目錄 {error_report_folder_path} 。"
                 WSysLog("1", "ChangeSaleFile", msg)
-            
+
             error_report_path = os.path.join(error_report_folder_path, error_file_name)
             error_data.to_excel(error_report_path, index = False)
             msg = f"Error檔案輸出完成，輸出檔名 {error_file_name}。"
@@ -536,7 +590,7 @@ def ChangeInventoryFile(dealer_id, file_name):
         change_result = {"Status" : change_status, "OutputFileName": changed_file_name, "ErrorNum": len(error_data),\
                          "Num" : len(output_data), "ErrorReportFileName" : error_file_name, "ErrorReportPath" : error_report_path}
         return change_result
-    
+
     except Exception as e:
         change_status = "NO"
         msg = f"轉換檔案失敗，遇到未知錯誤，{e}。"
@@ -604,7 +658,7 @@ def Changing(check_right_list):
 def MergeInventoryFile():
     file_names = [file for file in os.listdir(Config.ChangeFolderPath) \
                       if os.path.isfile(os.path.join(Config.ChangeFolderPath, file))]
-    
+
     # 取得要合併的檔案
     file_list, time_list = [], []
     for file_name in file_names:
@@ -612,29 +666,41 @@ def MergeInventoryFile():
         if part[1] == "I":
             file_list.append(file_name)
             time_list.append(part[2])
-            
+
     if file_list:
         # 抓取檔名中的檔案時間
-        time_list = [datetime.strptime(time_str, "%Y%m%d") for time_str in time_list]
-        file_time = time_list[-1].strftime("%Y%m%d")
-        
+        month = int(Config.Month)
+        if month < 8:
+            if month == 2:
+                end_date = 28
+            if ((month - 1) % 2) == 0:
+                end_date = 31
+            else:
+                end_date = 30
+        else:
+            if (month % 2) == 0:
+                end_date = 31
+            else:
+                end_date = 30
+        end_date = str(Config.Year) + str(month) + str(end_date)
+
         # 合併檔案
         dataframes = [pd.read_csv(os.path.join(Config.ChangeFolderPath, file)) for file in file_list]
         combined_df = pd.concat(dataframes, ignore_index=True)
-        
+
         # 輸出檔案
         changed_file_name = Config.InventoryOutputFileName.replace("{CountryCode}", Config.InventoryOutputFileCountryCode)\
-            .replace("{LastTransactionDate}", file_time)
+            .replace("{LastDate}", end_date)
         try:
             combined_df.to_csv(os.path.join(Config.ChangeFolderPath, \
-                f"{changed_file_name}.{Config.InventoryOutputFileExtension}"), sep = "\t", index=False)
+                f"{changed_file_name}.{Config.InventoryOutputFileExtension}"), sep = ",", index=False)
             msg = f"{len(file_list)} 份檔案成功合併成 {changed_file_name}.{Config.InventoryOutputFileExtension}。"
             WSysLog("1", "MargeInventoryFile", msg)
             for dealer_id in Config.DealerList:
                 target_folder = os.path.join(Config.ChangeFolderPath, dealer_id, datetime.strftime(Config.SystemTime, "%Y%m"))
                 if not os.path.exists(target_folder):
                     os.makedirs(target_folder)
-                
+
                 for file in file_list:
                     part = re.split(r"[._]" ,file)
                     if (part[0] == dealer_id) and (part[1] == "I"):

@@ -8,7 +8,7 @@ Writer：Qian
 # masterfile、kalist檔案檢查、維護區塊待寫
 
 # 標準庫
-import os, shutil, time
+import os, shutil
 from datetime import datetime
 
 # 第三方庫
@@ -89,14 +89,14 @@ def wright_dealer_info_in_file(file_path, sheet_name, file_header, ba_dealer_id)
             index = int((row - 2) / content_range)
             col =  search_column_name(file_header, "Dealer ID")
             ws[f"{col}{row}"] = ba_dealer_id[index]
-            
+
             for j in range(content_range):
                 col = search_column_name(file_header, "Position")
                 ws[f"{col}{row + j}"] = position_list[j]
                 for col_name in content_col:
                     col = search_column_name(file_header, col_name)
                     ws[f"{col}{row + j}"].alignment = Config.ExcelStyle
-            
+
             for col_name in file_header:
                 if col_name in content_col:
                     continue
@@ -178,7 +178,7 @@ def CheckBAFolderFiles():
         for ka_dealer in Config.KADealerList:
             if ka_dealer in ba_dealer_id:
                 ka_list_file_path = os.path.join(folder_path, kalist_file)
-                
+
                 # 目標目錄找不到kalist時須建立一份空的kalist
                 if not os.path.exists(ka_list_file_path):
                     flag = True
@@ -204,14 +204,14 @@ def CheckBAFolderFiles():
                     file_time["KAList"] = datetime.fromtimestamp(os.path.getmtime(ka_list_file_path))
 
         file_time_dic[ba_id] = file_time
-    
+
     if not flag:
         msg = "BA目錄底下應有檔案都存在。"
         WSysLog("1", "CheckBAFolderFiles", msg)
         return file_time_dic
     else:
         return file_time_dic
-    
+
 # 依據BA人數調整files.json格式
 def check_ba():
     flag = True
@@ -310,27 +310,31 @@ def MergeMasterFile(write_new_list):
 
     # 更新現有工作表內容
     else:
-        check_master_file(write_new_list)
+        # check_master_file(write_new_list)
         master_data = pd.read_excel(general_data_path, sheet_name = sheet_name, dtype = str)
         file_header = master_data.columns.values
         dealer_ids = sorted(list(set(master_data[file_header[0]].values)))
         part_data = {dealer_id: master_data[master_data[file_header[0]] ==\
                     dealer_id].reset_index(drop=True) for dealer_id in dealer_ids}
-        
+
         for ba_id in write_new_list:
-            print(ba_id)
             for ba in ba_list:
                 dealer_list_in_file = None
                 if ba_id == ba["BA_ID"]:
                     ba_folder_name = ba["BA_ID"][:2] + "_" + ba["BA_ID"][2:] + "_" + ba["BA_Name"]
                     master_file_path = os.path.join(ba_folder, ba_folder_name, file_name)
                     file_data = pd.read_excel(master_file_path, sheet_name = sheet_name, dtype = str)
+                    # print("file_data")
+                    # print(file_data.loc[588, :])
                     dealer_list_in_file = sorted(list(set(file_data[file_header[0]].values)))
                     part_data_in_ba_file = {dealer_id: file_data[file_data[file_header[0]] ==\
                                             dealer_id].reset_index(drop = True) for \
                                             dealer_id in dealer_list_in_file}
+                    # print("part_data_in_ba_file")
+                    # print(part_data_in_ba_file["1002322861"].loc[1, :])
                 if dealer_list_in_file:
                     for dealer_id in dealer_list_in_file:
+                        print(dealer_id)
                         # 若經銷商id值不在總表中，直接新增
                         if dealer_id not in dealer_ids:
                             part_data[dealer_id] = part_data_in_ba_file[dealer_id]
@@ -339,7 +343,7 @@ def MergeMasterFile(write_new_list):
                             general_data = part_data[dealer_id]
                             ba_data = part_data_in_ba_file[dealer_id]
                             for _, row in ba_data.iterrows():
-                                
+
                                 # 比對產品ID及起迄區間
                                 part_general = general_data[(general_data[file_header[1]] == row.iloc[1]) &\
                                                             (general_data[file_header[-2]] == row.iloc[-2]) &\
@@ -357,12 +361,12 @@ def MergeMasterFile(write_new_list):
 
                                 # 區間值未符合
                                 elif part_general.empty:
-                                    msg = f"{dealer_id} 之產品ID： {row.iloc[1]} 為搜尋到對應的起迄值。"
+                                    msg = f"{dealer_id} 之產品ID： {row.iloc[1]} 未搜尋到對應的起迄值。"
                                     WSysLog("1", "MergeMasterFile", msg)
                                     new_row = row.to_dict()
                                     max_row = len(part_data[dealer_id])
-                                    part_data[dealer_id][max_row] = new_row
-                                    msg = f"新增資料： {new_row} 至 {max_row + 2}row。"
+                                    part_data[dealer_id].loc[max_row, :] = new_row
+                                    msg = f"新增資料： {new_row} 至 row {max_row + 2}。"
                                     WSysLog("1", "MergeMasterFile", msg)
 
                                 # 符合區間值過多
@@ -1008,7 +1012,8 @@ def ConfigFileToCould():
 def WorkDay():
     # 建立台灣日曆
     cal = Taiwan()
-    result = cal.is_working_day(Config.SystemTime)
+    system_time = datetime.now()
+    result = cal.is_working_day(system_time)
     msg = WrtieWorkDay(result)
     WSysLog("1", "WorkDay", msg)
 
@@ -1037,7 +1042,7 @@ if __name__ == "__main__":
     # MergeDealerInfoWorkSheet(["BA01"])
     # RenewDealerJson()
     # ConfigFile()
-    # MergeMasterFile(["BA03"])
+    MergeMasterFile(["BA02"])
     # MergeKalist(["BA03"])
-    WorkDay()
+    # WorkDay()
     # print(Config.WorkDay)

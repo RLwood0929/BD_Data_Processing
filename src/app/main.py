@@ -112,7 +112,7 @@ def system_work_flow(half_flag = False):
         if half_flag:
             print("=== System Break ===")
             return
-        
+
         print("--Running MoveCheckErrorFile--")
         MoveCheckErrorFile()
         print("--End MoveCheckErrorFile--")
@@ -135,7 +135,7 @@ def system_work_flow(half_flag = False):
             print("--Running MargeInventory--")
             MergeInventoryFile()
             print("--End MargeInventory--")
-
+            # return
             print("--Running EFTUploadFile--")
             EFTUploadFile()
             print("--End EFTUploadFile--")
@@ -143,7 +143,7 @@ def system_work_flow(half_flag = False):
             print("--Running FileArchiving--")
             FileArchiving()
             print("--End FileArchiving--")
-
+        # return
         print("--Running MoveCheckFile--")
         MoveCheckFile()
         print("--End MoveCheckFile--")
@@ -152,7 +152,7 @@ def system_work_flow(half_flag = False):
         Statistics()
         print("--End Statistics--")
 
-        print("--Running SendNotSubMail--") 
+        print("--Running SendNotSubMail--")
         # SendNotSubMail()
         print("--End SendNotSubMail--")
 
@@ -165,38 +165,55 @@ def system_work_flow(half_flag = False):
         print("--End ConfigFileToCould--")
 
         print("--Running UploadOneDrive--")
-        # UploadOneDrive(Local, Could)
+        UploadOneDrive(Local, Could)
         print("--End UploadOneDrive--")
 
         print("--Running ClearLocal--")
-        # ClearLocal(Local)
+        ClearLocal(Local)
         print("--End ClearLocal--")
 
         print("=== System End ===")
-
-        if Config.TestMode:
-            sys.exit()
 
     except Exception as e:
         msg = f"系統自動運作時發生錯誤。錯誤原因： {e}"
         print(msg)
 
-schedule.every().day.at("00:01").do(WorkDay)
+# 離開程式運作
+def exit_system():
+    if Config.TestMode:
+        sys.exit()
 
+# 系統運作排程
 schedule.every().day.at("22:00").do(system_work_flow, half_flag = True)
 schedule.every().day.at("22:15").do(system_work_flow, half_flag = True)
 schedule.every().day.at("22:30").do(system_work_flow, half_flag = False)
 
+# 其餘任務排程
+# schedule.every().day.at("21:30").do(WorkDay)
+# schedule.every().day.at("01:00").do(exit_system)
+schedule.every().day.at("00:01").do(WorkDay)
 # 主程式
 def main():
-    # system_work_flow(half_flag = False)
+    print("請選擇運行方式：\n1.系統測試運行主流程\n2.系統自動化排程運行\n(輸入完畢後請按下 Enter 鍵)")
     try:
-        print("System Auto Running...")
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("User End.")
+        user_keyin = int(str(input()))
+        if user_keyin in [1, 2]:
+            if user_keyin == 1:
+                system_work_flow(half_flag = False)
+            else:
+                try:
+                    print("System Auto Running...")
+                    while True:
+                        schedule.run_pending()
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    print("User End.")
+        else:
+            print("使用者輸入錯誤。")
+    except ValueError as e:
+        msg = f"使用者輸入資訊錯誤。錯誤原因：{e}。"
+        print(msg)
+    # WorkDay()
 
 if __name__ == "__main__":
     main()

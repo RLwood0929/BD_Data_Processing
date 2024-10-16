@@ -46,17 +46,25 @@ def get_file_type(dealer_id, file):
     if extension in Config.AllowFileExtensions:
         _, max_row = read_data(file_path)
         file_name_part = file_name.split("_")
-        if file_name_part[1] in ["S", "I"]:
-            if file_name_part[1] == "S":
-                return "Sale", max_row
-            elif file_name_part[1] == "I":
-                return "Inventory", max_row
+        # 檢查檔名是否依據命名規範，{DealerID}_{S or I}_{date}
+        if len(file_name_part) > 2:
+            if file_name_part[1] in ["S", "I"]:
+                if file_name_part[1] == "S":
+                    return "Sale", max_row
+                elif file_name_part[1] == "I":
+                    return "Inventory", max_row
+            else:
+                os.remove(file_path)    
+                msg = f"檔案 {file} 名稱不符合命名規範，系統已刪除該檔案。"
+                # 是否需要加入信件通知?
+                WRecLog("2", "GetFileType", dealer_id, file, msg)
+                return False, None
         else:
             os.remove(file_path)    
             msg = f"檔案 {file} 名稱不符合命名規範，系統已刪除該檔案。"
             # 是否需要加入信件通知?
             WRecLog("2", "GetFileType", dealer_id, file, msg)
-            return False, None 
+            return False, None
     else:
         os.remove(file_path)
         msg = f"檔案 {file} 副檔名不在許可範圍中，系統已刪除該檔案。"

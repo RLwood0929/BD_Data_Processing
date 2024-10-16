@@ -11,11 +11,11 @@
         "Name": "BD_DataProcessing",
         "AutoRun": true,
         "Debug": false,
-        "TestMode": false,
+        "TestMode": true,
         "User": "System",
         "MaxTryRange": 3,
-        "WorkDay": false,
-        "MonthlyFileDeadline": 13,
+        "WorkDay": true,
+        "MonthlyFileDeadline": 15,
         "AllowFileExtensions": [
             ".csv",
             ".xlsx",
@@ -309,7 +309,7 @@
     },
     "OutputFile": {
         "Sale": {
-            "FileName": "{DealerID}_{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}",
+            "FileName": "{DealerID}_{DealerID}_{StartDate}_{EndDate}",
             "Extension": "CSV",
             "Header": [
                 "Area",
@@ -335,7 +335,7 @@
             ]
         },
         "Inventory": {
-            "FileName": "{CountryCode}_MTHQTY_M_{LastTransactionDate}",
+            "FileName": "{CountryCode}_MTHQTY_M_{LastDate}",
             "Extension": "txt",
             "CountryCode": "TWN",
             "Header": [
@@ -349,7 +349,7 @@
     },
     "ErrorReport": {
         "Sale": {
-            "FileName": "{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}_Sale_Error_Report.xlsx",
+            "FileName": "{DealerID}_{StartDate}_{EndDate}_Sale_Error_Report.xlsx",
             "Header": [
                 "Dealer ID",
                 "Dealer Name",
@@ -386,7 +386,7 @@
             ]
         },
         "Inventory": {
-            "FileName": "{DealerID}_{TransactionDataStartDate}_{TransactionDataEndDate}_Inventory_Error_Report.xlsx",
+            "FileName": "{DealerID}_{StartDate}_{EndDate}_Inventory_Error_Report.xlsx",
             "Header": [
                 "Dealer ID",
                 "Dealer Name",

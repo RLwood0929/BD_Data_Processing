@@ -188,7 +188,6 @@ def split_file_data(folder_path):
                 msg = f"{extension} 副檔名不再許可範圍。"
                 WSysLog("1", "SplitFileData", msg)
                 continue
-
             data[column_key] = pd.to_datetime(data[column_key], errors = "coerce")
             part = file_name.split("_")
             data_time = part[2]
@@ -225,6 +224,37 @@ def split_file_data(folder_path):
         msg = f"{folder_path} 目標目錄底下無檔案。"
         WSysLog("1", "SplitFileData", msg)
 
+# 針對保慶緊抓取當天檔案
+def getTodayFile(dealer_id, folder_path):
+    file_names = [file for file in os.listdir(folder_path) \
+        if os.path.isfile(os.path.join(folder_path, file))]
+
+    month = str(Config.Month)
+    if len(month) == 1:
+        month = "0" + str(month)
+
+    day = str(Config.Day)
+    if len(day) == 1:
+        day = "0" + str(day)
+
+    date = str(Config.Year) + str(month) + str(day)
+
+    sale_file_name = str(dealer_id) + "_S_" + str(date) + ".csv"
+    inventory_file_name = str(dealer_id) + "_I_" + str(date) + ".csv"
+
+    today_file_name = [sale_file_name, inventory_file_name]
+    print(f"today_file_name:{today_file_name}")
+    for file_name in file_names:
+        if file_name not in today_file_name:
+            file_path = os.path.join(folder_path, file_name)
+            os.remove(file_path)
+            if not os.path.exists(file_path):
+                msg = f"{file_name}不屬於當天應繳檔案，系統已自動刪除。"
+                WSysLog("1", "getTodayFile", msg)
+            else:
+                msg = f"系統於{folder_path}目錄，刪除{file_name}檔案時發生錯誤。"
+                WSysLog("2", "getTodayFile", msg)
+
 # 經銷商檔案預處理主流程
 def Preprocessing():
     dealer_list = ["1002322861", "1002317244", "1002357130"]
@@ -238,6 +268,9 @@ def Preprocessing():
         elif dealer_id == "1002317244":
             change_file_name(dealer_id, path, "Unimed")
             change_roc_year(path)
+        elif dealer_id == "1002357130":
+            getTodayFile(dealer_id, path)
+            print("getTodayFile end.")
         split_file_data(path)
         
 if __name__ == "__main__":

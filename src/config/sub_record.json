@@ -1,38 +1,49 @@
 {
-    "SubStartIndex": 0,
+    "SubStartIndex": 63,
     "NotSubStartIndex": null,
-    "ChangeDic": {},
+    "ChangeDic": {
+        "66": "1002317244_I_202410152000.xlsx",
+        "67": "1002317244_S_202410152008.xlsx",
+        "68": "1002322861_I_202410150830.csv",
+        "69": "1002322861_S_202410150837.csv",
+        "66": "1002317244_I_202410152000.xlsx",
+        "67": "1002317244_S_202410152008.xlsx",
+        "68": "1002322861_I_202410150830.csv",
+        "69": "1002322861_S_202410150837.csv",
+        "64": "1002357130_I_20241015.csv",
+        "65": "1002357130_S_20241015.csv"
+    },
     "Dealer1": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": false,
+        "InventoryFile": false,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
     },
     "Dealer2": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": false,
+        "InventoryFile": false,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
     },
     "Dealer3": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": true,
+        "InventoryFile": true,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
     },
     "Dealer4": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": true,
+        "InventoryFile": true,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
     },
     "Dealer5": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": true,
+        "InventoryFile": true,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
@@ -45,8 +56,8 @@
         "Mail4": {}
     },
     "Dealer7": {
-        "SaleFile": null,
-        "InventoryFile": null,
+        "SaleFile": true,
+        "InventoryFile": true,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
