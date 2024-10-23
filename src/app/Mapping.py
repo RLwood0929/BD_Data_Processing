@@ -772,7 +772,9 @@ if __name__ == "__main__":
 """
 改寫Mapping檔案
 """
-import pandas as pd, os
+import os
+import math
+import pandas as pd
 from dateutil import parser
 
 from Log import WSysLog, WChaLog
@@ -782,34 +784,95 @@ Config = AppConfig()
 
 class dataChangeFuncion:
     """
+    MasterFile Header：
+    經銷商號碼\nSold-to code, 貨號,	UOM, std cost (EA),	DP(EA),	KADP(EA), IVY (EA),	起,	迄
+
+    KAList Header：
+    經銷商ID, 客戶號, 起, 迄, Price TYPE
+
     檔案轉換方式方法
-    move_rule   將輸入資料寫入新的col中
     """
+    # class內區域變數
     def __init__(self):
+        # class內通用參數
+        self.master_file_header = ["經銷商號碼\nSold-to code",
+                                   "貨號",
+                                   "UOM",
+                                   "std cost (EA)",
+                                   "DP(EA)","KADP(EA)",
+                                   "IVY (EA)",
+                                   "起",
+                                   "迄"]
+
+        self.kalist_file_header = [ "經銷商ID",
+                                    "客戶號",
+                                    "起",
+                                    "迄",
+                                    "Price TYPE"]
+
+        self.product_id = "Product ID"
+        self.transaction_date = "Transaction Date"
+        self.creation_date = "Creation Date"
+        self.buyer_id = "Buyer ID"
+
+        date_cols = ["起", "迄"]
         master_folder_path = "./datas"
         master_file_name = "MasterFile.xlsx"
         master_file_sheet_name = "MasterFile"
+        kalist_file_sheet_name = "KAList"
+
         master_file_path = os.path.join(master_folder_path, master_file_name)
+
         try:
+            # MasterFile 資料
             self.master_file_data = pd.read_excel(master_file_path,
                                                 sheet_name = master_file_sheet_name,
                                                 dtype = str)
-            date_cols = ["起", "迄"]
+
+            # 比對 MasterFile 工作表要與規定的符合
+            master_file_data_header = self.master_file_data.columns.values
+            if set(self.master_file_header) != set(master_file_data_header):
+                msg = "MasterFile工作表的表頭與規定值不匹配。"
+                raise ValueError(msg)
+
             for col in date_cols:
                 self.master_file_data[col] = pd.to_datetime(self.master_file_data[col],
                                                             format = "%Y%m%d")
+
+            # KAList 資料
+            self.kalist_file_data = pd.read_excel(master_file_path,
+                                                sheet_name = kalist_file_sheet_name,
+                                                dtype = str)
+
+            # 比對 KAList 工作表要與規定的符合
+            kalist_file_data_header = self.kalist_file_data.columns.values
+            if set(self.kalist_file_header) != set(kalist_file_data_header):
+                msg = "KAList工作表的表頭與規定值不匹配。"
+                raise ValueError(msg)
+
+            for col in date_cols:
+                self.kalist_file_data[col] = pd.to_datetime(self.kalist_file_data[col],
+                                                            format = "%Y%m%d")
+
             msg = "成功讀取 MasterFile 資料。"
             WSysLog("1", "ReadMasterFile", msg)
+
         except Exception as e:
             msg = f"讀取 MasterFile時發生錯誤。錯誤原因：{str(e)}"
             WSysLog("3", "ReadMasterFile", msg)
             raise FileNotFoundError(msg) from e
 
     # 將 master_file 內容輸出
-    def master_file_test(self):
+    def print_master_file_data(self):
         print("Function master_file_test start.")
         print(self.master_file_data)
         print("Function master_file_test finish.")
+
+    # 將 kalist 內容輸出
+    def print_kalist_file_data(self):
+        print("Function kalist_file_test start.")
+        print(self.kalist_file_data)
+        print("Function kalist_file_test finish.")
 
     # 統一時間欄位內容格式
     def parse_and_format_date(self, date_str, output_format = "%Y/%m/%d"):
@@ -820,7 +883,7 @@ class dataChangeFuncion:
         except (ValueError, TypeError):
             return date_str
         # finally:
-            # print("Function parse_and_format_date finish.")
+        #     print("Function parse_and_format_date finish.")
 
     # 確認檔案 product_id 欄位值非中文
     def checkProductIdValue(self, file_path):
@@ -832,21 +895,21 @@ class dataChangeFuncion:
         if file_extension in Config.AllowFileExtensions:
             file_data = pd.read_csv(file_path, dtype = str)\
                 if file_extension == ".csv"\
-                    else pd.read_excel(file_path, dtype = str)
+                else pd.read_excel(file_path, dtype = str)
 
             # print(file_data)
 
             # 將時間欄位內容資料型態統一
-            date_cols = ["Transaction Date", "Creation Date"]
+            date_cols = [self.transaction_date, self.creation_date]
             for col in date_cols:
                 file_data[col] = file_data[col].apply(lambda x: self.parse_and_format_date(str(x)))
                 file_data[col] = pd.to_datetime(file_data[col],
                                                 format = "%Y/%m/%d",
                                                 errors = "coerce")
-            file_data["Product ID"] = file_data["Product ID"].astype(str).str.strip()
+            file_data[self.product_id] = file_data[self.product_id].astype(str).str.strip()
 
             # 過濾 Product ID 僅允許 a-z, A-Z, 0-9, - 符號
-            file_data = file_data[file_data["Product ID"].str.contains\
+            file_data = file_data[file_data[self.product_id].str.contains\
                 ("^[a-zA-Z0-9-]+$", regex=True, na=False)]
 
             # 刷新index值
@@ -861,10 +924,12 @@ class dataChangeFuncion:
     # 比對檔案中的 product id 存在於 master file 中
     def checkProdictIdInMasterFile(self, input_file_data, dealer_id):
         print("Function check_prodict_id_in_master_file start.")
+        col_dealer_id = self.master_file_header[0]
+        col_product_id = self.master_file_header[1]
         pid_not_in_master_file = []
         # input_file_data -> dataFrame
         # 取出輸入資料中的 "product id" 欄位資料，去掉重複值，排序
-        input_data_product_id = input_file_data.loc[:, "Product ID"].tolist()
+        input_data_product_id = input_file_data.loc[:, self.product_id].tolist()
         input_data_product_id = sorted(list(set(input_data_product_id)))
         # print(input_data_product_id)
         # print(len(input_data_product_id))
@@ -872,8 +937,8 @@ class dataChangeFuncion:
         # master_file_data -> dataFrame，此處輸入的masterfile是該經銷商的資料，非整份masterfile
         # 取出輸入資料中的 "貨號" 欄位資料，去掉重複值，排序
         master_file_data = self.master_file_data[\
-            self.master_file_data["經銷商號碼\nSold-to code"] == dealer_id]
-        master_file_product_id = master_file_data.loc[:, "貨號"].tolist()
+            self.master_file_data[col_dealer_id] == dealer_id]
+        master_file_product_id = master_file_data.loc[:, col_product_id].tolist()
         master_file_product_id = sorted(list(set(master_file_product_id)))
 
         # 使用迴圈檢查經銷商上傳檔案中的 product_id 是否存在於 master_file 資料中
@@ -883,12 +948,12 @@ class dataChangeFuncion:
         # print(f"pid_not_in_master_file:{pid_not_in_master_file}")
 
         input_data_in_master_file = input_file_data[\
-            ~input_file_data["Product ID"].isin(pid_not_in_master_file)]
+            ~input_file_data[self.product_id].isin(pid_not_in_master_file)]
         # print("input_data_in_master_file")
         # print(input_data_in_master_file)
 
         input_data_not_in_master_file = input_file_data[\
-            input_file_data["Product ID"].isin(pid_not_in_master_file)]
+            input_file_data[self.product_id].isin(pid_not_in_master_file)]
         # print("input_data_not_in_master_file")
         # print(input_data_not_in_master_file)
         print("Function check_prodict_id_in_master_file end.")
@@ -897,55 +962,186 @@ class dataChangeFuncion:
     # 將原先欄位的值移動到搬移到新的欄位
     def moveRule(self, input_data, input_col):
         print("Function move_rule start.")
+        print("Function move_rule end.")
         return input_data[input_col]
 
     # 欄位值固定為某些值
     def fixedValue(self, value, row):
         print("Function fixed_value start.")
+        print("Function fixed_value end.")
         return [value] * row
 
     # 轉換欄位內容的時間格式
     def changeTimeFormat(self, input_data, input_col, date_format):
         print("Function change_time_format start.")
+        print("Function change_time_format end.")
         return input_data[input_col].dt.strftime(date_format)
 
+    # 在MasterFile中搜尋產品ID，回傳需要的 value 值
     def search_pid_in_master_file(self, dealer_id, product_id, data_date):
+        print("Function search_pid_in_master_file start.")
+        col_dealer_id = self.master_file_header[0]
+        col_product_id = self.master_file_header[1]
+        col_start_date = self.master_file_header[7]
+        col_end_date = self.master_file_header[8]
+
         # 從 master_file 中取出對應 經銷商ID 的資料
-        master_file_data = self.master_file_data[\
-            self.master_file_data["經銷商號碼\nSold-to code"] == dealer_id]
+        master_file_data = self.master_file_data\
+            [self.master_file_data[col_dealer_id] == dealer_id]
 
-        search_pid_data = master_file_data[master_file_data["Product ID"] == product_id]
+        search_pid_data = master_file_data[master_file_data[col_product_id] == product_id]
 
-        if search_pid_data:
-            for row in range(len(search_pid_data)):
-                start_date = search_pid_data.loc[row, "起"]
-                end_date = search_pid_data.loc[row, "迄"]
-                if start_date <= data_date <= end_date:
-                    print(search_pid_data[row, :])
+        if not search_pid_data.empty:
+            # 透過data_date篩選除對應區間的masterfile資料
+            pid_data_in_date = search_pid_data[(search_pid_data[col_start_date] <= data_date) &
+                                                (search_pid_data[col_end_date] >= data_date)]
+            if not pid_data_in_date.empty:
+                print("Function search_pid_in_master_file end.")
+                return True, pid_data_in_date
 
-    def moveOrSearchUom(self, input_data, source_col, dealer_id): # , target_col
+            else:
+                msg = f"經銷商：{dealer_id} 的產品ID：{product_id}，在 masterfile 工作表中搜尋不到對應的起迄區間。"
+                WSysLog("3", "SearchPidInMasterFile", msg)
+                msg = "在 masterfile 檔案中搜尋不到對應的起迄區間。"
+                print("Function search_pid_in_master_file end.")
+                return None, msg
+        else:
+            msg = f"經銷商：{dealer_id} 的產品ID：{product_id}，在 masterfile 工作表中搜尋不到。"
+            WSysLog("3", "SearchPidInMasterFile", msg)
+            msg = "在 masterfile 檔案中搜尋不到此 Product ID。"
+            print("Function search_pid_in_master_file end.")
+            return False, msg
+
+    # 搬移或是轉換 Uom 值
+    def moveOrSearchUom(self, input_data, source_col, dealer_id, target_col):
         print("Function move_or_search_uom start.")
+        col_uom = self.master_file_header[2]
+        not_get_value_row, not_get_value_msg = [], []
 
-        # print(f"master_file_col:{master_file_col}")
+        value_list_in_source = input_data[source_col].tolist()
 
         # 篩選來源col欄位中值為空白的row，並取得index
         source_na_index_list = input_data[input_data[source_col].isna()].index.tolist()
-        for row in source_na_index_list:
-            print(row)
-            input_data_product_id = input_data.loc[row, "Product ID"]
-            input_data_date = input_data.loc[row, "Transaction Date"]
-            print(f"input_data_product_id:{input_data_product_id}")
-            print(f"input_data_date:{input_data_date}")
 
+        for row in source_na_index_list:
+            # print(row)
+            input_data_product_id = input_data.loc[row, self.product_id]
+            input_data_date = input_data.loc[row, self.transaction_date]
+            # print(f"input_data_product_id:{input_data_product_id}")
+            # print(f"input_data_date:{input_data_date}")
+            search_result, pid_data_in_date = self.search_pid_in_master_file\
+                (dealer_id, input_data_product_id, input_data_date)
+
+            if search_result:
+                target_col_list = pid_data_in_date[col_uom].to_list()
+                try:
+                    value = target_col_list[-1]
+                    if (isinstance(value, float)) and (math.isnan(value)):
+                        row_in_masterfile = pid_data_in_date.iloc[-1].name + 2
+                        msg = f"masterfile檔案中 {col_uom} 欄位第 {row_in_masterfile} 行數值為空。"
+                        WSysLog("2", "SearchPidInMasterFile", msg)
+                        not_get_value_row.append(row)
+
+                    elif isinstance(value, str):
+                        uom_in_masterfile = int(value)
+                        # print(input_data.loc[row, target_col])
+                        # print(type(input_data.loc[row, target_col]))
+                        if (isinstance(input_data.loc[row, target_col], float)) and\
+                            (math.isnan(input_data.loc[row, target_col])):
+                            msg = f"經銷商寫入的 {target_col} 欄位於第 {row + 2} 數值為空。"
+                            WSysLog("2", "SearchPidInMasterFile", msg)
+                            not_get_value_row.append(row)
+
+                        else:
+                            changed_value = uom_in_masterfile *\
+                                float(input_data.loc[row, target_col])
+                            value_list_in_source[row] = str(changed_value)
+
+                except Exception as e:
+                    msg = f"將搜尋的資訊轉換為數值時發生錯誤。錯誤原因：{str(e)}"
+                    WSysLog("3", "SearchPidInMasterFile", msg)
+                    raise TypeError(msg) from e
+
+            else:
+                not_get_value_row.append(row)
+                not_get_value_msg.append(pid_data_in_date)
+
+        # print("not_get_value_row")
+        # print(not_get_value_row)
+        for index in sorted(not_get_value_row, reverse=True):
+            del value_list_in_source[index]
+
+        print("Function move_or_search_uom end.")
+        return value_list_in_source, not_get_value_row, not_get_value_msg
+
+    def get_dp_type_in_kalist(self, dealer_id, buyer_id, data_date):
+        print("Function get_dp_type start.")
+        col_dealer_id_in_ka = self.kalist_file_header[0]
+        col_buyer_id_in_ka = self.kalist_file_header[1]
+        col_start_date = self.kalist_file_header[2]
+        col_end_date = self.kalist_file_header[3]
+        col_price_type = self.kalist_file_header[4]
+        price_type = "DP"
+
+        # 從 kalist 工作表中篩選經銷商與客戶號資訊
+        search_data_in_ka = self.kalist_file_data\
+            [(self.kalist_file_data[col_dealer_id_in_ka] == dealer_id) &
+            (self.kalist_file_data[col_buyer_id_in_ka] == buyer_id)]
+
+        if not search_data_in_ka.empty:
+            buyer_data_in_date = search_data_in_ka\
+                [(search_data_in_ka[col_start_date] <= data_date) &
+                (search_data_in_ka[col_end_date] >= data_date)]
+
+            if not buyer_data_in_date.empty:
+                type_list = buyer_data_in_date[col_price_type].to_list()
+                price_type = type_list[-1]
+                print("Function get_dp_type end.")
+                return price_type
+            else:
+                msg = f"經銷商ID： {dealer_id} 的客戶號： {buyer_id} 資料，在 KAList 工作表中未搜尋到符合時間區間的資料。"
+                WSysLog("2", "get_dp_type_in_kalist", msg)
+                print("Function get_dp_type end.")
+                return price_type
+        else:
+            msg = f"經銷商ID： {dealer_id} 的客戶號： {buyer_id} 資料，在 KAList 工作表中搜尋不到 。"
+            WSysLog("2", "get_dp_type_in_kalist", msg)
+            print("Function get_dp_type end.")
+            return price_type
+
+    # 搜尋 Dp 資料，若在 kalist 中，則需篩選對應的 value
+    def searchDP(self, input_data, dealer_id):
+        print("Function search_dp start.")
+        # col_dealer_id_in_ka = self.kalist_file_header[0]
+        # col_buyer_id_in_ka = self.kalist_file_header[1]
+        if dealer_id in Config.KADealerList:
+            for row in range(len(input_data)):
+                # print(row)
+                # print(type(row))
+                buyer_id = input_data.loc[row, self.buyer_id]
+                data_date = input_data.loc[row, self.transaction_date]
+                self.get_dp_type_in_kalist(dealer_id, buyer_id, data_date)
+                if row == 5:
+                    break
+        # for row in range(len(input_data)):
+        print("Function search_dp end.")
+
+# class dealerDataChange(dataChangeFuncion):
+#     def changeSaleFile():
+#         print()
+#     def changeInventoryFile():
+#         print()
 
 def test(data):
     change_function = dataChangeFuncion()
+    # change_function.print_kalist_file_data()
     data = change_function.checkProductIdValue(data)
     # print(data)
     # change_function.check_prodict_id_in_master_file(data, "1002317244")
-    change_function.moveOrSearchUom(data, "Original Quantity", "1002317244")
+    # change_function.moveOrSearchUom(data, "Original Quantity", "1002317244", "Quantity")
     # prodict_id = data["Product ID"]
     # print(prodict_id)
+    change_function.searchDP(data, "1002317244")
 
 if __name__ == "__main__":
     test_data_file_name = "Unimed_S_202410152008_YTD.xls"
