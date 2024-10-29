@@ -309,7 +309,7 @@
     },
     "OutputFile": {
         "Sale": {
-            "FileName": "{DealerID}_{DealerID}_{StartDate}_{EndDate}",
+            "FileName": "IMS_{DealerID}_{StartDate}_{EndDate}",
             "Extension": "CSV",
             "Header": [
                 "Area",
