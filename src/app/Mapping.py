@@ -888,9 +888,9 @@ class dataChangeFuncion:
         self.error_report_folder_path = Config.ErrorReportPath
 
         date_cols = ["起", "迄"]
-        master_folder_path = Config.MasterFolderPath
+        # master_folder_path = Config.MasterFolderPath
         # 測試用
-        # master_folder_path = "./datas"
+        master_folder_path = "./datas"
         master_file_name = "MasterFile.xlsx"
         master_file_sheet_name = "MasterFile"
         kalist_file_sheet_name = "KAList"
@@ -941,6 +941,7 @@ class dataChangeFuncion:
         if ShowScheduleSwitch:
             print("Function master_file_test start.")
         print(self.master_file_data)
+
         if ShowScheduleSwitch:
             print("Function master_file_test finish.")
 
@@ -949,6 +950,7 @@ class dataChangeFuncion:
         if ShowScheduleSwitch:
             print("Function kalist_file_test start.")
         print(self.kalist_file_data)
+
         if ShowScheduleSwitch:
             print("Function kalist_file_test finish.")
 
@@ -964,6 +966,7 @@ class dataChangeFuncion:
         if ShowScheduleSwitch:
             print("\t\tFunction get_error_report_path start.")
         folder_name = datetime.strftime(Config.SystemTime, "%Y%m")
+
         if ShowScheduleSwitch:
             print("\t\tFunction get_error_report_path end.")
         return os.path.join(self.error_report_folder_path, dealer_id, folder_name)
@@ -977,6 +980,7 @@ class dataChangeFuncion:
             os.remove(file_path)
             if ShowScheduleSwitch:
                 print("\tFunction del_file end.")
+
         except Exception as e:
             msg = f"系統刪除檔案時發生錯誤。錯誤原因:{str(e)}"
             WSysLog("3", "DelFile", msg)
@@ -1030,6 +1034,7 @@ class dataChangeFuncion:
         try:
             parsed_date = parser.parse(date_str)
             return parsed_date.strftime(output_format)
+
         except (ValueError, TypeError):
             return date_str
         # finally:
@@ -1039,6 +1044,7 @@ class dataChangeFuncion:
     def checkProductIdValue(self, file_path):
         if ShowScheduleSwitch:
             print("\t\tFunction check_product_id_value start.")
+
         file_name = os.path.basename(file_path)
         _, file_extension = os.path.splitext(file_name)
         file_extension = file_extension.lower()
@@ -1054,6 +1060,7 @@ class dataChangeFuncion:
             date_cols = [self.transaction_date, self.creation_date]
             if ShowScheduleSwitch:
                 print("\t\tFunction parse_and_format_date start.")
+
             for col in date_cols:
                 file_data[col] = file_data[col].apply(lambda x: self.parse_and_format_date(str(x)))
                 file_data[col] = pd.to_datetime(file_data[col],
@@ -1084,9 +1091,11 @@ class dataChangeFuncion:
     def checkProdictIdInMasterFile(self, input_file_data, dealer_id):
         if ShowScheduleSwitch:
             print("\t\tFunction check_prodict_id_in_master_file start.")
+
         col_dealer_id = self.master_file_header[0]
         col_product_id = self.master_file_header[1]
         pid_not_in_master_file = []
+
         # input_file_data -> dataFrame
         # 取出輸入資料中的 "product id" 欄位資料，去掉重複值，排序
         input_data_product_id = input_file_data.loc[:, self.product_id].tolist()
@@ -1116,6 +1125,7 @@ class dataChangeFuncion:
             input_file_data[self.product_id].isin(pid_not_in_master_file)]
         # print("input_data_not_in_master_file")
         # print(input_data_not_in_master_file)
+
         if ShowScheduleSwitch:
             print("\t\tFunction check_prodict_id_in_master_file end.")
         return input_data_in_master_file, input_data_not_in_master_file
@@ -1183,6 +1193,7 @@ class dataChangeFuncion:
     def moveOrSearchUom(self, input_data, source_col, dealer_id, target_col):
         if ShowScheduleSwitch:
             print("\t\t\tFunction move_or_search_uom start.")
+
         col_uom = self.master_file_header[2]
         no_value_in_masterfile = {}
 
@@ -1207,6 +1218,7 @@ class dataChangeFuncion:
                 try:
                     # 取出最後的值
                     value = target_col_list[-1]
+
                     if (isinstance(value, float)) and (math.isnan(value)):
                         row_in_masterfile = pid_data_in_date.iloc[-1].name + 2
                         msg = f"masterfile檔案中 {col_uom} 欄位第 {row_in_masterfile} 行數值為空。"
@@ -1274,11 +1286,13 @@ class dataChangeFuncion:
                 price_type = type_list[-1]
                 # print("Function get_dp_type end.")
                 return price_type
+
             else:
                 # msg = f"經銷商ID：{dealer_id} 的客戶號：{buyer_id} 資料，在 KAList 工作表中未搜尋到符合時間區間的資料。"
                 # WSysLog("2", "get_dp_type_in_kalist", msg)
                 # print("Function get_dp_type end.")
                 return price_type
+
         else:
             # msg = f"經銷商ID：{dealer_id} 的客戶號：{buyer_id} 資料，在 KAList 工作表中搜尋不到 。"
             # WSysLog("2", "get_dp_type_in_kalist", msg)
@@ -1445,6 +1459,7 @@ class dataChangeFuncion:
         merge_output = input_data[parts].apply\
                 (lambda row: value.join(row.values.astype(str)), axis=1)
         # print(merge_output)
+
         if ShowScheduleSwitch:
             print("\t\t\tFunction merge_columns end.")
         return merge_output.to_list()
@@ -1459,6 +1474,7 @@ class dataChangeFuncion:
         transaction_list.sort()
         last_value = transaction_list[-1].strftime("%m/%d/%Y")
         # print(f"last_value:{last_value}")
+
         if ShowScheduleSwitch:
             print("\t\t\tFunction last_transaction_date end.")
         return [last_value] * row
@@ -1487,9 +1503,9 @@ class SaleDataChange(dataChangeFuncion):
         self.change_rule = Config.SaleFileChangeRule
 
         # 轉換檔案產出位置
-        self.changed_folder_path = Config.ChangeFolderPath
+        # self.changed_folder_path = Config.ChangeFolderPath
         # 測試用
-        # self.changed_folder_path = "./datas"
+        self.changed_folder_path = "./datas"
 
         # 銷售轉換產出檔案副檔名
         self.changed_ex = Config.SaleOutputFileExtension
@@ -1678,9 +1694,9 @@ class SaleDataChange(dataChangeFuncion):
                 ("{StartDate}", start_date).replace\
                 ("{EndDate}", end_date)
 
-            error_report_folder_path = self.getErrorReportPath(self.dealer_id)
+            # error_report_folder_path = self.getErrorReportPath(self.dealer_id)
             # 測試用
-            # error_report_folder_path = os.path.join("./datas")
+            error_report_folder_path = os.path.join("./datas")
 
             try:
                 if not os.path.exists(error_report_folder_path):
@@ -1750,10 +1766,10 @@ class SaleDataChange(dataChangeFuncion):
                 [f"Dealer{dealer_index}"]["SaleFile"]["OUPType"]
 
             # 取得檔案的目錄位置
-            file_path = self.getFilePath(self.dealer_id, self.file_name)
+            # file_path = self.getFilePath(self.dealer_id, self.file_name)
 
             # 測試用
-            # file_path = os.path.join("./datas", self.file_name)
+            file_path = os.path.join("./datas", self.file_name)
 
             # 讀取檔案內容，過濾附檔名、統一時間欄位內容格式、確認 pid 欄位之值無中文
             self.input_file_data = self.checkProductIdValue(file_path)
@@ -1963,6 +1979,7 @@ class InventoryDataChange(dataChangeFuncion):
 
             msg = f"檔案轉換完成，輸出檔名 {convert_file_name}。"
             WChaLog("1", "ConvertOutputInfo", self.dealer_id, self.file_name, msg)
+
         except Exception as e:
             msg = f"寫入檔案時發生錯誤。錯誤原因：{str(e)}"
             WChaLog("2", "ConvertdOutputInfo", self.dealer_id, self.file_name, msg)
@@ -2078,6 +2095,7 @@ class InventoryDataChange(dataChangeFuncion):
 
         if dealer_index is not None:
             dealer_index += 1
+
             if ShowRunningDataSwitch:
                 print(f"dealer_index:{dealer_index}")
 
@@ -2355,6 +2373,8 @@ if __name__ == "__main__":
     # change_result = sale_change.changeSaleFile("1002317244", "1002317244_S_202410012008.xlsx")
     # test_dict = {18:"1002317244_I_202410042001.xlsx"}
     # Changing(test_dict)
-    MergeInventoryFile()
-    FileArchiving()
+    sale_change = SaleDataChange()
+    change_result = sale_change.changeSaleFile("1002322861", "1002322861_S_202410300838.csv")
+    # MergeInventoryFile()
+    # FileArchiving()
 '''
