@@ -15,7 +15,7 @@
         "User": "System",
         "MaxTryRange": 3,
         "WorkDay": true,
-        "MonthlyFileDeadline": 15,
+        "MonthlyFileDeadline": 14,
         "AllowFileExtensions": [
             ".csv",
             ".xlsx",

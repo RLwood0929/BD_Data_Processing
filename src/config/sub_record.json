@@ -1,5 +1,5 @@
 {
-    "SubStartIndex": 103,
+    "SubStartIndex": 16,
     "NotSubStartIndex": null,
     "ChangeDic": null,
     "Dealer1": {
@@ -10,8 +10,8 @@
         "Mail4": {}
     },
     "Dealer2": {
-        "SaleFile": false,
-        "InventoryFile": false,
+        "SaleFile": null,
+        "InventoryFile": null,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}
@@ -31,8 +31,8 @@
         "Mail4": {}
     },
     "Dealer5": {
-        "SaleFile": true,
-        "InventoryFile": true,
+        "SaleFile": null,
+        "InventoryFile": null,
         "Mail2": {},
         "Mail3": {},
         "Mail4": {}

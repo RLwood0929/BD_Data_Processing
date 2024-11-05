@@ -116,7 +116,7 @@ def change_roc_year(folder_path):
     column_keys = [Config.SF_Default_Header[23], Config.SF_Default_Header[26]]
     file_names = [file for file in os.listdir(folder_path) \
         if os.path.isfile(os.path.join(folder_path, file))]
-    
+
     if file_names:
         for file in file_names:
             file_path = os.path.join(folder_path, file)
@@ -140,7 +140,8 @@ def change_roc_year(folder_path):
                     for row in range(len(data)):
                         value = str(data.loc[row, column_key])
                         value_part = value.split("/")
-                        if (int(value_part[0]) != Config.Year) & ((int(value_part[0]) + 1911) == Config.Year):
+                        if (int(value_part[0]) != Config.Year) &\
+                            ((int(value_part[0]) + 1911) == Config.Year):
                             value_part[0] = str(int(value_part[0]) + 1911)
                             value = "/".join(value_part)
                         data.loc[row, column_key] = value
@@ -160,10 +161,10 @@ def change_roc_year(folder_path):
                 file_path = os.path.join(folder_path, new_file_name)
                 data.to_excel(file_path, index=False)
                 os.utime(file_path, (file_time, file_time))
-        
+
             msg = f"{file_name} 檔案已過濾出當月資料。"
             WSysLog("1", "ChangeRocYear", msg)
-    
+
     else:
         msg = f"{folder_path} 目標目錄底下無檔案。"
         WSysLog("1", "ChangeRocYear", msg)
@@ -204,9 +205,10 @@ def split_file_data(folder_path):
                 month_index = Config.Month
                 msg = "檔名時間格式不對，系統無法處理，將依據系統年月篩選檔案內容。"
                 WSysLog("2", "SplitFileData", msg)
-            
+
             # 過濾出對應時間區間的檔案內容
-            data = data[(data[column_key].dt.year == year_index) & (data[column_key].dt.month == month_index)]
+            data = data[(data[column_key].dt.year == year_index) &\
+                        (data[column_key].dt.month == month_index)]
             # 內容還原成原本的欄位格式YYYY/MM/DD
             data[column_key] = data[column_key].dt.strftime("%Y/%m/%d")
 
@@ -272,6 +274,6 @@ def Preprocessing():
             getTodayFile(dealer_id, path)
             print("getTodayFile end.")
         split_file_data(path)
-        
+
 if __name__ == "__main__":
     Preprocessing()

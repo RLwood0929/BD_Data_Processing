@@ -137,11 +137,11 @@ def system_work_flow(half_flag = False):
             print("--End MargeInventory--")
             # return
             print("--Running EFTUploadFile--")
-            EFTUploadFile()
+            # EFTUploadFile()
             print("--End EFTUploadFile--")
 
             print("--Running FileArchiving--")
-            FileArchiving()
+            # FileArchiving()
             print("--End FileArchiving--")
         # return
         print("--Running MoveCheckFile--")
